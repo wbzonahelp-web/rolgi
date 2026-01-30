@@ -43,6 +43,7 @@ const DataLoader = require('../loader/data-loader');
 const SStatsClient = require('./sstats-client');
 const { jwtAuthPlugin } = require('../auth/fastify-auth');
 const authRoutes = require('./routes/auth');
+const alertRoutes = require('./routes/alerts');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
 
@@ -252,6 +253,7 @@ class BackendApi {
     // ============================================================
 
     this.app.register(authRoutes, { prefix: '/api/auth' });
+    this.app.register(alertRoutes, { prefix: '/api/alerts' });
 
     // ============================================================
     // GAMES
