@@ -1,6 +1,8 @@
 # Production Docker Compose
 # Для развертывания на production сервере
 
+version: '3.8'
+
 services:
   # PostgreSQL Database
   postgres:
@@ -50,8 +52,6 @@ services:
       dockerfile: Dockerfile
     container_name: rolgi-api
     restart: always
-    env_file:
-      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,9 +59,39 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      API_PORT: ${API_PORT:-3000}
       API_HOST: 0.0.0.0
+      
+      # Database
       DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-rolgi}
+      DB_USER: ${DB_USER:-rolgi_user}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_SSL: "false"
+      
+      # Redis
       REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-24h}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+      
+      # Alerting
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
+      
+      ALERT_SLACK_ENABLED: ${ALERT_SLACK_ENABLED:-false}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+      SLACK_CHANNEL: ${SLACK_CHANNEL}
     ports:
       - "${API_PORT:-3000}:3000"
     volumes:

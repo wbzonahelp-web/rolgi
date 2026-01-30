@@ -39,7 +39,7 @@ const CHECK_CONFIG = {
 const CHECKS = [
   {
     name: 'Schema Lock Integrity',
-    critical: false,
+    critical: true,
     fn: checkSchemaLock
   },
   {
@@ -217,7 +217,7 @@ async function checkApiKey() {
       };
     }
 
-    if (apiKey.length < 10) {
+    if (apiKey.length < 20) {
       return {
         passed: false,
         error: 'SSTATS_API_KEY appears to be invalid (too short)'
