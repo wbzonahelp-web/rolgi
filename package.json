@@ -12,6 +12,8 @@
     "test:unit": "jest --selectProjects=unit",
     "test:integration": "jest --selectProjects=integration",
     "test:integration:watch": "jest --selectProjects=integration --watch",
+    "test:e2e": "jest --selectProjects=e2e",
+    "test:e2e:watch": "jest --selectProjects=e2e --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
