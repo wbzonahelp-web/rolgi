@@ -23,6 +23,8 @@ const { getDatabase, closeDatabase } = require('./src/database/db-pool');
 const BackendApi = require('./src/api/backend-api');
 const { getHealthMonitor, getTracer, getErrorCollector, getMetricsCollector } = require('./src/monitoring/monitoring');
 const { getJobsManager } = require('./src/jobs/scheduled-jobs');
+const WSServer = require('./src/websocket/ws-server');
+const GameUpdatesManager = require('./src/websocket/game-updates');
 
 const logger = pino({
   name: 'server',
@@ -44,6 +46,8 @@ class RolgiServer {
   constructor() {
     this.api = null;
     this.db = null;
+    this.wsServer = null;
+    this.gameUpdatesManager = null;
     this.jobsManager = null;
     this.healthMonitor = getHealthMonitor();
     this.tracer = getTracer();
@@ -203,6 +207,44 @@ class RolgiServer {
   }
 
   /**
+   * Initialize WebSocket Server
+   * @private
+   */
+  async _initializeWebSocket() {
+    logger.info('Initializing WebSocket server...');
+
+    const traceId = this.tracer.startTrace('websocket_init');
+
+    try {
+      // Получаем HTTP сервер из Fastify
+      const httpServer = this.api.app.server;
+
+      // Создаём WebSocket сервер
+      this.wsServer = new WSServer(httpServer, {
+        path: '/ws',
+        heartbeatInterval: 30000,
+        maxConnections: 10000,
+        rateLimitPerMinute: 60
+      });
+
+      // Создаём менеджер обновлений игр
+      this.gameUpdatesManager = new GameUpdatesManager(this.wsServer, this.db);
+      this.gameUpdatesManager.start();
+
+      logger.info({
+        path: '/ws',
+        maxConnections: 10000
+      }, 'WebSocket server initialized');
+
+      this.tracer.finishTrace(traceId);
+    } catch (error) {
+      this.errorCollector.recordError(error, { stage: 'websocket_init' });
+      this.tracer.finishTrace(traceId);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize Scheduled Jobs
    * @private
    */
@@ -252,6 +294,18 @@ class RolgiServer {
         if (this.jobsManager) {
           this.jobsManager.stop();
           logger.info('Scheduled jobs stopped');
+        }
+
+        // Stop game updates manager
+        if (this.gameUpdatesManager) {
+          this.gameUpdatesManager.stop();
+          logger.info('Game updates manager stopped');
+        }
+
+        // Stop WebSocket server
+        if (this.wsServer) {
+          await this.wsServer.close();
+          logger.info('WebSocket server stopped');
         }
 
         // Stop health monitoring
@@ -330,6 +384,7 @@ class RolgiServer {
 
     console.log('🚀 Server Information:');
     console.log(`   📍 API Server: http://${this.api.config.host}:${this.api.config.port}`);
+    console.log(`   🔌 WebSocket: ws://${this.api.config.host}:${this.api.config.port}/ws`);
     console.log(`   📖 Swagger Docs: http://${this.api.config.host}:${this.api.config.port}/docs`);
     console.log(`   🏥 Health Check: http://${this.api.config.host}:${this.api.config.port}/health`);
     console.log(`   📊 Metrics: http://${this.api.config.host}:${this.api.config.port}/metrics`);
@@ -343,6 +398,8 @@ class RolgiServer {
     console.log('   ✅ SStats API Client');
     console.log('   ✅ Data Loader Pipeline (13 steps)');
     console.log('   ✅ Backend API (Fastify)');
+    console.log('   ✅ WebSocket Server (Real-time)');
+    console.log('   ✅ Game Updates Manager');
     console.log('   ✅ Monitoring & Tracing');
     console.log('   ✅ Health Checks');
     console.log(`   ${this.jobsManager && this.jobsManager.isRunning ? '✅' : '⏸️'} Scheduled Jobs`);
@@ -377,13 +434,16 @@ class RolgiServer {
       // Step 4: Initialize API server
       await this._initializeApi();
 
-      // Step 5: Initialize scheduled jobs
+      // Step 5: Initialize WebSocket server
+      await this._initializeWebSocket();
+
+      // Step 6: Initialize scheduled jobs
       await this._initializeScheduledJobs();
 
-      // Step 6: Setup graceful shutdown
+      // Step 7: Setup graceful shutdown
       this._setupGracefulShutdown();
 
-      // Step 7: Print banner
+      // Step 8: Print banner
       this._printBanner();
 
       const duration = Date.now() - startTime;
@@ -395,6 +455,8 @@ class RolgiServer {
           'database',
           'health_checks',
           'api',
+          'websocket',
+          'game_updates',
           'scheduled_jobs',
           'monitoring',
           'graceful_shutdown'
