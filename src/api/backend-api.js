@@ -42,6 +42,8 @@ const pino = require('pino');
 const { getDatabase } = require('../database/db-pool');
 const DataLoader = require('../loader/data-loader');
 const SStatsClient = require('./sstats-client');
+const { jwtAuthPlugin } = require('../auth/fastify-auth');
+const authRoutes = require('./routes/auth');
 
 const logger = pino({
   name: 'backend-api',
@@ -131,6 +133,11 @@ class BackendApi {
       });
     }
 
+    // JWT Authentication
+    await this.app.register(jwtAuthPlugin, {
+      dbPool: this.db
+    });
+
     // Swagger documentation
     if (this.config.enableSwagger) {
       await this.app.register(swagger, {
@@ -146,8 +153,19 @@ class BackendApi {
               description: 'Development server'
             }
           ],
+          components: {
+            securitySchemes: {
+              bearerAuth: {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+                description: 'JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"'
+              }
+            }
+          },
           tags: [
             { name: 'Health', description: 'Health check endpoints' },
+            { name: 'Authentication', description: 'Authentication and authorization endpoints' },
             { name: 'Games', description: 'Games data endpoints' },
             { name: 'Teams', description: 'Teams data endpoints' },
             { name: 'Players', description: 'Players data endpoints' },
@@ -224,6 +242,12 @@ class BackendApi {
         apiClient: this.apiClient.getMetrics()
       };
     });
+
+    // ============================================================
+    // AUTHENTICATION
+    // ============================================================
+
+    this.app.register(authRoutes, { prefix: '/api/auth' });
 
     // ============================================================
     // GAMES
