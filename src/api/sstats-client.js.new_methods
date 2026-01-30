@@ -1,0 +1,88 @@
+
+  // ============================================================
+  // ADDITIONAL ENDPOINTS
+  // ============================================================
+
+  /**
+   * Get league details by ID
+   */
+  async getLeagueDetails(leagueId) {
+    return this.get(`/Leagues/${leagueId}`);
+  }
+
+  /**
+   * Get league seasons
+   */
+  async getLeagueSeasons(leagueId) {
+    return this.get(`/Leagues/${leagueId}/seasons`);
+  }
+
+  /**
+   * Get team games/matches
+   */
+  async getTeamGames(teamId, params = {}) {
+    return this.get(`/Teams/${teamId}/games`, params);
+  }
+
+  /**
+   * Get team statistics
+   */
+  async getTeamStats(teamId, params = {}) {
+    return this.get(`/Teams/${teamId}/stats`, params);
+  }
+
+  /**
+   * Get player games/matches
+   */
+  async getPlayerGames(playerId, params = {}) {
+    return this.get(`/Players/${playerId}/games`, params);
+  }
+
+  /**
+   * Get live odds for all games
+   */
+  async getOddsLive(params = {}) {
+    return this.get('/Odds/live', params);
+  }
+
+  /**
+   * Get prematch odds
+   */
+  async getOddsPrematch(params = {}) {
+    return this.get('/Odds/prematch', params);
+  }
+
+  /**
+   * Get odds history for a game
+   */
+  async getOddsHistory(gameId, params = {}) {
+    return this.get(`/Odds/history/${gameId}`, params);
+  }
+
+  /**
+   * Get game Glicko 2 rating and predictions
+   */
+  async getGameGlicko(gameId) {
+    return this.get(`/Games/glicko/${gameId}`);
+  }
+
+  /**
+   * Get game injuries information
+   */
+  async getGameInjuries(gameId) {
+    return this.get(`/Games/${gameId}/injuries`);
+  }
+
+  /**
+   * Get game profits/value bets analysis
+   */
+  async getGameProfits(gameId, params = {}) {
+    return this.get(`/Games/${gameId}/profits`, params);
+  }
+
+  /**
+   * Execute advanced query for games
+   */
+  async queryGamesAdvanced(queryData) {
+    return this.post('/Games/query', queryData);
+  }
