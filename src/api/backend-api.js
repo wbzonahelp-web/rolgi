@@ -209,6 +209,49 @@ class BackendApi {
    * @private
    */
   async _setupRoutes() {
+    // ========================================
+    // ROOT ROUTE
+    // ========================================
+    this.app.get('/', {
+      schema: {
+        tags: ['Info'],
+        description: 'API Information',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              version: { type: 'string' },
+              description: { type: 'string' },
+              endpoints: { type: 'object' },
+              documentation: { type: 'string' },
+              health: { type: 'string' },
+              github: { type: 'string' }
+            }
+          }
+        }
+      }
+    }, async (request, reply) => {
+      return {
+        name: 'Rolgi SStats Analytics Platform API',
+        version: '6.0.0',
+        description: 'Advanced football analytics and statistics platform',
+        endpoints: {
+          health: '/health',
+          documentation: '/docs',
+          apiVersions: '/api/versions',
+          metrics: '/metrics',
+          api: {
+            v1: '/api/v1',
+            v2: '/api/v2'
+          }
+        },
+        documentation: 'https://rolgi.com/docs',
+        health: 'https://rolgi.com/health',
+        github: 'https://github.com/wbzonahelp-web/rolgi'
+      };
+    });
+
     // ============================================================
     // HEALTH & METRICS
     // ============================================================
