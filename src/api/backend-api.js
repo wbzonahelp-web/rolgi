@@ -44,6 +44,7 @@ const SStatsClient = require('./sstats-client');
 const { jwtAuthPlugin } = require('../auth/fastify-auth');
 const authRoutes = require('./routes/auth');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
+const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
 
 const logger = pino({
   name: 'backend-api',
@@ -137,6 +138,9 @@ class BackendApi {
       // Global rate limit для всех routes
       this.app.addHook('onRequest', roleBasedRateLimit());
     }
+
+    // Redis-based Query Caching
+    await this.app.register(queryCachePlugin);
 
     // Swagger documentation
     if (this.config.enableSwagger) {
@@ -256,7 +260,7 @@ class BackendApi {
     this.app.get('/api/games', {
       schema: {
         tags: ['Games'],
-        description: 'Получить список игр',
+        description: 'Получить список игр (с кэшированием)',
         querystring: {
           type: 'object',
           properties: {
@@ -273,36 +277,49 @@ class BackendApi {
       }
     }, async (request, reply) => {
       const { league_id, season, status, date_from, date_to, team_id, limit, offset } = request.query;
+      const filters = { league_id, season, status, date_from, date_to, team_id, limit, offset };
 
+      // Проверяем кэш
+      const cached = await request.server.queryCache.getGames(filters);
+      if (cached) {
+        return reply.cached(cached, 300);
+      }
+
+      // Получаем из БД
       const where = {};
       if (league_id) where.league_id = league_id;
       if (season) where.season = season;
       if (status) where.status = status;
+      
+      let games;
       if (team_id) {
         // Games where team is home or away
-        const games = await this.db.query(
+        const result = await this.db.query(
           `SELECT * FROM games 
            WHERE (home_team_id = $1 OR away_team_id = $1)
            ORDER BY game_date DESC
            LIMIT $2 OFFSET $3`,
           [team_id, limit || 50, offset || 0]
         );
-        return games.rows;
+        games = result.rows;
+      } else {
+        games = await this.db.select('games', where, {
+          orderBy: 'game_date DESC',
+          limit: limit || 50,
+          offset: offset || 0
+        });
       }
 
-      const games = await this.db.select('games', where, {
-        orderBy: 'game_date DESC',
-        limit: limit || 50,
-        offset: offset || 0
-      });
+      // Сохраняем в кэш
+      await request.server.queryCache.cacheGames(filters, games);
 
-      return games;
+      return reply.notCached(games);
     });
 
     this.app.get('/api/games/:id', {
       schema: {
         tags: ['Games'],
-        description: 'Получить детали игры',
+        description: 'Получить детали игры (с кэшированием)',
         params: {
           type: 'object',
           properties: {
@@ -313,6 +330,12 @@ class BackendApi {
       }
     }, async (request, reply) => {
       const { id } = request.params;
+
+      // Проверяем кэш
+      const cached = await request.server.queryCache.getGameDetails(id);
+      if (cached) {
+        return reply.cached(cached, 30);
+      }
 
       const game = await this.db.select('games', { id }, { limit: 1 });
 
@@ -326,12 +349,17 @@ class BackendApi {
       const [awayTeam] = await this.db.select('teams', { id: game[0].away_team_id });
       const [league] = await this.db.select('leagues', { id: game[0].league_id });
 
-      return {
+      const gameDetails = {
         ...game[0],
         home_team: homeTeam,
         away_team: awayTeam,
         league
       };
+
+      // Сохраняем в кэш
+      await request.server.queryCache.cacheGameDetails(id, gameDetails);
+
+      return reply.notCached(gameDetails);
     });
 
     // ============================================================
@@ -519,7 +547,7 @@ class BackendApi {
     this.app.get('/api/standings', {
       schema: {
         tags: ['Standings'],
-        description: 'Получить турнирную таблицу',
+        description: 'Получить турнирную таблицу (с кэшированием)',
         querystring: {
           type: 'object',
           properties: {
@@ -532,11 +560,20 @@ class BackendApi {
     }, async (request, reply) => {
       const { league_id, season } = request.query;
 
+      // Проверяем кэш
+      const cached = await request.server.queryCache.getStandings(league_id, season);
+      if (cached) {
+        return reply.cached(cached, 600);
+      }
+
       const standings = await this.db.select('standings', { league_id, season }, {
         orderBy: 'position'
       });
 
-      return standings;
+      // Сохраняем в кэш
+      await request.server.queryCache.cacheStandings(league_id, season, standings);
+
+      return reply.notCached(standings);
     });
 
     // ============================================================
@@ -663,6 +700,12 @@ class BackendApi {
         port: this.config.port,
         host: this.config.host
       });
+
+      // Start cache warming
+      if (this.app.queryCache) {
+        await scheduleCacheWarming(this.app, this.db, 300000); // Every 5 minutes
+        logger.info('Cache warming scheduled');
+      }
 
       logger.info({
         port: this.config.port,
