@@ -47,6 +47,9 @@ const alertRoutes = require('./routes/alerts');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
 const { setupPrometheusMiddleware } = require('../monitoring/prometheus/middleware');
+const { versioningPlugin } = require('./versions/versioning');
+const { registerV1Routes } = require('./versions/v1');
+const { registerV2Routes } = require('./versions/v2');
 
 const logger = pino({
   name: 'backend-api',
@@ -144,6 +147,12 @@ class BackendApi {
     // Redis-based Query Caching
     await this.app.register(queryCachePlugin);
 
+    // API Versioning
+    await this.app.register(versioningPlugin, {
+      defaultVersion: 'v2',
+      strictMode: true
+    });
+
     // Swagger documentation
     if (this.config.enableSwagger) {
       await this.app.register(swagger, {
@@ -172,6 +181,7 @@ class BackendApi {
           tags: [
             { name: 'Health', description: 'Health check endpoints' },
             { name: 'Authentication', description: 'Authentication and authorization endpoints' },
+            { name: 'Versioning', description: 'API versioning and compatibility' },
             { name: 'Games', description: 'Games data endpoints' },
             { name: 'Teams', description: 'Teams data endpoints' },
             { name: 'Players', description: 'Players data endpoints' },
@@ -252,12 +262,43 @@ class BackendApi {
       };
     });
 
+    this.app.get('/api/versions', {
+      schema: {
+        tags: ['Health'],
+        description: 'API versions information'
+      }
+    }, async (request, reply) => {
+      const { apiVersions } = require('./versions/versioning');
+      return {
+        current: 'v2',
+        supported: Object.keys(apiVersions),
+        versions: apiVersions,
+        deprecation: {
+          v1: {
+            deprecated: false,
+            deprecationDate: null,
+            endOfLife: null
+          }
+        }
+      };
+    });
+
     // ============================================================
     // AUTHENTICATION
     // ============================================================
 
     this.app.register(authRoutes, { prefix: '/api/auth' });
     this.app.register(alertRoutes, { prefix: '/api/alerts' });
+
+    // ============================================================
+    // API VERSIONING
+    // ============================================================
+
+    // Register V1 routes (legacy)
+    await registerV1Routes(this.app);
+    
+    // Register V2 routes (current)
+    await registerV2Routes(this.app);
 
     // ============================================================
     // GAMES
