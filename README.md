@@ -7,6 +7,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
+[![Test](https://github.com/wbzonahelp-web/rolgi/workflows/Test/badge.svg)](https://github.com/wbzonahelp-web/rolgi/actions/workflows/test.yml)
+[![Build](https://github.com/wbzonahelp-web/rolgi/workflows/Build%20Docker%20Image/badge.svg)](https://github.com/wbzonahelp-web/rolgi/actions/workflows/build.yml)
+[![Code Quality](https://github.com/wbzonahelp-web/rolgi/workflows/Code%20Quality/badge.svg)](https://github.com/wbzonahelp-web/rolgi/actions/workflows/code-quality.yml)
+
 ---
 
 ## 📋 Содержание
