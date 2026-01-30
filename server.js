@@ -20,6 +20,7 @@ require('dotenv').config();
 const pino = require('pino');
 const { runPreflightChecks } = require('./src/core/preflight-checks');
 const { getDatabase, closeDatabase } = require('./src/database/db-pool');
+const { createRedisClient, closeRedis, healthCheck: redisHealthCheck } = require('./src/cache/redis-client');
 const BackendApi = require('./src/api/backend-api');
 const { getHealthMonitor, getTracer, getErrorCollector, getMetricsCollector } = require('./src/monitoring/monitoring');
 const { getJobsManager } = require('./src/jobs/scheduled-jobs');
@@ -46,6 +47,7 @@ class RolgiServer {
   constructor() {
     this.api = null;
     this.db = null;
+    this.redis = null;
     this.wsServer = null;
     this.gameUpdatesManager = null;
     this.jobsManager = null;
@@ -134,6 +136,39 @@ class RolgiServer {
   }
 
   /**
+   * Initialize Redis
+   * @private
+   */
+  async _initializeRedis() {
+    logger.info('Initializing Redis connection...');
+
+    const traceId = this.tracer.startTrace('redis_init');
+
+    try {
+      this.redis = createRedisClient();
+
+      // Test connection
+      const healthy = await redisHealthCheck();
+
+      if (!healthy) {
+        logger.warn('Redis health check failed, continuing without Redis');
+        // Не бросаем ошибку, так как Redis опциональный
+      } else {
+        logger.info('Redis connection initialized');
+      }
+
+      this.tracer.finishTrace(traceId);
+    } catch (error) {
+      logger.warn({
+        error: error.message
+      }, 'Redis initialization failed, continuing without Redis');
+      this.errorCollector.recordError(error, { stage: 'redis_init', optional: true });
+      this.tracer.finishTrace(traceId);
+      // Не бросаем ошибку, так как Redis опциональный
+    }
+  }
+
+  /**
    * Setup health checks
    * @private
    */
@@ -143,6 +178,11 @@ class RolgiServer {
     // Database health check
     this.healthMonitor.registerCheck('database', async () => {
       return await this.db.healthCheck();
+    }, 30000); // Every 30 seconds
+
+    // Redis health check
+    this.healthMonitor.registerCheck('redis', async () => {
+      return await redisHealthCheck();
     }, 30000); // Every 30 seconds
 
     // API health check
@@ -322,6 +362,10 @@ class RolgiServer {
         await closeDatabase();
         logger.info('Database connections closed');
 
+        // Close Redis connection
+        await closeRedis();
+        logger.info('Redis connection closed');
+
         // Clear old traces
         this.tracer.clearOldTraces(0); // Clear all
         logger.info('Traces cleared');
@@ -395,9 +439,11 @@ class RolgiServer {
     console.log('   ✅ Endpoint Lock (32 endpoints)');
     console.log('   ✅ UPSERT Keys (22 tables)');
     console.log('   ✅ Database Connection Pool');
+    console.log(`   ${this.redis ? '✅' : '⚠️'} Redis Cache & Rate Limiting`);
     console.log('   ✅ SStats API Client');
     console.log('   ✅ Data Loader Pipeline (13 steps)');
     console.log('   ✅ Backend API (Fastify)');
+    console.log('   ✅ JWT Authentication & Authorization');
     console.log('   ✅ WebSocket Server (Real-time)');
     console.log('   ✅ Game Updates Manager');
     console.log('   ✅ Monitoring & Tracing');
@@ -428,22 +474,25 @@ class RolgiServer {
       // Step 2: Initialize database
       await this._initializeDatabase();
 
-      // Step 3: Setup health checks
+      // Step 3: Initialize Redis
+      await this._initializeRedis();
+
+      // Step 4: Setup health checks
       this._setupHealthChecks();
 
-      // Step 4: Initialize API server
+      // Step 5: Initialize API server
       await this._initializeApi();
 
-      // Step 5: Initialize WebSocket server
+      // Step 6: Initialize WebSocket server
       await this._initializeWebSocket();
 
-      // Step 6: Initialize scheduled jobs
+      // Step 7: Initialize scheduled jobs
       await this._initializeScheduledJobs();
 
-      // Step 7: Setup graceful shutdown
+      // Step 8: Setup graceful shutdown
       this._setupGracefulShutdown();
 
-      // Step 8: Print banner
+      // Step 9: Print banner
       this._printBanner();
 
       const duration = Date.now() - startTime;
@@ -453,6 +502,7 @@ class RolgiServer {
         componentsInitialized: [
           'preflight',
           'database',
+          'redis',
           'health_checks',
           'api',
           'websocket',

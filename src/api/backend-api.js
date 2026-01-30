@@ -35,7 +35,6 @@
 const fastify = require('fastify');
 const cors = require('@fastify/cors');
 const helmet = require('@fastify/helmet');
-const rateLimit = require('@fastify/rate-limit');
 const swagger = require('@fastify/swagger');
 const swaggerUi = require('@fastify/swagger-ui');
 const pino = require('pino');
@@ -44,6 +43,7 @@ const DataLoader = require('../loader/data-loader');
 const SStatsClient = require('./sstats-client');
 const { jwtAuthPlugin } = require('../auth/fastify-auth');
 const authRoutes = require('./routes/auth');
+const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 
 const logger = pino({
   name: 'backend-api',
@@ -125,18 +125,18 @@ class BackendApi {
       });
     }
 
-    // Rate limiting
-    if (this.config.enableRateLimit) {
-      await this.app.register(rateLimit, {
-        max: this.config.rateLimitMax,
-        timeWindow: this.config.rateLimitWindow
-      });
-    }
-
     // JWT Authentication
     await this.app.register(jwtAuthPlugin, {
       dbPool: this.db
     });
+
+    // Redis-based Rate Limiting
+    if (this.config.enableRateLimit) {
+      await this.app.register(rateLimiterPlugin);
+      
+      // Global rate limit для всех routes
+      this.app.addHook('onRequest', roleBasedRateLimit());
+    }
 
     // Swagger documentation
     if (this.config.enableSwagger) {
