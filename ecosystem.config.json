@@ -1,0 +1,27 @@
+{
+  "apps": [
+    {
+      "name": "rolgi-api",
+      "script": "./server.js",
+      "cwd": "/home/sshauto/apps/rolgi/webapp",
+      "instances": 2,
+      "exec_mode": "cluster",
+      "max_memory_restart": "1G",
+      "env": {
+        "NODE_ENV": "production",
+        "API_PORT": 3000,
+        "API_HOST": "0.0.0.0"
+      },
+      "error_file": "/home/sshauto/apps/rolgi/logs/api-error.log",
+      "out_file": "/home/sshauto/apps/rolgi/logs/api-out.log",
+      "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+      "merge_logs": true,
+      "autorestart": true,
+      "watch": false,
+      "max_restarts": 10,
+      "min_uptime": "10s",
+      "listen_timeout": 3000,
+      "kill_timeout": 5000
+    }
+  ]
+}
