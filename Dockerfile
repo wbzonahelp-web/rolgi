@@ -52,6 +52,7 @@ COPY --from=build /app/server.js ./
 COPY --from=build /app/package.json ./
 COPY --from=build /app/.env.example ./.env.example
 COPY --from=build /app/static ./static
+COPY --from=build /app/public ./public
 
 # Create memories directory for schema lock
 RUN mkdir -p memories
