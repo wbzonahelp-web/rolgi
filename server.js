@@ -22,6 +22,7 @@ const { runPreflightChecks } = require('./src/core/preflight-checks');
 const { getDatabase, closeDatabase } = require('./src/database/db-pool');
 const BackendApi = require('./src/api/backend-api');
 const { getHealthMonitor, getTracer, getErrorCollector, getMetricsCollector } = require('./src/monitoring/monitoring');
+const { getJobsManager } = require('./src/jobs/scheduled-jobs');
 
 const logger = pino({
   name: 'server',
@@ -43,6 +44,7 @@ class RolgiServer {
   constructor() {
     this.api = null;
     this.db = null;
+    this.jobsManager = null;
     this.healthMonitor = getHealthMonitor();
     this.tracer = getTracer();
     this.errorCollector = getErrorCollector();
@@ -201,6 +203,34 @@ class RolgiServer {
   }
 
   /**
+   * Initialize Scheduled Jobs
+   * @private
+   */
+  async _initializeScheduledJobs() {
+    logger.info('Initializing scheduled jobs...');
+
+    const traceId = this.tracer.startTrace('jobs_init');
+
+    try {
+      this.jobsManager = getJobsManager();
+
+      // Start jobs if enabled in environment
+      if (process.env.ENABLE_SCHEDULED_JOBS !== 'false') {
+        this.jobsManager.start();
+        logger.info('Scheduled jobs started');
+      } else {
+        logger.info('Scheduled jobs disabled via environment');
+      }
+
+      this.tracer.finishTrace(traceId);
+    } catch (error) {
+      this.errorCollector.recordError(error, { stage: 'jobs_init' });
+      this.tracer.finishTrace(traceId);
+      throw error;
+    }
+  }
+
+  /**
    * Setup graceful shutdown handlers
    * @private
    */
@@ -218,6 +248,12 @@ class RolgiServer {
       const traceId = this.tracer.startTrace('shutdown');
 
       try {
+        // Stop scheduled jobs
+        if (this.jobsManager) {
+          this.jobsManager.stop();
+          logger.info('Scheduled jobs stopped');
+        }
+
         // Stop health monitoring
         this.healthMonitor.stop();
         logger.info('Health monitoring stopped');
@@ -309,12 +345,14 @@ class RolgiServer {
     console.log('   ✅ Backend API (Fastify)');
     console.log('   ✅ Monitoring & Tracing');
     console.log('   ✅ Health Checks');
+    console.log(`   ${this.jobsManager && this.jobsManager.isRunning ? '✅' : '⏸️'} Scheduled Jobs`);
     console.log();
     console.log('📝 Environment:');
     console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
     console.log(`   LOG_LEVEL: ${process.env.LOG_LEVEL || 'info'}`);
     console.log(`   DB_HOST: ${process.env.DB_HOST || 'localhost'}`);
     console.log(`   DB_NAME: ${process.env.DB_NAME || 'rolgi_v6'}`);
+    console.log(`   SCHEDULED_JOBS: ${process.env.ENABLE_SCHEDULED_JOBS !== 'false' ? 'enabled' : 'disabled'}`);
     console.log();
     console.log('✨ Server is ready to accept requests!\n');
   }
@@ -339,10 +377,13 @@ class RolgiServer {
       // Step 4: Initialize API server
       await this._initializeApi();
 
-      // Step 5: Setup graceful shutdown
+      // Step 5: Initialize scheduled jobs
+      await this._initializeScheduledJobs();
+
+      // Step 6: Setup graceful shutdown
       this._setupGracefulShutdown();
 
-      // Step 6: Print banner
+      // Step 7: Print banner
       this._printBanner();
 
       const duration = Date.now() - startTime;
@@ -354,6 +395,7 @@ class RolgiServer {
           'database',
           'health_checks',
           'api',
+          'scheduled_jobs',
           'monitoring',
           'graceful_shutdown'
         ]

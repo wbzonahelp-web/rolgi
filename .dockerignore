@@ -1,0 +1,49 @@
+# Node modules
+node_modules
+npm-debug.log
+package-lock.json
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+docs
+*.md
+!package.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Tests
+tests
+coverage
+*.test.js
+*.spec.js
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Build artifacts
+dist
+build
