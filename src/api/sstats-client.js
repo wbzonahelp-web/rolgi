@@ -86,7 +86,7 @@ class SStatsClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
+        ...(this.config.apiKey && { 'Authorization': `ApiKey ${this.config.apiKey}` })
       }
     });
 
