@@ -48,3 +48,5 @@ temp/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+nginx/ssl/*.pem
+nginx/ssl/*.key
