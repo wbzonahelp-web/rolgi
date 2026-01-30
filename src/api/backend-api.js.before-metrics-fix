@@ -240,25 +240,25 @@ class BackendApi {
       };
     });
 
-//     this.app.get('/metrics', {
-//       schema: {
-//         tags: ['Health'],
-//         description: 'System metrics endpoint'
-//       }
-//     }, async (request, reply) => {
-//       return {
-//         api: {
-//           uptime: process.uptime(),
-//           memory: process.memoryUsage(),
-//           cpu: process.cpuUsage()
-//         },
-//         database: this.db.getPoolStats(),
-//         loader: this.loader.getStats(),
-//         apiClient: this.apiClient.getMetrics()
-//       };
-//     });
-// 
-//     this.app.get('/api/versions', {
+    this.app.get('/metrics', {
+      schema: {
+        tags: ['Health'],
+        description: 'System metrics endpoint'
+      }
+    }, async (request, reply) => {
+      return {
+        api: {
+          uptime: process.uptime(),
+          memory: process.memoryUsage(),
+          cpu: process.cpuUsage()
+        },
+        database: this.db.getPoolStats(),
+        loader: this.loader.getStats(),
+        apiClient: this.apiClient.getMetrics()
+      };
+    });
+
+    this.app.get('/api/versions', {
       schema: {
         tags: ['Health'],
         description: 'API versions information'
