@@ -793,6 +793,58 @@ class SStatsClient {
   }
 
   /**
+
+  // ============================================================
+  // ADDITIONAL ENDPOINTS  
+  // ============================================================
+
+  async getLeagueDetails(leagueId) {
+    return this.get(`/Leagues/${leagueId}`);
+  }
+
+  async getLeagueSeasons(leagueId) {
+    return this.get(`/Leagues/${leagueId}/seasons`);
+  }
+
+  async getTeamGames(teamId, params = {}) {
+    return this.get(`/Teams/${teamId}/games`, params);
+  }
+
+  async getTeamStats(teamId, params = {}) {
+    return this.get(`/Teams/${teamId}/stats`, params);
+  }
+
+  async getPlayerGames(playerId, params = {}) {
+    return this.get(`/Players/${playerId}/games`, params);
+  }
+
+  async getOddsLive(params = {}) {
+    return this.get('/Odds/live', params);
+  }
+
+  async getOddsPrematch(params = {}) {
+    return this.get('/Odds/prematch', params);
+  }
+
+  async getOddsHistory(gameId, params = {}) {
+    return this.get(`/Odds/history/${gameId}`, params);
+  }
+
+  async getGameGlicko(gameId) {
+    return this.get(`/Games/glicko/${gameId}`);
+  }
+
+  async getGameInjuries(gameId) {
+    return this.get(`/Games/${gameId}/injuries`);
+  }
+
+  async getGameProfits(gameId, params = {}) {
+    return this.get(`/Games/${gameId}/profits`, params);
+  }
+
+  async queryGamesAdvanced(queryData) {
+    return this.post('/Games/query', queryData);
+  }
    * Очистить кэш
    */
   clearCache() {

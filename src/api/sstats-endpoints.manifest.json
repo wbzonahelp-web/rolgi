@@ -7,7 +7,7 @@
     "withKey": "300 requests/minute",
     "withoutKey": "Limited/blocked"
   },
-  "lastUpdated": "2026-01-30",
+  "lastUpdated": "2026-01-30T17:24:37.576Z",
   "endpoints": [
     {
       "category": "Account",
@@ -24,14 +24,57 @@
       "method": "GET",
       "description": "Get list of games with filtering",
       "parameters": [
-        {"name": "leagueId", "type": "integer", "required": false},
-        {"name": "season", "type": "integer", "required": false},
-        {"name": "status", "type": "string", "required": false, "enum": ["scheduled", "live", "finished", "postponed", "cancelled"]},
-        {"name": "dateFrom", "type": "string", "format": "date", "required": false},
-        {"name": "dateTo", "type": "string", "format": "date", "required": false},
-        {"name": "teamId", "type": "integer", "required": false},
-        {"name": "page", "type": "integer", "required": false, "default": 1},
-        {"name": "limit", "type": "integer", "required": false, "default": 100}
+        {
+          "name": "leagueId",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "season",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "enum": [
+            "scheduled",
+            "live",
+            "finished",
+            "postponed",
+            "cancelled"
+          ]
+        },
+        {
+          "name": "dateFrom",
+          "type": "string",
+          "format": "date",
+          "required": false
+        },
+        {
+          "name": "dateTo",
+          "type": "string",
+          "format": "date",
+          "required": false
+        },
+        {
+          "name": "teamId",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "required": false,
+          "default": 100
+        }
       ],
       "requiredAuth": true,
       "responseType": "GamesList",
@@ -43,7 +86,12 @@
       "method": "GET",
       "description": "Get detailed information about a specific game",
       "parameters": [
-        {"name": "id", "type": "integer", "required": true, "in": "path"}
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        }
       ],
       "requiredAuth": true,
       "responseType": "GameDetails"
@@ -54,7 +102,12 @@
       "method": "GET",
       "description": "Get Glicko ratings for a specific game",
       "parameters": [
-        {"name": "id", "type": "integer", "required": true, "in": "path"}
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        }
       ],
       "requiredAuth": true,
       "responseType": "GlickoRatings"
@@ -65,7 +118,12 @@
       "method": "POST",
       "description": "Advanced game query with complex filtering",
       "parameters": [
-        {"name": "filters", "type": "object", "required": true, "in": "body"}
+        {
+          "name": "filters",
+          "type": "object",
+          "required": true,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "GamesList"
@@ -76,8 +134,18 @@
       "method": "POST",
       "description": "Get season table/standings",
       "parameters": [
-        {"name": "leagueId", "type": "integer", "required": true, "in": "body"},
-        {"name": "season", "type": "integer", "required": true, "in": "body"}
+        {
+          "name": "leagueId",
+          "type": "integer",
+          "required": true,
+          "in": "body"
+        },
+        {
+          "name": "season",
+          "type": "integer",
+          "required": true,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "SeasonTable"
@@ -88,8 +156,19 @@
       "method": "POST",
       "description": "Get statistics for last N games of a team",
       "parameters": [
-        {"name": "teamId", "type": "integer", "required": true, "in": "body"},
-        {"name": "count", "type": "integer", "required": false, "default": 5, "in": "body"}
+        {
+          "name": "teamId",
+          "type": "integer",
+          "required": true,
+          "in": "body"
+        },
+        {
+          "name": "count",
+          "type": "integer",
+          "required": false,
+          "default": 5,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "GamesStats"
@@ -100,7 +179,12 @@
       "method": "POST",
       "description": "Get text summary of a game",
       "parameters": [
-        {"name": "gameId", "type": "integer", "required": true, "in": "body"}
+        {
+          "name": "gameId",
+          "type": "integer",
+          "required": true,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "TextSummary"
@@ -111,8 +195,18 @@
       "method": "POST",
       "description": "Calculate profits for betting strategies",
       "parameters": [
-        {"name": "games", "type": "array", "required": true, "in": "body"},
-        {"name": "strategy", "type": "string", "required": true, "in": "body"}
+        {
+          "name": "games",
+          "type": "array",
+          "required": true,
+          "in": "body"
+        },
+        {
+          "name": "strategy",
+          "type": "string",
+          "required": true,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "ProfitsCalculation"
@@ -123,7 +217,11 @@
       "method": "GET",
       "description": "Get injuries for a specific game",
       "parameters": [
-        {"name": "gameId", "type": "integer", "required": true}
+        {
+          "name": "gameId",
+          "type": "integer",
+          "required": true
+        }
       ],
       "requiredAuth": true,
       "responseType": "Injuries"
@@ -134,8 +232,16 @@
       "method": "GET",
       "description": "Get list of all leagues",
       "parameters": [
-        {"name": "countryId", "type": "integer", "required": false},
-        {"name": "isActive", "type": "boolean", "required": false}
+        {
+          "name": "countryId",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "isActive",
+          "type": "boolean",
+          "required": false
+        }
       ],
       "requiredAuth": true,
       "responseType": "LeaguesList"
@@ -146,11 +252,33 @@
       "method": "GET",
       "description": "Get list of teams with filtering",
       "parameters": [
-        {"name": "leagueId", "type": "integer", "required": false},
-        {"name": "countryId", "type": "integer", "required": false},
-        {"name": "search", "type": "string", "required": false},
-        {"name": "page", "type": "integer", "required": false, "default": 1},
-        {"name": "limit", "type": "integer", "required": false, "default": 100}
+        {
+          "name": "leagueId",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "countryId",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "search",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "required": false,
+          "default": 100
+        }
       ],
       "requiredAuth": true,
       "responseType": "TeamsList",
@@ -162,7 +290,12 @@
       "method": "GET",
       "description": "Get detailed information about a specific team",
       "parameters": [
-        {"name": "id", "type": "integer", "required": true, "in": "path"}
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        }
       ],
       "requiredAuth": true,
       "responseType": "TeamDetails"
@@ -173,11 +306,33 @@
       "method": "GET",
       "description": "Search for players",
       "parameters": [
-        {"name": "name", "type": "string", "required": false},
-        {"name": "teamId", "type": "integer", "required": false},
-        {"name": "position", "type": "string", "required": false},
-        {"name": "page", "type": "integer", "required": false, "default": 1},
-        {"name": "limit", "type": "integer", "required": false, "default": 100}
+        {
+          "name": "name",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "teamId",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "position",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "required": false,
+          "default": 100
+        }
       ],
       "requiredAuth": true,
       "responseType": "PlayersList",
@@ -189,7 +344,12 @@
       "method": "GET",
       "description": "Get detailed information about a specific player",
       "parameters": [
-        {"name": "id", "type": "integer", "required": true, "in": "path"}
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        }
       ],
       "requiredAuth": true,
       "responseType": "PlayerDetails"
@@ -200,8 +360,17 @@
       "method": "GET",
       "description": "Get events for a specific player",
       "parameters": [
-        {"name": "id", "type": "integer", "required": true, "in": "path"},
-        {"name": "season", "type": "integer", "required": false}
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        },
+        {
+          "name": "season",
+          "type": "integer",
+          "required": false
+        }
       ],
       "requiredAuth": true,
       "responseType": "PlayerEvents"
@@ -221,9 +390,22 @@
       "method": "GET",
       "description": "Get prematch odds for a game",
       "parameters": [
-        {"name": "gameId", "type": "integer", "required": true, "in": "path"},
-        {"name": "bookmaker", "type": "string", "required": false},
-        {"name": "market", "type": "string", "required": false}
+        {
+          "name": "gameId",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        },
+        {
+          "name": "bookmaker",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "market",
+          "type": "string",
+          "required": false
+        }
       ],
       "requiredAuth": true,
       "responseType": "GameOdds"
@@ -234,9 +416,22 @@
       "method": "GET",
       "description": "Get live odds for a game",
       "parameters": [
-        {"name": "gameId", "type": "integer", "required": true, "in": "path"},
-        {"name": "bookmaker", "type": "string", "required": false},
-        {"name": "market", "type": "string", "required": false}
+        {
+          "name": "gameId",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        },
+        {
+          "name": "bookmaker",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "market",
+          "type": "string",
+          "required": false
+        }
       ],
       "requiredAuth": true,
       "responseType": "GameOddsLive"
@@ -247,7 +442,12 @@
       "method": "GET",
       "description": "Get only updated live odds",
       "parameters": [
-        {"name": "since", "type": "string", "format": "datetime", "required": true}
+        {
+          "name": "since",
+          "type": "string",
+          "format": "datetime",
+          "required": true
+        }
       ],
       "requiredAuth": true,
       "responseType": "OddsUpdates"
@@ -258,8 +458,18 @@
       "method": "GET",
       "description": "Get live odds changes for a specific game",
       "parameters": [
-        {"name": "gameId", "type": "integer", "required": true, "in": "path"},
-        {"name": "since", "type": "string", "format": "datetime", "required": false}
+        {
+          "name": "gameId",
+          "type": "integer",
+          "required": true,
+          "in": "path"
+        },
+        {
+          "name": "since",
+          "type": "string",
+          "format": "datetime",
+          "required": false
+        }
       ],
       "requiredAuth": true,
       "responseType": "OddsChanges"
@@ -288,8 +498,16 @@
       "method": "GET",
       "description": "Get standings for a league season",
       "parameters": [
-        {"name": "leagueId", "type": "integer", "required": true},
-        {"name": "season", "type": "integer", "required": true}
+        {
+          "name": "leagueId",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "season",
+          "type": "integer",
+          "required": true
+        }
       ],
       "requiredAuth": true,
       "responseType": "Standings"
@@ -300,7 +518,12 @@
       "method": "GET",
       "description": "Get Flashscore game data by ID",
       "parameters": [
-        {"name": "id", "type": "string", "required": true, "in": "path"}
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "in": "path"
+        }
       ],
       "requiredAuth": true,
       "responseType": "FlashscoreGame"
@@ -311,8 +534,17 @@
       "method": "GET",
       "description": "Get list of Flashscore games",
       "parameters": [
-        {"name": "date", "type": "string", "format": "date", "required": false},
-        {"name": "leagueId", "type": "string", "required": false}
+        {
+          "name": "date",
+          "type": "string",
+          "format": "date",
+          "required": false
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": false
+        }
       ],
       "requiredAuth": true,
       "responseType": "FlashscoreGamesList"
@@ -323,7 +555,12 @@
       "method": "GET",
       "description": "Get Flashscore team data",
       "parameters": [
-        {"name": "id", "type": "string", "required": true, "in": "path"}
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "in": "path"
+        }
       ],
       "requiredAuth": true,
       "responseType": "FlashscoreTeam"
@@ -343,8 +580,16 @@
       "method": "GET",
       "description": "Get Flashscore standings",
       "parameters": [
-        {"name": "leagueId", "type": "string", "required": true},
-        {"name": "season", "type": "string", "required": false}
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "season",
+          "type": "string",
+          "required": false
+        }
       ],
       "requiredAuth": true,
       "responseType": "FlashscoreStandings"
@@ -355,8 +600,18 @@
       "method": "POST",
       "description": "Generate Delux Excel report",
       "parameters": [
-        {"name": "games", "type": "array", "required": true, "in": "body"},
-        {"name": "options", "type": "object", "required": false, "in": "body"}
+        {
+          "name": "games",
+          "type": "array",
+          "required": true,
+          "in": "body"
+        },
+        {
+          "name": "options",
+          "type": "object",
+          "required": false,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "ExcelFile"
@@ -367,7 +622,12 @@
       "method": "POST",
       "description": "Generate FootballCalc Excel report",
       "parameters": [
-        {"name": "games", "type": "array", "required": true, "in": "body"}
+        {
+          "name": "games",
+          "type": "array",
+          "required": true,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "ExcelFile"
@@ -378,11 +638,71 @@
       "method": "POST",
       "description": "Generate Results Excel report",
       "parameters": [
-        {"name": "leagueId", "type": "integer", "required": true, "in": "body"},
-        {"name": "season", "type": "integer", "required": true, "in": "body"}
+        {
+          "name": "leagueId",
+          "type": "integer",
+          "required": true,
+          "in": "body"
+        },
+        {
+          "name": "season",
+          "type": "integer",
+          "required": true,
+          "in": "body"
+        }
       ],
       "requiredAuth": true,
       "responseType": "ExcelFile"
+    },
+    {
+      "path": "/Leagues/{id}",
+      "method": "GET",
+      "description": "Get league details"
+    },
+    {
+      "path": "/Leagues/{id}/seasons",
+      "method": "GET",
+      "description": "Get league seasons"
+    },
+    {
+      "path": "/Teams/{id}/games",
+      "method": "GET",
+      "description": "Get team games"
+    },
+    {
+      "path": "/Teams/{id}/stats",
+      "method": "GET",
+      "description": "Get team statistics"
+    },
+    {
+      "path": "/Players/{id}/games",
+      "method": "GET",
+      "description": "Get player games"
+    },
+    {
+      "path": "/Odds/live",
+      "method": "GET",
+      "description": "Get live odds"
+    },
+    {
+      "path": "/Odds/prematch",
+      "method": "GET",
+      "description": "Get prematch odds"
+    },
+    {
+      "path": "/Odds/history/{gameId}",
+      "method": "GET",
+      "description": "Get odds history"
+    },
+    {
+      "path": "/Games/{id}/injuries",
+      "method": "GET",
+      "description": "Get game injuries"
+    },
+    {
+      "path": "/Games/{id}/profits",
+      "method": "GET",
+      "description": "Get game profits"
     }
   ],
   "categories": [
@@ -396,5 +716,5 @@
     "Ls",
     "Excel"
   ],
-  "totalEndpoints": 32
+  "totalEndpoints": 42
 }
