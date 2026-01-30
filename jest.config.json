@@ -18,6 +18,22 @@
       "statements": 70
     }
   },
+  "setupFilesAfterEnv": [
+    "<rootDir>/tests/helpers/setup.js"
+  ],
+  "projects": [
+    {
+      "displayName": "unit",
+      "testMatch": ["<rootDir>/tests/unit/**/*.test.js"],
+      "testTimeout": 5000
+    },
+    {
+      "displayName": "integration",
+      "testMatch": ["<rootDir>/tests/integration/**/*.test.js"],
+      "setupFilesAfterEnv": ["<rootDir>/tests/helpers/setup.js"],
+      "testTimeout": 30000
+    }
+  ],
   "verbose": true,
   "testTimeout": 10000
 }
