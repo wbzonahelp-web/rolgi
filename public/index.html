@@ -1,130 +1,373 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rolgi - Football Analytics Platform</title>
+    <title>Rolgi SStats Analytics Platform v6.0.0</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            max-width: 900px;
-            margin: 40px 20px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px 40px;
-            text-align: center;
-        }
-        .header h1 { font-size: 3em; margin-bottom: 10px; }
-        .content { padding: 40px; }
-        .status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
             padding: 20px;
-            background: #f0fdf4;
-            border-radius: 10px;
-            border-left: 4px solid #22c55e;
         }
-        .endpoints {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        .endpoint-card {
-            background: #f8fafc;
-            padding: 25px;
-            border-radius: 12px;
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-        .endpoint-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-color: #667eea;
-        }
-        .endpoint-card h3 { color: #667eea; margin-bottom: 10px; }
-        .endpoint-card .url {
-            margin-top: 15px;
-            padding: 10px;
+
+        header {
             background: white;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.85em;
-            color: #667eea;
-        }
-        .footer {
-            text-align: center;
             padding: 30px;
-            background: #f8fafc;
-            color: #64748b;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
         }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
         .version {
-            background: #667eea;
-            color: white;
+            color: #764ba2;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .status {
+            display: inline-block;
             padding: 5px 15px;
+            background: #10b981;
+            color: white;
             border-radius: 20px;
             font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: opacity 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .api-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .api-endpoint {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .api-endpoint .method {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .api-endpoint .path {
+            font-family: 'Courier New', monospace;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .api-endpoint .description {
+            color: #666;
+            margin-top: 8px;
+            font-size: 0.95em;
+        }
+
+        .demo-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .result {
+            background: #1a202c;
+            color: #68d391;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .loading {
+            color: #f6ad55;
+        }
+
+        .error {
+            color: #fc8181;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            padding: 20px;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>⚽ Rolgi</h1>
-            <p>Advanced Football Analytics Platform</p>
-            <span class="version">v6.0.0</span>
-        </div>
-        <div class="content">
-            <div class="status">
-                <strong>✅ Система работает</strong>
+        <header>
+            <h1>⚽ Rolgi SStats Analytics Platform</h1>
+            <div class="version">Version 6.0.0</div>
+            <div class="status" id="status">🔴 Checking...</div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🔒 Три Железных Замка</h2>
+                <p>Защита от дрейфа схемы БД, AI-галлюцинаций API и нарушений UPSERT-ключей</p>
+                <a href="#locks" class="btn">Подробнее</a>
             </div>
-            <h2>🔗 Доступные эндпоинты</h2>
-            <div class="endpoints">
-                <a href="/health" class="endpoint-card">
-                    <h3>🏥 Health Check</h3>
-                    <p>Проверка состояния системы</p>
-                    <div class="url">/health</div>
-                </a>
-                <a href="/docs" class="endpoint-card">
-                    <h3>📚 API Docs</h3>
-                    <p>Swagger документация</p>
-                    <div class="url">/docs</div>
-                </a>
-                <a href="/api/versions" class="endpoint-card">
-                    <h3>🔢 Versions</h3>
-                    <p>Версии API</p>
-                    <div class="url">/api/versions</div>
-                </a>
-                <a href="/metrics" class="endpoint-card">
-                    <h3>📊 Metrics</h3>
-                    <p>Prometheus метрики</p>
-                    <div class="url">/metrics</div>
-                </a>
+
+            <div class="card">
+                <h2>🗄️ 22 таблицы БД</h2>
+                <p>Полная схема PostgreSQL с партиционированием, constraints и индексами</p>
+                <a href="#database" class="btn">Подробнее</a>
+            </div>
+
+            <div class="card">
+                <h2>🔄 13-шаговый Pipeline</h2>
+                <p>Надёжная загрузка данных с валидацией, трансформацией и recovery</p>
+                <a href="#loader" class="btn">Подробнее</a>
+            </div>
+
+            <div class="card">
+                <h2>🚀 REST API</h2>
+                <p>Fastify-based API с Swagger документацией и полным мониторингом</p>
+                <a href="/docs" class="btn" target="_blank">API Docs</a>
+            </div>
+
+            <div class="card">
+                <h2>📈 Мониторинг</h2>
+                <p>Distributed tracing, метрики, error tracking, health checks</p>
+                <a href="/metrics" class="btn" target="_blank">Метрики</a>
+            </div>
+
+            <div class="card">
+                <h2>⚡ Production-ready</h2>
+                <p>Pre-flight checks, graceful shutdown, connection pooling, rate limiting</p>
+                <a href="/health" class="btn" target="_blank">Health Check</a>
             </div>
         </div>
-        <div class="footer">
-            <p>Разработано для футбольной аналитики ❤️</p>
+
+        <div class="api-section">
+            <h2>📡 Доступные API Эндпоинты</h2>
+
+            <div class="api-endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/games</span>
+                <div class="description">Получить список игр с фильтрацией по лиге, сезону, статусу, датам</div>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/games/:id</span>
+                <div class="description">Получить детали конкретной игры со статистикой и событиями</div>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/teams</span>
+                <div class="description">Получить список команд с поиском и фильтрацией</div>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/teams/:id</span>
+                <div class="description">Получить детали команды с составом игроков</div>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/players</span>
+                <div class="description">Получить список игроков с фильтрацией по команде и позиции</div>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/odds/live/:gameId</span>
+                <div class="description">Получить live коэффициенты для игры</div>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/standings</span>
+                <div class="description">Получить турнирную таблицу лиги</div>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method">POST</span>
+                <span class="path">/api/loader/load</span>
+                <div class="description">Запустить загрузку данных (games, teams, players, odds, standings)</div>
+            </div>
         </div>
+
+        <div class="demo-section">
+            <h2>🧪 Интерактивная демонстрация API</h2>
+            
+            <div class="demo-controls">
+                <button class="btn" onclick="testHealth()">Health Check</button>
+                <button class="btn" onclick="testGames()">Получить игры</button>
+                <button class="btn" onclick="testTeams()">Получить команды</button>
+                <button class="btn" onclick="testPlayers()">Получить игроков</button>
+                <button class="btn" onclick="testMetrics()">Метрики</button>
+            </div>
+
+            <div class="result" id="result">Выберите действие выше для тестирования API...</div>
+        </div>
+
+        <footer>
+            <p>Rolgi SStats Analytics Platform v6.0.0 | Production-Ready | MIT License</p>
+            <p>
+                <a href="https://github.com/wbzonahelp-web/rolgi" target="_blank">GitHub Repository</a> |
+                <a href="/docs" target="_blank">API Documentation</a>
+            </p>
+        </footer>
     </div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        const statusDiv = document.getElementById('status');
+
+        // Check API health on load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    statusDiv.textContent = '✅ Online';
+                    statusDiv.style.background = '#10b981';
+                } else {
+                    statusDiv.textContent = '⚠️ Degraded';
+                    statusDiv.style.background = '#f59e0b';
+                }
+            } catch (error) {
+                statusDiv.textContent = '🔴 Offline';
+                statusDiv.style.background = '#ef4444';
+            }
+        });
+
+        async function makeRequest(url, options = {}) {
+            resultDiv.textContent = '⏳ Загрузка...';
+            resultDiv.className = 'result loading';
+
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result';
+            } catch (error) {
+                resultDiv.textContent = `❌ Ошибка: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testHealth() {
+            await makeRequest('/health');
+        }
+
+        async function testGames() {
+            await makeRequest('/api/games?limit=5');
+        }
+
+        async function testTeams() {
+            await makeRequest('/api/teams?limit=5');
+        }
+
+        async function testPlayers() {
+            await makeRequest('/api/players?limit=5');
+        }
+
+        async function testMetrics() {
+            await makeRequest('/metrics');
+        }
+    </script>
 </body>
 </html>
