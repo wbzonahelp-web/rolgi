@@ -46,6 +46,7 @@ const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
+const { setupPrometheusMiddleware } = require('../monitoring/prometheus/middleware');
 
 const logger = pino({
   name: 'backend-api',
@@ -192,6 +193,9 @@ class BackendApi {
     }
 
     logger.info('Plugins registered');
+    
+    // Setup Prometheus middleware
+    setupPrometheusMiddleware(this.app);
   }
 
   /**

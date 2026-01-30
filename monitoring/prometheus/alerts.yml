@@ -1,0 +1,217 @@
+# Prometheus Alerting Rules
+# Rolgi SStats Analytics Platform v6.1.0
+
+groups:
+  # API Health Alerts
+  - name: api_health
+    interval: 30s
+    rules:
+      - alert: APIHighErrorRate
+        expr: |
+          (
+            sum(rate(rolgi_http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(rolgi_http_requests_total[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High API error rate detected"
+          description: "API error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: APIHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(rolgi_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile latency is {{ $value }}s (threshold: 2s)"
+
+      - alert: APIDown
+        expr: up{job="rolgi-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "API is down"
+          description: "Rolgi API at {{ $labels.instance }} is not responding"
+
+  # Database Alerts
+  - name: database_health
+    interval: 30s
+    rules:
+      - alert: DatabaseHighConnectionUsage
+        expr: |
+          (
+            rolgi_db_pool_connections{state="active"}
+            /
+            rolgi_db_pool_connections{state="total"}
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High database connection usage"
+          description: "Database connection pool is {{ $value | humanizePercentage }} full (threshold: 80%)"
+
+      - alert: DatabaseSlowQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(rolgi_db_query_duration_seconds_bucket[5m])) by (le, table)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile query time for table {{ $labels.table }} is {{ $value }}s"
+
+      - alert: DatabaseHighErrorRate
+        expr: |
+          rate(rolgi_db_errors_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "High database error rate"
+          description: "Database error rate is {{ $value }} errors/sec"
+
+  # Cache Alerts
+  - name: cache_health
+    interval: 30s
+    rules:
+      - alert: CacheLowHitRate
+        expr: |
+          (
+            rate(rolgi_cache_hits_total[5m])
+            /
+            (rate(rolgi_cache_hits_total[5m]) + rate(rolgi_cache_misses_total[5m]))
+          ) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 50%)"
+
+  # WebSocket Alerts
+  - name: websocket_health
+    interval: 30s
+    rules:
+      - alert: WebSocketHighConnectionCount
+        expr: sum(rolgi_websocket_connections) > 9000
+        for: 5m
+        labels:
+          severity: warning
+          component: websocket
+        annotations:
+          summary: "High WebSocket connection count"
+          description: "WebSocket connections: {{ $value }} (threshold: 9000)"
+
+      - alert: WebSocketHighErrorRate
+        expr: rate(rolgi_websocket_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          component: websocket
+        annotations:
+          summary: "High WebSocket error rate"
+          description: "WebSocket error rate: {{ $value }} errors/sec"
+
+  # Authentication Alerts
+  - name: auth_security
+    interval: 30s
+    rules:
+      - alert: HighFailedLoginAttempts
+        expr: |
+          rate(rolgi_auth_login_attempts_total{status="failure"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          component: auth
+        annotations:
+          summary: "High failed login attempt rate"
+          description: "Failed login rate: {{ $value }} attempts/sec (threshold: 5/sec)"
+
+      - alert: SuspiciousLoginActivity
+        expr: |
+          rate(rolgi_auth_login_attempts_total{status="failure"}[1m]) > 20
+        for: 1m
+        labels:
+          severity: critical
+          component: auth
+        annotations:
+          summary: "Suspicious login activity detected"
+          description: "Very high failed login rate: {{ $value }} attempts/sec - possible attack"
+
+  # Rate Limiting Alerts
+  - name: rate_limiting
+    interval: 30s
+    rules:
+      - alert: HighRateLimitHits
+        expr: rate(rolgi_rate_limit_hits_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          component: rate_limit
+        annotations:
+          summary: "High rate limit hit rate"
+          description: "Rate limit hit rate: {{ $value }} hits/sec (threshold: 50/sec)"
+
+  # System Resource Alerts
+  - name: system_resources
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes{job="rolgi-api"}
+            /
+            (1024 * 1024 * 1024)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage: {{ $value | humanize }}GB (threshold: 2GB)"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="rolgi-api"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage: {{ $value | humanizePercentage }} (threshold: 80%)"
+
+  # Business Metrics Alerts
+  - name: business_metrics
+    interval: 1m
+    rules:
+      - alert: NoRecentGames
+        expr: |
+          (
+            time() - max(timestamp(rolgi_games_total))
+          ) / 60 > 60
+        for: 10m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "No recent game data"
+          description: "No game data updates in the last hour"

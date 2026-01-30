@@ -1,0 +1,62 @@
+# Prometheus Configuration
+# Rolgi SStats Analytics Platform v6.1.0
+
+global:
+  scrape_interval: 15s # Collect metrics every 15 seconds
+  evaluation_interval: 15s # Evaluate rules every 15 seconds
+  external_labels:
+    cluster: 'rolgi-production'
+    env: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load alerting rules
+rule_files:
+  - '/etc/prometheus/alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Rolgi Backend API
+  - job_name: 'rolgi-api'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['host.docker.internal:3000'] # For Docker Desktop
+        labels:
+          service: 'backend-api'
+          instance: 'api-1'
+    # For Linux, use:
+    # - targets: ['172.17.0.1:3000']
+
+  # Rolgi WebSocket Server (если отдельный порт для metrics)
+  - job_name: 'rolgi-websocket'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+        labels:
+          service: 'websocket'
+          instance: 'ws-1'
+
+  # PostgreSQL Exporter (optional, если установлен)
+  # - job_name: 'postgresql'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # Redis Exporter (optional, если установлен)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # Node Exporter (optional, system metrics)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
