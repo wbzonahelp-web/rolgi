@@ -1,0 +1,447 @@
+{
+  "version": "6.0.0",
+  "hash": "55893a5b280252833ea7af2b3c51f48a49133ec751a114f191d560327da30866",
+  "tables": {
+    "countries": {
+      "columnCount": 6,
+      "columns": [
+        "id",
+        "name",
+        "code",
+        "flag_url",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "bookmakers": {
+      "columnCount": 7,
+      "columns": [
+        "id",
+        "sstats_id",
+        "name",
+        "website",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "leagues": {
+      "columnCount": 12,
+      "columns": [
+        "id",
+        "sstats_id",
+        "flashscore_id",
+        "name",
+        "country_id",
+        "country_name",
+        "logo",
+        "is_active",
+        "priority",
+        "type",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "seasons": {
+      "columnCount": 8,
+      "columns": [
+        "id",
+        "league_id",
+        "season",
+        "start_date",
+        "end_date",
+        "is_current",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "teams": {
+      "columnCount": 14,
+      "columns": [
+        "id",
+        "sstats_id",
+        "flashscore_id",
+        "name",
+        "short_name",
+        "country_id",
+        "country_name",
+        "logo",
+        "stadium",
+        "founded",
+        "website",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "players": {
+      "columnCount": 17,
+      "columns": [
+        "id",
+        "sstats_id",
+        "flashscore_id",
+        "name",
+        "first_name",
+        "last_name",
+        "date_of_birth",
+        "age",
+        "height",
+        "weight",
+        "position",
+        "country_id",
+        "country_name",
+        "photo",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "games": {
+      "columnCount": 24,
+      "columns": [
+        "id",
+        "sstats_id",
+        "flashscore_id",
+        "league_id",
+        "season",
+        "round",
+        "date",
+        "home_team_id",
+        "away_team_id",
+        "home_score",
+        "away_score",
+        "home_score_ht",
+        "away_score_ht",
+        "status",
+        "referee",
+        "stadium",
+        "attendance",
+        "is_live",
+        "is_finished",
+        "is_deleted",
+        "deleted_at",
+        "last_updated",
+        "created_at",
+        ")"
+      ]
+    },
+    "games_": {
+      "columnCount": 2,
+      "columns": [
+        "%L)",
+        "year"
+      ]
+    },
+    "odds_prematch": {
+      "columnCount": 11,
+      "columns": [
+        "id",
+        "game_id",
+        "date",
+        "bookmaker_id",
+        "bookmaker_name",
+        "market_id",
+        "market_name",
+        "selection",
+        "odds",
+        "timestamp",
+        "created_at"
+      ]
+    },
+    "odds_live": {
+      "columnCount": 12,
+      "columns": [
+        "id",
+        "game_id",
+        "date",
+        "bookmaker_id",
+        "bookmaker_name",
+        "market_id",
+        "market_name",
+        "selection",
+        "odds",
+        "minute",
+        "timestamp",
+        "created_at"
+      ]
+    },
+    "game_statistics": {
+      "columnCount": 21,
+      "columns": [
+        "id",
+        "game_id",
+        "date",
+        "possession_home",
+        "possession_away",
+        "shots_home",
+        "shots_away",
+        "shots_on_target_home",
+        "shots_on_target_away",
+        "corners_home",
+        "corners_away",
+        "fouls_home",
+        "fouls_away",
+        "yellow_cards_home",
+        "yellow_cards_away",
+        "red_cards_home",
+        "red_cards_away",
+        "offsides_home",
+        "offsides_away",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "game_events": {
+      "columnCount": 15,
+      "columns": [
+        "id",
+        "sstats_id",
+        "game_id",
+        "date",
+        "team_id",
+        "player_id",
+        "player_name",
+        "minute",
+        "minute_extra",
+        "type",
+        "subtype",
+        "assist_player_id",
+        "assist_player_name",
+        "description",
+        "created_at"
+      ]
+    },
+    "game_lineups": {
+      "columnCount": 13,
+      "columns": [
+        "id",
+        "game_id",
+        "date",
+        "team_id",
+        "player_id",
+        "player_name",
+        "position",
+        "shirt_number",
+        "is_starter",
+        "is_captain",
+        "substituted_in_minute",
+        "substituted_out_minute",
+        "created_at"
+      ]
+    },
+    "game_player_stats": {
+      "columnCount": 21,
+      "columns": [
+        "id",
+        "game_id",
+        "date",
+        "player_id",
+        "team_id",
+        "minutes_played",
+        "goals",
+        "assists",
+        "yellow_cards",
+        "red_cards",
+        "shots",
+        "shots_on_target",
+        "passes",
+        "passes_completed",
+        "tackles",
+        "interceptions",
+        "fouls_committed",
+        "fouls_suffered",
+        "rating",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "game_glicko": {
+      "columnCount": 10,
+      "columns": [
+        "id",
+        "game_id",
+        "date",
+        "team_id",
+        "team_name",
+        "rating",
+        "rd",
+        "vol",
+        "win_probability",
+        "created_at"
+      ]
+    },
+    "standings": {
+      "columnCount": 25,
+      "columns": [
+        "id",
+        "league_id",
+        "season",
+        "team_id",
+        "team_name",
+        "position",
+        "played",
+        "won",
+        "drawn",
+        "lost",
+        "goals_for",
+        "goals_against",
+        "goal_difference",
+        "points",
+        "form",
+        "home_played",
+        "home_won",
+        "home_drawn",
+        "home_lost",
+        "away_played",
+        "away_won",
+        "away_drawn",
+        "away_lost",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "error_log": {
+      "columnCount": 22,
+      "columns": [
+        "id",
+        "error_id",
+        "severity",
+        "category",
+        "source",
+        "message",
+        "stack_trace",
+        "trace_id",
+        "url",
+        "method",
+        "params",
+        "function_name",
+        "file_name",
+        "line_number",
+        "user_agent",
+        "ip_address",
+        "breadcrumbs",
+        "is_resolved",
+        "resolved_at",
+        "resolved_by",
+        "resolution_notes",
+        "created_at"
+      ]
+    },
+    "trace_log": {
+      "columnCount": 11,
+      "columns": [
+        "id",
+        "trace_id",
+        "parent_trace_id",
+        "span_id",
+        "span_name",
+        "operation_type",
+        "status",
+        "duration_ms",
+        "metadata",
+        "error_message",
+        "created_at"
+      ]
+    },
+    "performance_metrics": {
+      "columnCount": 6,
+      "columns": [
+        "id",
+        "metric_name",
+        "metric_value",
+        "metric_unit",
+        "tags",
+        "created_at"
+      ]
+    },
+    "sync_log": {
+      "columnCount": 14,
+      "columns": [
+        "id",
+        "sync_type",
+        "entity_type",
+        "entity_id",
+        "status",
+        "records_processed",
+        "records_inserted",
+        "records_updated",
+        "records_failed",
+        "error_message",
+        "started_at",
+        "completed_at",
+        "duration_ms",
+        "created_at"
+      ]
+    },
+    "loader_runs": {
+      "columnCount": 15,
+      "columns": [
+        "id",
+        "run_id",
+        "mode",
+        "status",
+        "params",
+        "started_at",
+        "completed_at",
+        "paused_at",
+        "resumed_at",
+        "duration_ms",
+        "total_steps",
+        "completed_steps",
+        "failed_steps",
+        "error_message",
+        "created_at"
+      ]
+    },
+    "loader_step_results": {
+      "columnCount": 16,
+      "columns": [
+        "id",
+        "run_id",
+        "step_name",
+        "step_order",
+        "status",
+        "records_processed",
+        "records_inserted",
+        "records_updated",
+        "records_failed",
+        "started_at",
+        "completed_at",
+        "failed_at",
+        "duration_ms",
+        "error_message",
+        "error_stack",
+        "created_at"
+      ]
+    },
+    "loader_cursors": {
+      "columnCount": 6,
+      "columns": [
+        "id",
+        "run_id",
+        "step_id",
+        "cursor_data",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "schema_version": {
+      "columnCount": 3,
+      "columns": [
+        "version",
+        "description",
+        "applied_at"
+      ]
+    }
+  },
+  "history": [
+    {
+      "timestamp": "2026-01-30T07:40:27.113Z",
+      "hash": "55893a5b280252833ea7af2b3c51f48a49133ec751a114f191d560327da30866",
+      "reason": "Initial schema v6.0.0",
+      "tableCount": 24
+    }
+  ],
+  "lastUpdated": "2026-01-30T07:40:27.116Z",
+  "createdAt": "2026-01-30T07:40:27.116Z"
+}

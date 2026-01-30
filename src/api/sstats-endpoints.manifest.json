@@ -1,0 +1,400 @@
+{
+  "version": "6.0.0",
+  "apiName": "SStats.net API",
+  "baseUrl": "https://api.sstats.net",
+  "authentication": "Bearer token",
+  "rateLimit": {
+    "withKey": "300 requests/minute",
+    "withoutKey": "Limited/blocked"
+  },
+  "lastUpdated": "2026-01-30",
+  "endpoints": [
+    {
+      "category": "Account",
+      "path": "/Account/Info",
+      "method": "GET",
+      "description": "Get account information and API key status",
+      "parameters": [],
+      "requiredAuth": true,
+      "responseType": "AccountInfo"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/list",
+      "method": "GET",
+      "description": "Get list of games with filtering",
+      "parameters": [
+        {"name": "leagueId", "type": "integer", "required": false},
+        {"name": "season", "type": "integer", "required": false},
+        {"name": "status", "type": "string", "required": false, "enum": ["scheduled", "live", "finished", "postponed", "cancelled"]},
+        {"name": "dateFrom", "type": "string", "format": "date", "required": false},
+        {"name": "dateTo", "type": "string", "format": "date", "required": false},
+        {"name": "teamId", "type": "integer", "required": false},
+        {"name": "page", "type": "integer", "required": false, "default": 1},
+        {"name": "limit", "type": "integer", "required": false, "default": 100}
+      ],
+      "requiredAuth": true,
+      "responseType": "GamesList",
+      "paginated": true
+    },
+    {
+      "category": "Games",
+      "path": "/Games/{id}",
+      "method": "GET",
+      "description": "Get detailed information about a specific game",
+      "parameters": [
+        {"name": "id", "type": "integer", "required": true, "in": "path"}
+      ],
+      "requiredAuth": true,
+      "responseType": "GameDetails"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/glicko/{id}",
+      "method": "GET",
+      "description": "Get Glicko ratings for a specific game",
+      "parameters": [
+        {"name": "id", "type": "integer", "required": true, "in": "path"}
+      ],
+      "requiredAuth": true,
+      "responseType": "GlickoRatings"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/query",
+      "method": "POST",
+      "description": "Advanced game query with complex filtering",
+      "parameters": [
+        {"name": "filters", "type": "object", "required": true, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "GamesList"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/season-table",
+      "method": "POST",
+      "description": "Get season table/standings",
+      "parameters": [
+        {"name": "leagueId", "type": "integer", "required": true, "in": "body"},
+        {"name": "season", "type": "integer", "required": true, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "SeasonTable"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/last-games-stats",
+      "method": "POST",
+      "description": "Get statistics for last N games of a team",
+      "parameters": [
+        {"name": "teamId", "type": "integer", "required": true, "in": "body"},
+        {"name": "count", "type": "integer", "required": false, "default": 5, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "GamesStats"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/text-summary",
+      "method": "POST",
+      "description": "Get text summary of a game",
+      "parameters": [
+        {"name": "gameId", "type": "integer", "required": true, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "TextSummary"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/profits",
+      "method": "POST",
+      "description": "Calculate profits for betting strategies",
+      "parameters": [
+        {"name": "games", "type": "array", "required": true, "in": "body"},
+        {"name": "strategy", "type": "string", "required": true, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "ProfitsCalculation"
+    },
+    {
+      "category": "Games",
+      "path": "/Games/injuries",
+      "method": "GET",
+      "description": "Get injuries for a specific game",
+      "parameters": [
+        {"name": "gameId", "type": "integer", "required": true}
+      ],
+      "requiredAuth": true,
+      "responseType": "Injuries"
+    },
+    {
+      "category": "Leagues",
+      "path": "/Leagues",
+      "method": "GET",
+      "description": "Get list of all leagues",
+      "parameters": [
+        {"name": "countryId", "type": "integer", "required": false},
+        {"name": "isActive", "type": "boolean", "required": false}
+      ],
+      "requiredAuth": true,
+      "responseType": "LeaguesList"
+    },
+    {
+      "category": "Teams",
+      "path": "/Teams/list",
+      "method": "GET",
+      "description": "Get list of teams with filtering",
+      "parameters": [
+        {"name": "leagueId", "type": "integer", "required": false},
+        {"name": "countryId", "type": "integer", "required": false},
+        {"name": "search", "type": "string", "required": false},
+        {"name": "page", "type": "integer", "required": false, "default": 1},
+        {"name": "limit", "type": "integer", "required": false, "default": 100}
+      ],
+      "requiredAuth": true,
+      "responseType": "TeamsList",
+      "paginated": true
+    },
+    {
+      "category": "Teams",
+      "path": "/Teams/{id}",
+      "method": "GET",
+      "description": "Get detailed information about a specific team",
+      "parameters": [
+        {"name": "id", "type": "integer", "required": true, "in": "path"}
+      ],
+      "requiredAuth": true,
+      "responseType": "TeamDetails"
+    },
+    {
+      "category": "Players",
+      "path": "/Players/find",
+      "method": "GET",
+      "description": "Search for players",
+      "parameters": [
+        {"name": "name", "type": "string", "required": false},
+        {"name": "teamId", "type": "integer", "required": false},
+        {"name": "position", "type": "string", "required": false},
+        {"name": "page", "type": "integer", "required": false, "default": 1},
+        {"name": "limit", "type": "integer", "required": false, "default": 100}
+      ],
+      "requiredAuth": true,
+      "responseType": "PlayersList",
+      "paginated": true
+    },
+    {
+      "category": "Players",
+      "path": "/Players/{id}",
+      "method": "GET",
+      "description": "Get detailed information about a specific player",
+      "parameters": [
+        {"name": "id", "type": "integer", "required": true, "in": "path"}
+      ],
+      "requiredAuth": true,
+      "responseType": "PlayerDetails"
+    },
+    {
+      "category": "Players",
+      "path": "/Players/{id}/events",
+      "method": "GET",
+      "description": "Get events for a specific player",
+      "parameters": [
+        {"name": "id", "type": "integer", "required": true, "in": "path"},
+        {"name": "season", "type": "integer", "required": false}
+      ],
+      "requiredAuth": true,
+      "responseType": "PlayerEvents"
+    },
+    {
+      "category": "Odds",
+      "path": "/Odds/bookmakers",
+      "method": "GET",
+      "description": "Get list of all bookmakers",
+      "parameters": [],
+      "requiredAuth": true,
+      "responseType": "BookmakersList"
+    },
+    {
+      "category": "Odds",
+      "path": "/Odds/{gameId}",
+      "method": "GET",
+      "description": "Get prematch odds for a game",
+      "parameters": [
+        {"name": "gameId", "type": "integer", "required": true, "in": "path"},
+        {"name": "bookmaker", "type": "string", "required": false},
+        {"name": "market", "type": "string", "required": false}
+      ],
+      "requiredAuth": true,
+      "responseType": "GameOdds"
+    },
+    {
+      "category": "Odds",
+      "path": "/Odds/live/{gameId}",
+      "method": "GET",
+      "description": "Get live odds for a game",
+      "parameters": [
+        {"name": "gameId", "type": "integer", "required": true, "in": "path"},
+        {"name": "bookmaker", "type": "string", "required": false},
+        {"name": "market", "type": "string", "required": false}
+      ],
+      "requiredAuth": true,
+      "responseType": "GameOddsLive"
+    },
+    {
+      "category": "Odds",
+      "path": "/Odds/live-changes/updates-only",
+      "method": "GET",
+      "description": "Get only updated live odds",
+      "parameters": [
+        {"name": "since", "type": "string", "format": "datetime", "required": true}
+      ],
+      "requiredAuth": true,
+      "responseType": "OddsUpdates"
+    },
+    {
+      "category": "Odds",
+      "path": "/Odds/live-changes/{gameId}",
+      "method": "GET",
+      "description": "Get live odds changes for a specific game",
+      "parameters": [
+        {"name": "gameId", "type": "integer", "required": true, "in": "path"},
+        {"name": "since", "type": "string", "format": "datetime", "required": false}
+      ],
+      "requiredAuth": true,
+      "responseType": "OddsChanges"
+    },
+    {
+      "category": "Odds",
+      "path": "/Odds/prematch-markets",
+      "method": "GET",
+      "description": "Get list of available prematch markets",
+      "parameters": [],
+      "requiredAuth": true,
+      "responseType": "MarketsList"
+    },
+    {
+      "category": "Odds",
+      "path": "/Odds/live-markets",
+      "method": "GET",
+      "description": "Get list of available live markets",
+      "parameters": [],
+      "requiredAuth": true,
+      "responseType": "MarketsList"
+    },
+    {
+      "category": "Seasons",
+      "path": "/Seasons/standings",
+      "method": "GET",
+      "description": "Get standings for a league season",
+      "parameters": [
+        {"name": "leagueId", "type": "integer", "required": true},
+        {"name": "season", "type": "integer", "required": true}
+      ],
+      "requiredAuth": true,
+      "responseType": "Standings"
+    },
+    {
+      "category": "Ls",
+      "path": "/Ls/Games/{id}",
+      "method": "GET",
+      "description": "Get Flashscore game data by ID",
+      "parameters": [
+        {"name": "id", "type": "string", "required": true, "in": "path"}
+      ],
+      "requiredAuth": true,
+      "responseType": "FlashscoreGame"
+    },
+    {
+      "category": "Ls",
+      "path": "/Ls/Games/list",
+      "method": "GET",
+      "description": "Get list of Flashscore games",
+      "parameters": [
+        {"name": "date", "type": "string", "format": "date", "required": false},
+        {"name": "leagueId", "type": "string", "required": false}
+      ],
+      "requiredAuth": true,
+      "responseType": "FlashscoreGamesList"
+    },
+    {
+      "category": "Ls",
+      "path": "/Ls/Teams/{id}",
+      "method": "GET",
+      "description": "Get Flashscore team data",
+      "parameters": [
+        {"name": "id", "type": "string", "required": true, "in": "path"}
+      ],
+      "requiredAuth": true,
+      "responseType": "FlashscoreTeam"
+    },
+    {
+      "category": "Ls",
+      "path": "/Ls/Leagues",
+      "method": "GET",
+      "description": "Get list of Flashscore leagues",
+      "parameters": [],
+      "requiredAuth": true,
+      "responseType": "FlashscoreLeaguesList"
+    },
+    {
+      "category": "Ls",
+      "path": "/Ls/Standings",
+      "method": "GET",
+      "description": "Get Flashscore standings",
+      "parameters": [
+        {"name": "leagueId", "type": "string", "required": true},
+        {"name": "season", "type": "string", "required": false}
+      ],
+      "requiredAuth": true,
+      "responseType": "FlashscoreStandings"
+    },
+    {
+      "category": "Excel",
+      "path": "/Excel/Delux",
+      "method": "POST",
+      "description": "Generate Delux Excel report",
+      "parameters": [
+        {"name": "games", "type": "array", "required": true, "in": "body"},
+        {"name": "options", "type": "object", "required": false, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "ExcelFile"
+    },
+    {
+      "category": "Excel",
+      "path": "/Excel/FootballCalc",
+      "method": "POST",
+      "description": "Generate FootballCalc Excel report",
+      "parameters": [
+        {"name": "games", "type": "array", "required": true, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "ExcelFile"
+    },
+    {
+      "category": "Excel",
+      "path": "/Excel/Results",
+      "method": "POST",
+      "description": "Generate Results Excel report",
+      "parameters": [
+        {"name": "leagueId", "type": "integer", "required": true, "in": "body"},
+        {"name": "season", "type": "integer", "required": true, "in": "body"}
+      ],
+      "requiredAuth": true,
+      "responseType": "ExcelFile"
+    }
+  ],
+  "categories": [
+    "Account",
+    "Games",
+    "Leagues",
+    "Teams",
+    "Players",
+    "Odds",
+    "Seasons",
+    "Ls",
+    "Excel"
+  ],
+  "totalEndpoints": 32
+}
