@@ -26,10 +26,6 @@ const { validateResponseStructure } = require('./response-types');
 const { getRecoveryStrategy } = require('../monitoring/recovery-playbook');
 const endpointManifest = require('./sstats-endpoints.manifest.json');
 
-const logger = pino({
-  name: 'sstats-client',
-  level: process.env.LOG_LEVEL || 'info'
-});
 
 /**
  * @typedef {Object} SStatsClientConfig

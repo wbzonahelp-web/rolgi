@@ -25,10 +25,6 @@ const fs = require('fs');
 const path = require('path');
 const { getDatabase } = require('../database/db-pool');
 
-const logger = pino({
-  name: 'migrations',
-  level: process.env.LOG_LEVEL || 'info'
-});
 
 const MIGRATIONS_DIR = path.join(__dirname, '../../migrations');
 const MIGRATIONS_TABLE = 'schema_migrations';

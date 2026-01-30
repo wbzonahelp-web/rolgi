@@ -21,10 +21,6 @@ const { Pool } = require('pg');
 const { getLoadOrder } = require('./table-dependencies');
 const { generateUpsertSQL, generateBatchUpsertSQL } = require('./upsert-keys');
 
-const logger = pino({
-  name: 'db-pool',
-  level: process.env.LOG_LEVEL || 'info'
-});
 
 /**
  * @typedef {Object} DatabaseConfig

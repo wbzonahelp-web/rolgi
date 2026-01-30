@@ -18,10 +18,6 @@ const DataLoader = require('../loader/data-loader');
 const { getDatabase } = require('../database/db-pool');
 const { getTracer, getMetricsCollector } = require('../monitoring/monitoring');
 
-const logger = pino({
-  name: 'scheduled-jobs',
-  level: process.env.LOG_LEVEL || 'info'
-});
 
 /**
  * Scheduled Jobs Manager

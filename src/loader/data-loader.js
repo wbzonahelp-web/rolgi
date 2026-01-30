@@ -42,10 +42,6 @@ const { getRecoveryStrategy } = require('../monitoring/recovery-playbook');
 const { canLoadTable, getDependencies } = require('../database/table-dependencies');
 const { runPreflightChecks } = require('../core/preflight-checks');
 
-const logger = pino({
-  name: 'data-loader',
-  level: process.env.LOG_LEVEL || 'info'
-});
 
 /**
  * @typedef {Object} LoaderConfig

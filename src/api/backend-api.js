@@ -51,10 +51,6 @@ const { versioningPlugin } = require('./versions/versioning');
 const { registerV1Routes } = require('./versions/v1');
 const { registerV2Routes } = require('./versions/v2');
 
-const logger = pino({
-  name: 'backend-api',
-  level: process.env.LOG_LEVEL || 'info'
-});
 
 /**
  * @typedef {Object} ApiConfig

@@ -18,10 +18,6 @@ const logger = require("./logger");
 
 const { v4: uuidv4 } = require('uuid');
 
-const logger = pino({
-  name: 'monitoring',
-  level: process.env.LOG_LEVEL || 'info'
-});
 
 /**
  * @typedef {Object} Span
