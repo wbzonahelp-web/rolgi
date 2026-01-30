@@ -240,6 +240,9 @@ class BackendApi {
       };
     });
 
+    // /metrics endpoint removed - handled by Prometheus middleware
+
+    this.app.get('/api/versions', {
       schema: {
         tags: ['Health'],
         description: 'API versions information'
