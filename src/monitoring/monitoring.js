@@ -1,3 +1,4 @@
+const logger = require("./logger");
 /**
  * Monitoring & Tracing System v6.0.0
  * 
@@ -15,7 +16,6 @@
  * @module monitoring
  */
 
-const pino = require('pino');
 const { v4: uuidv4 } = require('uuid');
 
 const logger = pino({

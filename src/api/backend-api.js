@@ -1,3 +1,4 @@
+const logger = require("../monitoring/logger");
 /**
  * Backend API Server v6.0.0
  * 
@@ -37,7 +38,6 @@ const cors = require('@fastify/cors');
 const helmet = require('@fastify/helmet');
 const swagger = require('@fastify/swagger');
 const swaggerUi = require('@fastify/swagger-ui');
-const pino = require('pino');
 const { getDatabase } = require('../database/db-pool');
 const DataLoader = require('../loader/data-loader');
 const SStatsClient = require('./sstats-client');
@@ -212,7 +212,7 @@ class BackendApi {
    * Setup routes
    * @private
    */
-  _setupRoutes() {
+  async _setupRoutes() {
     // ============================================================
     // HEALTH & METRICS
     // ============================================================
@@ -740,7 +740,7 @@ class BackendApi {
   async start() {
     try {
       await this._setupPlugins();
-      this._setupRoutes();
+      await this._setupRoutes();
       this._setupErrorHandlers();
 
       await this.app.listen({

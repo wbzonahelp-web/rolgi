@@ -1,3 +1,4 @@
+const logger = require("../monitoring/logger");
 /**
  * Database Migration Manager v6.0.0
  * 
@@ -23,7 +24,6 @@
 const fs = require('fs');
 const path = require('path');
 const { getDatabase } = require('../database/db-pool');
-const pino = require('pino');
 
 const logger = pino({
   name: 'migrations',

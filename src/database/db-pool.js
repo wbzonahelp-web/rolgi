@@ -1,3 +1,4 @@
+const logger = require("../monitoring/logger");
 /**
  * Database Connection Pool Manager v6.0.0
  * 
@@ -17,7 +18,6 @@
  */
 
 const { Pool } = require('pg');
-const pino = require('pino');
 const { getLoadOrder } = require('./table-dependencies');
 const { generateUpsertSQL, generateBatchUpsertSQL } = require('./upsert-keys');
 

@@ -1,3 +1,4 @@
+const logger = require("../monitoring/logger");
 /**
  * Data Loader Pipeline v6.0.0
  * 
@@ -33,13 +34,12 @@
  * @module data-loader
  */
 
-const pino = require('pino');
 const { v4: uuidv4 } = require('uuid');
 const SStatsClient = require('../api/sstats-client');
-const { getDatabase } = require('./db-pool');
+const { getDatabase } = require('../database/db-pool');
 const { validateResponseStructure } = require('../api/response-types');
 const { getRecoveryStrategy } = require('../monitoring/recovery-playbook');
-const { canLoadTable, getDependencies } = require('./table-dependencies');
+const { canLoadTable, getDependencies } = require('../database/table-dependencies');
 const { runPreflightChecks } = require('../core/preflight-checks');
 
 const logger = pino({

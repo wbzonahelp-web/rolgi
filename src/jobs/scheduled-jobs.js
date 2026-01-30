@@ -1,3 +1,4 @@
+const logger = require("../monitoring/logger");
 /**
  * Scheduled Jobs Manager v6.0.0
  * 
@@ -13,7 +14,6 @@
  */
 
 const cron = require('node-cron');
-const pino = require('pino');
 const DataLoader = require('../loader/data-loader');
 const { getDatabase } = require('../database/db-pool');
 const { getTracer, getMetricsCollector } = require('../monitoring/monitoring');

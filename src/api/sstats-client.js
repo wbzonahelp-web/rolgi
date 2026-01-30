@@ -1,3 +1,4 @@
+const logger = require("../monitoring/logger");
 /**
  * SStats.net API Client v6.0.0
  * 
@@ -21,7 +22,6 @@
 const axios = require('axios');
 const { RateLimiter } = require('limiter');
 const NodeCache = require('node-cache');
-const pino = require('pino');
 const { validateResponseStructure } = require('./response-types');
 const { getRecoveryStrategy } = require('../monitoring/recovery-playbook');
 const endpointManifest = require('./sstats-endpoints.manifest.json');

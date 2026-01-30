@@ -6,8 +6,8 @@
  * API endpoints для аутентификации и управления пользователями.
  */
 
-const { authenticate, requireRole, requirePermission } = require('../auth/fastify-auth');
-const { ROLES } = require('../auth/jwt-auth');
+const { authenticate, requireRole, requirePermission } = require('../../auth/fastify-auth');
+const { ROLES } = require('../../auth/jwt-auth');
 
 /**
  * Регистрация auth routes
