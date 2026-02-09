@@ -1,0 +1,351 @@
+# Games API - Profits (Калькуляция прибыли)
+
+## Endpoint: GET /Games/profits
+
+Анализирует историческую прибыльность различных видов ставок для команд на основе их предыдущих матчей.
+
+### Query Parameters
+
+- **gameId** (integer | string, required): Уникальный идентификатор матча для анализа
+- **thisLeague** (boolean, optional): Учитывать только игры той же лиги. По умолчанию: false
+- **homeAway** (boolean, optional): Учитывать только домашние/выездные игры. По умолчанию: false
+- **sameGames** (boolean, optional): Учитывать только игры с похожими xG (разница ≤ 0.2). По умолчанию: false
+- **bookieId** (integer, optional): ID конкретного букмекера для анализа
+- **limit** (integer, optional): Максимальное количество игр для анализа (5-100). По умолчанию: 25
+
+### Описание
+
+Endpoint возвращает детальную статистику по прибыльности различных типов ставок для:
+
+1. **Полный матч** (Full Time)
+   - Все ставки за полные 90 минут
+   - Match Winner, Totals, BTTS, и др.
+
+2. **Первый тайм** (First Half)
+   - Ставки только на первую половину матча
+   - 1H Winner, 1H Totals, и др.
+
+3. **Второй тайм** (Second Half)
+   - Ставки только на вторую половину
+   - 2H Winner, 2H Totals, и др.
+
+### Response Structure
+
+```json
+{
+  "status": "OK",
+  "data": {
+    "home": [
+      {
+        "market": "Match Winner",
+        "outcomes": [
+          {
+            "name": "Home Win",
+            "profit": 15.75,
+            "profitHistory": [2.5, 5.0, 7.8, 10.2, 12.5, 15.75],
+            "gamesCount": 25,
+            "winCount": 14
+          },
+          {
+            "name": "Draw",
+            "profit": -8.5,
+            "profitHistory": [-1.5, -3.2, -5.0, -6.8, -8.5],
+            "gamesCount": 25,
+            "winCount": 6
+          },
+          {
+            "name": "Away Win",
+            "profit": -18.25,
+            "profitHistory": [-2.0, -5.5, -10.0, -14.5, -18.25],
+            "gamesCount": 25,
+            "winCount": 5
+          }
+        ]
+      },
+      {
+        "market": "Over/Under 2.5",
+        "outcomes": [
+          {
+            "name": "Over 2.5",
+            "profit": 8.40,
+            "profitHistory": [1.8, 3.5, 5.2, 6.9, 8.40],
+            "gamesCount": 25,
+            "winCount": 16
+          },
+          {
+            "name": "Under 2.5",
+            "profit": -8.40,
+            "profitHistory": [-1.8, -3.5, -5.2, -6.9, -8.40],
+            "gamesCount": 25,
+            "winCount": 9
+          }
+        ]
+      },
+      {
+        "market": "BTTS",
+        "outcomes": [
+          {
+            "name": "Yes",
+            "profit": 5.60,
+            "profitHistory": [1.7, 3.2, 4.5, 5.60],
+            "gamesCount": 25,
+            "winCount": 15
+          },
+          {
+            "name": "No",
+            "profit": -5.60,
+            "profitHistory": [-1.7, -3.2, -4.5, -5.60],
+            "gamesCount": 25,
+            "winCount": 10
+          }
+        ]
+      }
+    ],
+    "homeFirstHalf": [...],
+    "homeSecondHalf": [...],
+    "away": [...],
+    "awayFirstHalf": [...],
+    "awaySecondHalf": [...]
+  }
+}
+```
+
+### Response Fields
+
+#### Main Structure:
+- **home** - Прибыльность для домашней команды (полный матч)
+- **homeFirstHalf** - Прибыльность домашней команды (1-й тайм)
+- **homeSecondHalf** - Прибыльность домашней команды (2-й тайм)
+- **away** - Прибыльность для выездной команды (полный матч)
+- **awayFirstHalf** - Прибыльность выездной команды (1-й тайм)
+- **awaySecondHalf** - Прибыльность выездной команды (2-й тайм)
+
+#### Market Object:
+- **market** - Тип рынка (Match Winner, Over/Under, BTTS, и т.д.)
+- **outcomes** - Массив возможных исходов
+
+#### Outcome Object:
+- **name** - Название исхода (Home Win, Over 2.5, Yes, и т.д.)
+- **profit** - Общая прибыль/убыток (в единицах ставки)
+- **profitHistory** - История изменения прибыли по матчам
+- **gamesCount** - Количество проанализированных игр
+- **winCount** - Количество выигрышных ставок
+
+### Поддерживаемые рынки (Markets)
+
+1. **Match Winner** (1X2)
+   - Home Win
+   - Draw
+   - Away Win
+
+2. **Over/Under Goals**
+   - Over 0.5, 1.5, 2.5, 3.5, 4.5
+   - Under 0.5, 1.5, 2.5, 3.5, 4.5
+
+3. **Both Teams To Score (BTTS)**
+   - Yes
+   - No
+
+4. **Asian Handicap**
+   - Home -0.5, -1.0, -1.5, -2.0
+   - Away -0.5, -1.0, -1.5, -2.0
+
+5. **Correct Score** (опционально)
+   - 1-0, 2-0, 2-1, и т.д.
+
+6. **Double Chance**
+   - Home or Draw
+   - Home or Away
+   - Draw or Away
+
+7. **First Half / Second Half**
+   - Те же рынки для таймов
+
+### Интерпретация данных
+
+#### Profit (Прибыль):
+- **> 0**: Прибыльная ставка
+- **= 0**: Безубыточная
+- **< 0**: Убыточная ставка
+
+#### Win Rate (Процент побед):
+```
+winRate = winCount / gamesCount
+```
+- **> 60%**: Очень хороший показатель
+- **50-60%**: Хороший показатель
+- **40-50%**: Средний показатель
+- **< 40%**: Плохой показатель
+
+#### ROI (Return on Investment):
+```
+ROI = (profit / gamesCount) * 100
+```
+- **> 10%**: Отличный ROI
+- **5-10%**: Хороший ROI
+- **0-5%**: Небольшая прибыль
+- **< 0%**: Убыток
+
+#### Profit History:
+Показывает кумулятивное изменение прибыли:
+- Растущий тренд → положительная динамика
+- Падающий тренд → отрицательная динамика
+- Стабильный → нейтральная динамика
+
+### Use Cases
+
+1. **Value Betting**
+   - Поиск прибыльных рынков
+   - Сравнение с текущими коэффициентами
+   - Выявление паттернов прибыльности
+
+2. **Стратегия ставок**
+   - Выбор оптимальных рынков для ставок
+   - Избежание исторически убыточных ставок
+   - Определение размера ставки на основе ROI
+
+3. **Анализ команд**
+   - Сильные/слабые стороны команд
+   - Особенности игры (голевые, оборонительные)
+   - Различия дома и в гостях
+
+4. **Тайм-специфичный анализ**
+   - Команды, которые забивают в первом тайме
+   - Команды, которые усиливаются во втором тайме
+   - Тактические особенности
+
+5. **Автоматизация**
+   - Betting bots
+   - Автоматический скрининг
+   - Алерты на прибыльные возможности
+
+### Example Requests
+
+#### Базовый запрос (25 последних игр)
+```bash
+curl "https://api.sstats.net/Games/profits?gameId=1461496"
+```
+
+#### С фильтром по лиге
+```bash
+curl "https://api.sstats.net/Games/profits?gameId=1461496&thisLeague=true"
+```
+
+#### С учетом домашних/выездных
+```bash
+curl "https://api.sstats.net/Games/profits?gameId=1461496&homeAway=true"
+```
+
+#### Только похожие игры по xG
+```bash
+curl "https://api.sstats.net/Games/profits?gameId=1461496&sameGames=true"
+```
+
+#### Конкретный букмекер
+```bash
+curl "https://api.sstats.net/Games/profits?gameId=1461496&bookieId=1"
+```
+
+#### Кастомный лимит (50 игр)
+```bash
+curl "https://api.sstats.net/Games/profits?gameId=1461496&limit=50"
+```
+
+#### Комбинация фильтров
+```bash
+curl "https://api.sstats.net/Games/profits?gameId=1461496&limit=30&thisLeague=true&homeAway=true"
+```
+
+#### Через наш API
+```bash
+curl "http://158.69.195.140:3001/api/games/profits?gameId=1461496&limit=25"
+```
+
+### Best Practices
+
+1. **Выбор фильтров**:
+   - `thisLeague=true` для более релевантной статистики
+   - `homeAway=true` для учета домашнего фактора
+   - `sameGames=true` для похожих по силе матчей
+   - `limit=25-50` для достаточной выборки
+
+2. **Интерпретация прибыли**:
+   - Ищите положительную прибыль > 5 единиц
+   - Учитывайте количество игр (gamesCount)
+   - Проверяйте динамику (profitHistory)
+
+3. **Win Rate vs Profit**:
+   - Высокий win rate не гарантирует прибыль
+   - Учитывайте коэффициенты
+   - Один выигрыш на высоком коэффициенте может компенсировать несколько проигрышей
+
+4. **Комбинирование с другими endpoint'ами**:
+   - Profits + Text Summary = комплексный анализ
+   - Profits + Glicko 2 = оценка силы + прибыльность
+   - Profits + Last Games Stats = форма + историческая прибыльность
+
+5. **Тайм-специфичный анализ**:
+   - Используйте firstHalf для early goals стратегий
+   - Используйте secondHalf для late goals стратегий
+   - Сравнивайте прибыльность таймов
+
+### Responses
+
+#### 200 OK
+Успешный запрос с данными о прибыльности
+
+#### 400 Bad Request
+- Отсутствует gameId
+- Некорректный лимит (вне диапазона 5-100)
+- Некорректный формат параметров
+
+#### 404 Not Found
+Матч не найден или данные недоступны
+
+### Notes
+
+1. Прибыль рассчитывается на основе исторических коэффициентов
+2. Все ставки считаются по 1 единице (stake = 1)
+3. Данные могут быть недоступны для новых команд
+4. ROI зависит от размера выборки
+5. Рекомендуется использовать минимум 20-25 игр для анализа
+6. Profit History полезен для выявления трендов
+
+### Calculation Examples
+
+#### Example 1: Profitable Market
+```
+Market: Over 2.5
+Games: 25
+Wins: 16
+Profit: +8.40
+
+Win Rate = 16/25 = 64%
+ROI = (8.40/25) * 100 = 33.6%
+→ Highly profitable market
+```
+
+#### Example 2: Unprofitable Market
+```
+Market: Away Win
+Games: 25
+Wins: 5
+Profit: -18.25
+
+Win Rate = 5/25 = 20%
+ROI = (-18.25/25) * 100 = -73%
+→ Avoid this market
+```
+
+### Related Endpoints
+
+- `GET /Games/text-summary` - Текстовая сводка с рекомендациями
+- `GET /Games/last-games-stats` - Средняя статистика
+- `GET /Games/glicko/{id}` - Glicko 2 рейтинги
+- `GET /Odds/live/{id}` - Live коэффициенты
+
+### Disclaimer
+
+⚠️ **ВАЖНО**: Прошлые результаты не гарантируют будущих результатов. 
+Используйте эту информацию только в образовательных целях. 
+Ставки на спорт связаны с риском. Ставьте ответственно.

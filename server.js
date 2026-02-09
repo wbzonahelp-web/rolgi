@@ -119,7 +119,10 @@ class RolgiServer {
       const healthy = await this.db.healthCheck();
 
       if (!healthy) {
-        throw new Error('Database health check failed');
+        logger.warn('Database health check failed, continuing without database');
+        // Don't throw error - continue without database
+        this.tracer.finishTrace(traceId);
+        return;
       }
 
       logger.info({
@@ -129,9 +132,12 @@ class RolgiServer {
 
       this.tracer.finishTrace(traceId);
     } catch (error) {
-      this.errorCollector.recordError(error, { stage: 'db_init' });
+      logger.warn({
+        error: error.message
+      }, 'Database initialization failed, continuing without database');
+      this.errorCollector.recordError(error, { stage: 'db_init', optional: true });
       this.tracer.finishTrace(traceId);
-      throw error;
+      // Don't throw error - continue without database
     }
   }
 

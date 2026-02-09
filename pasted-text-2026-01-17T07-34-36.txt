@@ -1,0 +1,170 @@
+Синтаксис запросов
+Операторы сравнения
+= - равно (пример: LeagueId = 39)
+!= или <> - не равно (пример: Status != 0)
+> - больше (пример: Winner1 > 1.5)
+< - меньше (пример: Winner2 < 2.0)
+>= - больше или равно (пример: ScoreHomeFT >= 2)
+<= - меньше или равно (пример: ScoreAwayFT <= 1)
+Логические операторы
+AND - оба условия должны выполняться
+Пример: LeagueId = 39 AND Year = 2024
+OR - хотя бы одно условие должно выполняться
+Пример: Year = 2023 OR Year = 2024
+Скобки () - группировка условий
+Пример: (Year = 2023 OR Year = 2024) AND LeagueId = 39
+Специальные операторы
+IN - значение входит в список
+Пример: LeagueId IN (39, 140, 135)
+NOT IN - значение не входит в список
+Пример: Status NOT IN (1, 2)
+LIKE - поиск по шаблону (% - любые символы)
+Пример: HomeTeamName LIKE '%United%'
+Математические операции в полях
+В списке полей можно использовать:
+
+Сложение: ScoreHomeFT + ScoreAwayFT
+Вычитание: ScoreHomeFT - ScoreAwayFT
+Умножение: Winner1 * 100
+Деление: ScoreHomeFT / (ScoreAwayFT + 0.1)
+Псевдонимы (Только в Fields): ScoreHomeFT + ScoreAwayFT AS TotalGoals
+Доступные поля
+Основная информация
+Id - идентификатор матча
+Date - дата и время
+LeagueId, LeagueName - лига
+CountryName, CountryCode - страна
+Year - год сезона
+Status - статус матча
+Команды
+HomeTeamId, HomeTeamName - домашняя команда
+AwayTeamId, AwayTeamName - гостевая команда
+HomeTeamCoachName, AwayTeamCoachName - тренеры
+Счет
+ScoreHomeFT, ScoreAwayFT - основное время
+ScoreHomeHT, ScoreAwayHT - первый тайм
+ScoreHomeET, ScoreAwayET - дополнительное время
+ScoreHomePT, ScoreAwayPT - пенальти
+Коэффициенты
+Winner1, WinnerX, Winner2 - победа хозяев/ничья/победа гостей
+DC_1X, DC_12, DC_2X - двойной шанс
+DNB_1, DNB_2 - ставка без ничьей
+Статистика
+TotalShotsHome, TotalShotsAway - всего ударов
+ShotsOnGoalHome, ShotsOnGoalAway - удары в створ
+BallPossessionHome, BallPossessionAway - владение мячом (%)
+CornerKicksHome, CornerKicksAway - угловые
+YellowCardsHome, YellowCardsAway - желтые карточки
+RedCardsHome, RedCardsAway - красные карточки
+ExpectedGoalsHome, ExpectedGoalsAway - ожидаемые голы (xG)
+Модель Glicko
+GlickoRatingHome, GlickoRatingAway - рейтинг команд
+GlickoWinProbHome, GlickoWinProbAway - вероятность победы
+GlickoXgHome, GlickoXgAway - прогноз голов
+Все параметры JSON запроса
+Condition (обязательный) - условие фильтрации
+Fields - массив полей для вывода
+Order - сортировка (добавьте DESC для убывания)
+Limit - количество записей (макс. 1000)
+Offset - пропустить первые N записей
+Format - формат вывода: "json" или "csv"
+Timezone - часовой пояс (-12 до +12)
+Полный список доступных полей
+Поле	Тип	Описание
+Id	int	Уникальный идентификатор матча
+FlashId	string	Идентификатор матча в системе LiveScore
+SeasonUid	string	Уникальный идентификатор сезона
+Year	int	Год проведения сезона
+Status	int	Статус матча (не начат, идет, завершен и т.д.) Спиос статусов
+Date	Date	Дата и время проведения матча
+LeagueId	int	Идентификатор лиги
+LeagueName	string	Название лиги
+CountryName	string	Название страны
+CountryCode	string	Код страны (два символа. коды можно взять здесь /leagues )
+ScoreHome	int	Голы домашней команды (итоговый счет)
+ScoreAway	int	Голы гостевой команды (итоговый счет)
+ScoreHomeFT	int	Голы домашней команды по итогам основного времени
+ScoreAwayFT	int	Голы гостевой команды по итогам основного времени
+ScoreHomeHT	int	Голы домашней команды в первом тайме
+ScoreAwayHT	int	Голы гостевой команды в первом тайме
+ScoreHomeET	int	Голы домашней команды в дополнительное время
+ScoreAwayET	int	Голы гостевой команды в дополнительное время
+ScoreHomePT	int	Голы домашней команды в серии пенальти
+ScoreAwayPT	int	Голы гостевой команды в серии пенальти
+HomeTeamId	int	Идентификатор домашней команды
+AwayTeamId	int	Идентификатор гостевой команды
+HomeTeamName	string	Название домашней команды
+AwayTeamName	string	Название гостевой команды
+HomeTeamCoachId	int	Идентификатор тренера домашней команды
+AwayTeamCoachId	int	Идентификатор тренера гостевой команды
+HomeTeamCoachName	string	Полное имя тренера домашней команды
+AwayTeamCoachName	string	Полное имя тренера гостевой команды
+HomeTeamCoachFirstName	string	Имя тренера домашней команды
+AwayTeamCoachFirstName	string	Имя тренера гостевой команды
+HomeTeamCoachLastName	string	Фамилия тренера домашней команды
+AwayTeamCoachLastName	string	Фамилия тренера гостевой команды
+HomeTeamCoachNationality	string	Национальность тренера домашней команды
+AwayTeamCoachNationality	string	Национальность тренера гостевой команды
+VenueId	int	Идентификатор стадиона
+VenueName	string	Название стадиона
+VenueAddress	string	Адрес стадиона
+VenueCity	string	Город стадиона
+Winner1	float	Коэффициент на победу домашней команды (1)
+WinnerX	float	Коэффициент на ничью (X)
+Winner2	float	Коэффициент на победу гостевой команды (2)
+DC_1X	float	Коэффициент двойного шанса 1X (победа дома или ничья)
+DC_12	float	Коэффициент двойного шанса 12 (победа любой команды)
+DC_2X	float	Коэффициент двойного шанса 2X (победа гостей или ничья)
+DNB_1	float	Коэффициент "ничья не учитывается" на домашнюю команду
+DNB_2	float	Коэффициент "ничья не учитывается" на гостевую команду
+OddsXgHome	float	Ожидаемые голы домашней команды по букмекерам
+OddsXgAway	float	Ожидаемые голы гостевой команды по букмекерам
+GlickoRatingHome	float	Рейтинг Glicko 2 домашней команды
+GlickoRatingAway	float	Рейтинг Glicko 2 гостевой команды
+GlickoRdHome	float	Отклонение рейтинга Glicko домашней команды
+GlickoRdAway	float	Отклонение рейтинга Glicko гостевой команды
+GlickoXgHome	float	Ожидаемые голы домашней команды по Glicko
+GlickoXgAway	float	Ожидаемые голы гостевой команды по Glicko
+GlickoWinProbHome	float	Вероятность победы домашней команды по Glicko
+GlickoWinProbAway	float	Вероятность победы гостевой команды по Glicko
+ShotsOnGoalHome	int	Удары в створ ворот домашней команды
+ShotsOnGoalAway	int	Удары в створ ворот гостевой команды
+ShotsOffGoalHome	int	Удары мимо ворот домашней команды
+ShotsOffGoalAway	int	Удары мимо ворот гостевой команды
+TotalShotsHome	int	Общее количество ударов домашней команды
+TotalShotsAway	int	Общее количество ударов гостевой команды
+BlockedShotsHome	int	Заблокированные удары домашней команды
+BlockedShotsAway	int	Заблокированные удары гостевой команды
+ShotsInsideBoxHome	int	Удары из штрафной площади домашней команды
+ShotsInsideBoxAway	int	Удары из штрафной площади гостевой команды
+ShotsOutsideBoxHome	int	Удары вне штрафной площади домашней команды
+ShotsOutsideBoxAway	int	Удары вне штрафной площади гостевой команды
+FoulsHome	int	Фолы домашней команды
+FoulsAway	int	Фолы гостевой команды
+CornerKicksHome	int	Угловые удары домашней команды
+CornerKicksAway	int	Угловые удары гостевой команды
+BallPossessionHome	int	Владение мячом домашней команды (в процентах)
+BallPossessionAway	int	Владение мячом гостевой команды (в процентах)
+YellowCardsHome	int	Желтые карточки домашней команды
+YellowCardsAway	int	Желтые карточки гостевой команды
+GoalkeeperSavesHome	int	Сейвы вратаря домашней команды
+GoalkeeperSavesAway	int	Сейвы вратаря гостевой команды
+TotalPassesHome	int	Общее количество передач домашней команды
+TotalPassesAway	int	Общее количество передач гостевой команды
+PassesAccurateHome	int	Точные передачи домашней команды
+PassesAccurateAway	int	Точные передачи гостевой команды
+OffsidesHome	int	Офсайды домашней команды
+OffsidesAway	int	Офсайды гостевой команды
+RedCardsHome	int	Красные карточки домашней команды
+RedCardsAway	int	Красные карточки гостевой команды
+ExpectedGoalsHome	float	Ожидаемые голы домашней команды (xG)
+ExpectedGoalsAway	float	Ожидаемые голы гостевой команды (xG)
+CalculatedXgHome	float	Расчетные ожидаемые голы домашней команды
+CalculatedXgAway	float	Расчетные ожидаемые голы гостевой команды
+CoverageSeasonPlayers	boolean	Доступность данных об игроках в сезоне
+CoverageSeasonEvents	boolean	Доступность данных о событиях в сезоне
+CoverageSeasonLineups	boolean	Доступность данных о составах в сезоне
+CoverageSeasonStatisticsFixtures	boolean	Доступность статистики матчей в сезоне
+CoverageSeasonStatisticsPlayers	boolean	Доступность статистики игроков в сезоне
+CoverageSeasonStandings	boolean	Доступность турнирной таблицы в сезоне
+CoverageSeasonOdds	boolean	Доступность коэффициентов в сезоне

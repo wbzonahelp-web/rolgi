@@ -34,8 +34,10 @@ const logger = require("../monitoring/logger");
  */
 
 const fastify = require('fastify');
+const path = require('path');
 const cors = require('@fastify/cors');
 const helmet = require('@fastify/helmet');
+const fastifyStatic = require('@fastify/static');
 const swagger = require('@fastify/swagger');
 const swaggerUi = require('@fastify/swagger-ui');
 const { getDatabase } = require('../database/db-pool');
@@ -44,6 +46,11 @@ const SStatsClient = require('./sstats-client');
 const { jwtAuthPlugin } = require('../auth/fastify-auth');
 const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
+const advancedQueryRoutes = require('./routes/advanced-query');
+const flashscoreRoutes = require('./routes/flashscore-routes');
+const proxyRoutes = require('./routes/proxy-routes');
+const cachedProxyRoutes = require('./routes/cached-proxy');
+const scoutRoutes = require('./routes/scout-routes');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
 const { setupPrometheusMiddleware } = require('../monitoring/prometheus/middleware');
@@ -117,6 +124,12 @@ class BackendApi {
     // Helmet for security headers
     await this.app.register(helmet, {
       contentSecurityPolicy: false
+    });
+
+    // Static files serving
+    await this.app.register(fastifyStatic, {
+      root: path.join(__dirname, '../../public'),
+      prefix: '/'
     });
 
     // CORS
@@ -198,6 +211,14 @@ class BackendApi {
       });
     }
 
+    // Multipart support for file uploads
+    await this.app.register(require('@fastify/multipart'), {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+        files: 1
+      }
+    });
+
     logger.info('Plugins registered');
     
     // Setup Prometheus middleware
@@ -272,6 +293,27 @@ class BackendApi {
 
     this.app.register(authRoutes, { prefix: '/api/auth' });
     this.app.register(alertRoutes, { prefix: '/api/alerts' });
+
+    // Advanced Query routes
+    this.app.register(advancedQueryRoutes, { 
+      prefix: '/api/query',
+      sstatsClient: this.apiClient 
+    });
+
+    // Flashscore API routes
+    this.app.register(flashscoreRoutes, { 
+      prefix: '/api/flashscore',
+      sstatsClient: this.apiClient 
+    });
+
+    // Proxy routes for frontend
+    this.app.register(proxyRoutes, { prefix: '/api/proxy' });
+    
+    // Cached proxy routes for frontend (recommended)
+    this.app.register(cachedProxyRoutes, { prefix: '/api/cached' });
+
+    // Scout routes for betting tracking
+    this.app.register(scoutRoutes);
 
     // ============================================================
     // API VERSIONING

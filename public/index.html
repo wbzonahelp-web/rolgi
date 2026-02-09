@@ -1,10 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rolgi SStats Analytics Platform v6.0.0</title>
+    <title>Rolgi SStats - Футбольная статистика и аналитика</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #1a5f7a;
+            --primary-dark: #134b5f;
+            --secondary-color: #57c5b6;
+            --accent-color: #159895;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --text-muted: #6c757d;
+            --border-color: #e0e0e0;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --live-color: #ff4757;
+            --odds-home: #3498db;
+            --odds-draw: #95a5a6;
+            --odds-away: #e74c3c;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,362 +34,2593 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+
+        .logo i {
+            color: var(--secondary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-links a.active {
+            background: var(--secondary-color);
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
             padding: 20px;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        /* Sidebar */
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: fit-content;
+            position: sticky;
+            top: 80px;
         }
 
-        header {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
+        .sidebar-section {
+            border-bottom: 1px solid var(--border-color);
         }
 
-        h1 {
-            color: #667eea;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .sidebar-section:last-child {
+            border-bottom: none;
         }
 
-        .version {
-            color: #764ba2;
-            font-size: 1.2em;
+        .sidebar-header {
+            padding: 15px;
+            font-weight: 600;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header:hover {
+            background: #eee;
+        }
+
+        .sidebar-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-item:hover {
+            background: #f5f5f5;
+            border-left-color: var(--primary-color);
+        }
+
+        .sidebar-item.active {
+            background: #e8f4f8;
+            border-left-color: var(--primary-color);
             font-weight: 600;
         }
 
-        .status {
-            display: inline-block;
-            padding: 5px 15px;
-            background: #10b981;
-            color: white;
-            border-radius: 20px;
-            font-size: 0.9em;
-            margin-top: 10px;
+        .sidebar-item img {
+            width: 20px;
+            height: 15px;
+            object-fit: cover;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+        .league-count {
+            margin-left: auto;
+            background: #eee;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            color: var(--text-muted);
         }
 
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
+        /* Main Content */
+        .content {
+            min-width: 0;
         }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-
-        .card h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-
-        .card p {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: opacity 0.3s;
-            border: none;
-            cursor: pointer;
-            font-size: 1em;
-        }
-
-        .btn:hover {
-            opacity: 0.9;
-        }
-
-        .api-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
-        }
-
-        .api-endpoint {
-            background: #f7fafc;
+        /* Filters */
+        .filters-bar {
+            background: var(--card-bg);
+            border-radius: 10px;
             padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
-        }
-
-        .api-endpoint .method {
-            display: inline-block;
-            padding: 3px 10px;
-            background: #667eea;
-            color: white;
-            border-radius: 5px;
-            font-size: 0.85em;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .api-endpoint .path {
-            font-family: 'Courier New', monospace;
-            color: #333;
-            font-size: 1.1em;
-        }
-
-        .api-endpoint .description {
-            color: #666;
-            margin-top: 8px;
-            font-size: 0.95em;
-        }
-
-        .demo-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .demo-controls {
-            display: flex;
-            gap: 10px;
             margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
             flex-wrap: wrap;
         }
 
-        .result {
-            background: #1a202c;
-            color: #68d391;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
             font-size: 0.9em;
-            max-height: 500px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
         }
 
-        .loading {
-            color: #f6ad55;
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
         }
 
-        .error {
-            color: #fc8181;
-        }
-
-        footer {
-            text-align: center;
+        .filter-btn.active {
+            background: var(--primary-color);
             color: white;
-            margin-top: 30px;
+            border-color: var(--primary-color);
+        }
+
+        .date-picker {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 5px 10px;
+        }
+
+        .date-picker input {
+            border: none;
+            outline: none;
+            font-size: 0.9em;
+            width: 120px;
+        }
+
+        .date-nav {
+            display: flex;
+            gap: 5px;
+        }
+
+        .date-nav button {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .date-nav button:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Extended Filters */
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 0.9em;
+            width: 180px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 0.9em;
+            background: white;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary-color);
+        }
+
+        .date-input {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 0.9em;
+            width: 130px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .filter-btn-reset {
+            background: #fff5f5;
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .filter-btn-reset:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .active-filters {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .active-filters-label {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .active-filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #e3f2fd;
+            color: var(--primary-color);
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+
+        .active-filter-tag button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 0;
+            font-size: 1em;
+            line-height: 1;
+        }
+
+        .active-filter-tag button:hover {
+            color: var(--danger-color);
+        }
+
+        /* Games List */
+        .games-section {
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .league-header {
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .league-header:hover {
+            background: #e9ecef;
+        }
+
+        .league-flag {
+            width: 24px;
+            height: 18px;
+            object-fit: cover;
+            border-radius: 2px;
+        }
+
+        .league-name {
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .league-country {
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+
+        .games-table {
+            width: 100%;
+        }
+
+        .game-row {
+            display: grid;
+            grid-template-columns: 70px 1fr 120px 1fr 200px;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .game-row:hover {
+            background: #f8f9fa;
+        }
+
+        .game-row:last-child {
+            border-bottom: none;
+        }
+
+        .game-time {
+            text-align: center;
+        }
+
+        .game-time .time {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .game-time .date {
+            font-size: 0.8em;
+            color: var(--text-muted);
+        }
+
+        .game-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-live {
+            background: var(--live-color);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-finished {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-scheduled {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .status-postponed {
+            background: var(--warning-color);
+            color: #333;
+        }
+
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .team.home {
+            justify-content: flex-end;
+            text-align: right;
+        }
+
+        .team.away {
+            text-align: left;
+        }
+
+        .team-logo {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        .team-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .score-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .score {
+            background: #333;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 5px;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        .score-separator {
+            color: var(--text-muted);
+        }
+
+        .half-score {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            font-weight: normal;
+            margin-top: 3px;
+        }
+
+        .odds-box {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+        }
+
+        .odd {
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: 600;
+            min-width: 55px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .odd:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .odd.home {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: var(--odds-home);
+            border: 1px solid var(--odds-home);
+        }
+
+        .odd.draw {
+            background: linear-gradient(135deg, #f5f5f5, #eeeeee);
+            color: var(--odds-draw);
+            border: 1px solid var(--odds-draw);
+        }
+
+        .odd.away {
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            color: var(--odds-away);
+            border: 1px solid var(--odds-away);
+        }
+
+        .odd-label {
+            font-size: 0.7em;
+            display: block;
+            opacity: 0.7;
+            margin-bottom: 2px;
+        }
+
+        .odd-value {
+            font-size: 1em;
+        }
+
+        /* Game Details Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 50px 20px;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 15px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .modal-teams {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
             padding: 20px;
         }
 
-        footer a {
-            color: white;
-            text-decoration: underline;
+        .modal-team {
+            text-align: center;
+        }
+
+        .modal-team-logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+
+        .modal-team-name {
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .modal-score {
+            text-align: center;
+        }
+
+        .modal-score-value {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 20px;
+            background: #f8f9fa;
+        }
+
+        .modal-tab {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .modal-tab:hover {
+            background: #eee;
+        }
+
+        .modal-tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .stats-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .stats-card h4 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        .stat-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .stat-bar-home {
+            background: var(--odds-home);
+        }
+
+        .stat-bar-away {
+            background: var(--odds-away);
+        }
+
+        /* Profit Table */
+        .profit-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .profit-table th,
+        .profit-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .profit-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .profit-positive {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .profit-negative {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: var(--text-muted);
+        }
+
+        .loading i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .game-row {
+                grid-template-columns: 60px 1fr 100px 1fr;
+            }
+
+            .odds-box {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .game-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .team.home {
+                justify-content: flex-start;
+            }
+        }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .pagination-info {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Sidebar search */
+        .sidebar-search {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 0.85em;
+            outline: none;
+        }
+
+        .sidebar-search input:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* League item with country */
+        .league-item-country {
+            font-size: 0.75em;
+            color: var(--text-muted);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>⚽ Rolgi SStats Analytics Platform</h1>
-            <div class="version">Version 6.0.0</div>
-            <div class="status" id="status">🔴 Checking...</div>
-        </header>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <i class="fas fa-futbol"></i>
+                <span>Rolgi SStats</span>
+            </a>
+            <nav class="nav-links">
+                <a href="/" class="active"><i class="fas fa-home"></i> Главная</a>
+                <a href="/leagues.html"><i class="fas fa-trophy"></i> Лиги</a>
+                <a href="/teams.html"><i class="fas fa-users"></i> Команды</a>
+                <a href="/players.html"><i class="fas fa-user"></i> Игроки</a>
+                <a href="/scout.html"><i class="fas fa-binoculars"></i> Скаут</a>
+            </nav>
+        </div>
+    </header>
 
-        <div class="grid">
-            <div class="card">
-                <h2>🔒 Три Железных Замка</h2>
-                <p>Защита от дрейфа схемы БД, AI-галлюцинаций API и нарушений UPSERT-ключей</p>
-                <a href="#locks" class="btn">Подробнее</a>
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Popular Leagues -->
+            <div class="sidebar-section">
+                <div class="sidebar-header" onclick="toggleSection(this)">
+                    <span><i class="fas fa-star"></i> Популярные турниры</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="sidebar-content" id="popularLeagues">
+                    <div class="sidebar-item" data-league="39">
+                        <img src="https://flagcdn.com/w20/gb-eng.png" alt="England">
+                        <span>Premier League</span>
+                    </div>
+                    <div class="sidebar-item" data-league="140">
+                        <img src="https://flagcdn.com/w20/es.png" alt="Spain">
+                        <span>La Liga</span>
+                    </div>
+                    <div class="sidebar-item" data-league="135">
+                        <img src="https://flagcdn.com/w20/it.png" alt="Italy">
+                        <span>Serie A</span>
+                    </div>
+                    <div class="sidebar-item" data-league="78">
+                        <img src="https://flagcdn.com/w20/de.png" alt="Germany">
+                        <span>Bundesliga</span>
+                    </div>
+                    <div class="sidebar-item" data-league="61">
+                        <img src="https://flagcdn.com/w20/fr.png" alt="France">
+                        <span>Ligue 1</span>
+                    </div>
+                    <div class="sidebar-item" data-league="2">
+                        <img src="https://flagcdn.com/w20/eu.png" alt="UEFA">
+                        <span>Champions League</span>
+                    </div>
+                    <div class="sidebar-item" data-league="3">
+                        <img src="https://flagcdn.com/w20/eu.png" alt="UEFA">
+                        <span>Europa League</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="card">
-                <h2>🗄️ 22 таблицы БД</h2>
-                <p>Полная схема PostgreSQL с партиционированием, constraints и индексами</p>
-                <a href="#database" class="btn">Подробнее</a>
+            <!-- All Leagues -->
+            <div class="sidebar-section">
+                <div class="sidebar-header" onclick="toggleSection(this)">
+                    <span><i class="fas fa-globe"></i> Все лиги</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="sidebar-content" id="allLeaguesList" style="max-height: 400px;">
+                    <div class="loading">
+                        <i class="fas fa-spinner spinner"></i>
+                        <div>Загрузка лиг...</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="card">
-                <h2>🔄 13-шаговый Pipeline</h2>
-                <p>Надёжная загрузка данных с валидацией, трансформацией и recovery</p>
-                <a href="#loader" class="btn">Подробнее</a>
+            <!-- Countries -->
+            <div class="sidebar-section">
+                <div class="sidebar-header" onclick="toggleSection(this)">
+                    <span><i class="fas fa-flag"></i> По странам</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="sidebar-content" id="countriesList">
+                    <div class="loading">
+                        <i class="fas fa-spinner spinner"></i>
+                        <div>Загрузка...</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="card">
-                <h2>🚀 REST API</h2>
-                <p>Fastify-based API с Swagger документацией и полным мониторингом</p>
-                <a href="/docs" class="btn" target="_blank">API Docs</a>
+            <!-- Teams Search -->
+            <div class="sidebar-section">
+                <div class="sidebar-header" onclick="toggleSection(this)">
+                    <span><i class="fas fa-users"></i> Команды</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="sidebar-content" id="teamsSearchSection" style="max-height: 350px;">
+                    <div class="sidebar-search">
+                        <input type="text" id="teamsSearchInput" placeholder="Поиск команды..." onkeyup="handleTeamsSearchInput(event)">
+                        <button onclick="searchTeams()" style="margin-top:5px;width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:5px;cursor:pointer;">
+                            <i class="fas fa-search"></i> Найти
+                        </button>
+                    </div>
+                    <div id="teamsSearchResults" style="padding: 10px; color: var(--text-muted); font-size: 0.9em;">
+                        Введите название команды для поиска
+                    </div>
+                </div>
             </div>
 
-            <div class="card">
-                <h2>📈 Мониторинг</h2>
-                <p>Distributed tracing, метрики, error tracking, health checks</p>
-                <a href="/metrics" class="btn" target="_blank">Метрики</a>
+            <!-- Players Search -->
+            <div class="sidebar-section">
+                <div class="sidebar-header" onclick="toggleSection(this)">
+                    <span><i class="fas fa-user"></i> Игроки</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="sidebar-content" id="playersSearchSection" style="max-height: 350px;">
+                    <div class="sidebar-search">
+                        <input type="text" id="playersSearchInput" placeholder="Поиск игрока..." onkeyup="handlePlayersSearchInput(event)">
+                        <button onclick="searchPlayers()" style="margin-top:5px;width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:5px;cursor:pointer;">
+                            <i class="fas fa-search"></i> Найти
+                        </button>
+                    </div>
+                    <div id="playersSearchResults" style="padding: 10px; color: var(--text-muted); font-size: 0.9em;">
+                        Введите имя игрока для поиска
+                    </div>
+                </div>
             </div>
 
-            <div class="card">
-                <h2>⚡ Production-ready</h2>
-                <p>Pre-flight checks, graceful shutdown, connection pooling, rate limiting</p>
-                <a href="/health" class="btn" target="_blank">Health Check</a>
+            <!-- Favorites -->
+            <div class="sidebar-section">
+                <div class="sidebar-header" onclick="toggleSection(this)">
+                    <span><i class="fas fa-heart"></i> Избранное</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="sidebar-content" id="favoritesList">
+                    <div class="sidebar-item" style="color: var(--text-muted); font-style: italic;">
+                        Нет избранных турниров
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <span style="margin-right: 10px; font-weight: 500;">Группировка:</span>
+                        <button class="filter-btn active" data-view="leagues">По турнирам</button>
+                        <button class="filter-btn" data-view="time">По времени</button>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <span style="margin-right: 10px; font-weight: 500;">Статус:</span>
+                        <button class="filter-btn active" data-status="all">Все</button>
+                        <button class="filter-btn" data-status="finished">Завершенные</button>
+                        <button class="filter-btn" data-status="upcoming">Предстоящие</button>
+                        <button class="filter-btn" data-status="live">Live</button>
+                    </div>
+
+                    <div class="filter-group" style="margin-left: auto;">
+                        <div class="date-nav">
+                            <button onclick="changeDate(-1)" title="Предыдущий день"><i class="fas fa-chevron-left"></i></button>
+                            <div class="date-picker">
+                                <i class="fas fa-calendar"></i>
+                                <input type="date" id="dateInput" onchange="loadGames()">
+                            </div>
+                            <button onclick="changeDate(1)" title="Следующий день"><i class="fas fa-chevron-right"></i></button>
+                            <button onclick="setToday()" title="Сегодня">Сегодня</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extended Filters Row -->
+                <div class="filters-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <div class="filter-group">
+                        <span style="margin-right: 10px; font-weight: 500;"><i class="fas fa-search"></i> Поиск:</span>
+                        <input type="text" id="teamSearchInput" placeholder="Команда или ID матча..." class="search-input" onkeyup="handleTeamSearch(event)">
+                        <button class="filter-btn" onclick="searchByTeam()"><i class="fas fa-search"></i></button>
+                    </div>
+
+                    <div class="filter-group">
+                        <span style="margin-right: 10px; font-weight: 500;"><i class="fas fa-calendar-check"></i> Сезон:</span>
+                        <select id="yearSelect" class="filter-select" onchange="handleYearChange()">
+                            <option value="">Все годы</option>
+                            <option value="2026">2026</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <span style="margin-right: 10px; font-weight: 500;"><i class="fas fa-calendar-alt"></i> Период:</span>
+                        <select id="periodSelect" class="filter-select" onchange="handlePeriodChange()">
+                            <option value="day">За день</option>
+                            <option value="today">Сегодня (today=true)</option>
+                            <option value="range">Диапазон дат</option>
+                            <option value="live">Только Live</option>
+                            <option value="upcoming">Только предстоящие</option>
+                            <option value="ended">Только завершённые</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group date-range-group" style="display: none;">
+                        <input type="date" id="dateFromInput" class="date-input">
+                        <span style="margin: 0 5px;">—</span>
+                        <input type="date" id="dateToInput" class="date-input">
+                        <button class="filter-btn" onclick="loadGamesRange()"><i class="fas fa-check"></i></button>
+                    </div>
+
+                    <div class="filter-group">
+                        <button class="filter-btn filter-btn-reset" onclick="resetFilters()" title="Сбросить фильтры">
+                            <i class="fas fa-times"></i> Сбросить
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Filters Display -->
+                <div id="activeFiltersDisplay" class="active-filters" style="display: none;">
+                    <span class="active-filters-label">Активные фильтры:</span>
+                    <div id="activeFiltersList"></div>
+                </div>
+            </div>
+
+            <!-- Games List -->
+            <div id="gamesList">
+                <div class="loading">
+                    <i class="fas fa-spinner spinner"></i>
+                    <div>Загрузка матчей...</div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="pagination-container" style="display: none;">
+                <div class="pagination-info" id="paginationInfo"></div>
+                <div class="pagination-controls">
+                    <button class="filter-btn" id="prevPageBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i> Назад</button>
+                    <span id="pageIndicator" style="padding: 0 15px;"></span>
+                    <button class="filter-btn" id="nextPageBtn" onclick="changePage(1)">Вперёд <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Game Details Modal -->
+    <div class="modal-overlay" id="gameModal" onclick="closeModalOnOverlay(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeGameModal()">&times;</button>
+                <div id="modalLeagueInfo" style="font-size: 0.9em; opacity: 0.8; margin-bottom: 10px;"></div>
+                <div class="modal-teams">
+                    <div class="modal-team">
+                        <img class="modal-team-logo" id="modalHomeTeamLogo" src="" alt="">
+                        <div class="modal-team-name" id="modalHomeTeamName"></div>
+                    </div>
+                    <div class="modal-score">
+                        <div class="modal-score-value" id="modalScore"></div>
+                        <div id="modalHalfScore" style="font-size: 0.8em; opacity: 0.8;"></div>
+                        <div id="modalStatus" style="margin-top: 5px;"></div>
+                    </div>
+                    <div class="modal-team">
+                        <img class="modal-team-logo" id="modalAwayTeamLogo" src="" alt="">
+                        <div class="modal-team-name" id="modalAwayTeamName"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-tabs">
+                <div class="modal-tab active" data-tab="summary">Обзор</div>
+                <div class="modal-tab" data-tab="stats">Статистика</div>
+                <div class="modal-tab" data-tab="odds">Коэффициенты</div>
+                <div class="modal-tab" data-tab="h2h">H2H</div>
+            </div>
+
+            <div class="modal-body">
+                <!-- Summary Tab -->
+                <div class="tab-content active" id="tab-summary">
+                    <div class="stats-grid">
+                        <div class="stats-card">
+                            <h4><i class="fas fa-home"></i> <span id="summaryHomeTeam"></span> - Прибыль</h4>
+                            <div id="homeProfit">
+                                <div class="loading"><i class="fas fa-spinner spinner"></i></div>
+                            </div>
+                        </div>
+                        <div class="stats-card">
+                            <h4><i class="fas fa-plane"></i> <span id="summaryAwayTeam"></span> - Прибыль</h4>
+                            <div id="awayProfit">
+                                <div class="loading"><i class="fas fa-spinner spinner"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-grid" style="margin-top: 20px;">
+                        <div class="stats-card">
+                            <h4><i class="fas fa-chart-bar"></i> <span id="summaryHomeTeam2"></span> - Средние показатели</h4>
+                            <div id="homeStats">
+                                <div class="loading"><i class="fas fa-spinner spinner"></i></div>
+                            </div>
+                        </div>
+                        <div class="stats-card">
+                            <h4><i class="fas fa-chart-bar"></i> <span id="summaryAwayTeam2"></span> - Средние показатели</h4>
+                            <div id="awayStats">
+                                <div class="loading"><i class="fas fa-spinner spinner"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Tab -->
+                <div class="tab-content" id="tab-stats">
+                    <div id="matchStats">
+                        <div class="loading"><i class="fas fa-spinner spinner"></i></div>
+                    </div>
+                </div>
+
+                <!-- Odds Tab -->
+                <div class="tab-content" id="tab-odds">
+                    <div id="matchOdds">
+                        <div class="loading"><i class="fas fa-spinner spinner"></i></div>
+                    </div>
+                </div>
+
+                <!-- H2H Tab -->
+                <div class="tab-content" id="tab-h2h">
+                    <div id="h2hData">
+                        <div class="loading"><i class="fas fa-spinner spinner"></i></div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <div class="api-section">
-            <h2>📡 Доступные API Эндпоинты</h2>
-
-            <div class="api-endpoint">
-                <span class="method">GET</span>
-                <span class="path">/api/games</span>
-                <div class="description">Получить список игр с фильтрацией по лиге, сезону, статусу, датам</div>
-            </div>
-
-            <div class="api-endpoint">
-                <span class="method">GET</span>
-                <span class="path">/api/games/:id</span>
-                <div class="description">Получить детали конкретной игры со статистикой и событиями</div>
-            </div>
-
-            <div class="api-endpoint">
-                <span class="method">GET</span>
-                <span class="path">/api/teams</span>
-                <div class="description">Получить список команд с поиском и фильтрацией</div>
-            </div>
-
-            <div class="api-endpoint">
-                <span class="method">GET</span>
-                <span class="path">/api/teams/:id</span>
-                <div class="description">Получить детали команды с составом игроков</div>
-            </div>
-
-            <div class="api-endpoint">
-                <span class="method">GET</span>
-                <span class="path">/api/players</span>
-                <div class="description">Получить список игроков с фильтрацией по команде и позиции</div>
-            </div>
-
-            <div class="api-endpoint">
-                <span class="method">GET</span>
-                <span class="path">/api/odds/live/:gameId</span>
-                <div class="description">Получить live коэффициенты для игры</div>
-            </div>
-
-            <div class="api-endpoint">
-                <span class="method">GET</span>
-                <span class="path">/api/standings</span>
-                <div class="description">Получить турнирную таблицу лиги</div>
-            </div>
-
-            <div class="api-endpoint">
-                <span class="method">POST</span>
-                <span class="path">/api/loader/load</span>
-                <div class="description">Запустить загрузку данных (games, teams, players, odds, standings)</div>
-            </div>
-        </div>
-
-        <div class="demo-section">
-            <h2>🧪 Интерактивная демонстрация API</h2>
-            
-            <div class="demo-controls">
-                <button class="btn" onclick="testHealth()">Health Check</button>
-                <button class="btn" onclick="testGames()">Получить игры</button>
-                <button class="btn" onclick="testTeams()">Получить команды</button>
-                <button class="btn" onclick="testPlayers()">Получить игроков</button>
-                <button class="btn" onclick="testMetrics()">Метрики</button>
-            </div>
-
-            <div class="result" id="result">Выберите действие выше для тестирования API...</div>
-        </div>
-
-        <footer>
-            <p>Rolgi SStats Analytics Platform v6.0.0 | Production-Ready | MIT License</p>
-            <p>
-                <a href="https://github.com/wbzonahelp-web/rolgi" target="_blank">GitHub Repository</a> |
-                <a href="/docs" target="_blank">API Documentation</a>
-            </p>
-        </footer>
     </div>
 
     <script>
-        const resultDiv = document.getElementById('result');
-        const statusDiv = document.getElementById('status');
-
-        // Check API health on load
-        window.addEventListener('load', async () => {
+        // API Configuration - using local cached proxy for better performance
+        const API_BASE = '/api/cached';  // Local proxy with caching
+        const API_DIRECT = 'https://api.sstats.net';  // Direct API (fallback)
+        const API_KEY = 'fl3qjc4crvx8cppm';
+        
+        // Client-side cache
+        const clientCache = {
+            data: new Map(),
+            ttl: {
+                leagues: 3600000,      // 1 hour
+                'games-list': 30000,   // 30 seconds
+                'games-live': 10000,   // 10 seconds (short for live updates)
+                teams: 3600000,        // 1 hour
+                players: 3600000       // 1 hour
+            },
+            
+            get(key) {
+                const item = this.data.get(key);
+                if (!item) return null;
+                if (Date.now() > item.expires) {
+                    this.data.delete(key);
+                    return null;
+                }
+                return item.value;
+            },
+            
+            set(key, value, type = 'default') {
+                const ttl = this.ttl[type] || 60000;
+                this.data.set(key, {
+                    value,
+                    expires: Date.now() + ttl,
+                    type
+                });
+            },
+            
+            clear() {
+                this.data.clear();
+            }
+        };
+        
+        // Cached fetch wrapper
+        async function cachedFetch(url, cacheType = 'default') {
+            const cacheKey = url;
+            
+            // Check client cache first
+            const cached = clientCache.get(cacheKey);
+            if (cached) {
+                console.log('Client cache hit:', url.substring(0, 60));
+                return cached;
+            }
+            
             try {
-                const response = await fetch('/health');
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 
-                if (data.status === 'healthy') {
-                    statusDiv.textContent = '✅ Online';
-                    statusDiv.style.background = '#10b981';
-                } else {
-                    statusDiv.textContent = '⚠️ Degraded';
-                    statusDiv.style.background = '#f59e0b';
-                }
+                // Store in client cache
+                clientCache.set(cacheKey, data, cacheType);
+                
+                return data;
             } catch (error) {
-                statusDiv.textContent = '🔴 Offline';
-                statusDiv.style.background = '#ef4444';
+                console.error('Fetch error:', error.message);
+                throw error;
             }
+        }
+        
+        // Helper to add API key to URL (for direct API calls)
+        function withApiKey(url) {
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}apikey=${API_KEY}`;
+        }
+        
+        // Global state
+        let currentDate = new Date();
+        let currentLeague = null;
+        let currentStatus = 'all';
+        let currentView = 'leagues';
+        let allGames = [];
+        let allLeagues = [];
+        let currentPage = 1;
+        let pageSize = 50;
+        let totalGames = 0;
+
+        // Auto-refresh interval for live games (2 minutes)
+        let autoRefreshInterval = null;
+        const AUTO_REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes in ms
+        
+        // Start auto-refresh when viewing live games
+        function startAutoRefresh() {
+            stopAutoRefresh(); // Clear any existing interval
+            autoRefreshInterval = setInterval(() => {
+                const periodSelect = document.getElementById('periodSelect');
+                if (periodSelect && periodSelect.value === 'live') {
+                    console.log('Auto-refreshing live games...');
+                    loadGames();
+                }
+            }, AUTO_REFRESH_INTERVAL);
+            console.log('Auto-refresh started (every 2 minutes)');
+        }
+        
+        // Stop auto-refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Initializing Rolgi SStats...');
+            setToday();
+            setupEventListeners();
+            loadCountries();
+            // Load leagues in parallel (non-blocking)
+            loadAllLeagues();
+            // Start auto-refresh for live games
+            startAutoRefresh();
         });
 
-        async function makeRequest(url, options = {}) {
-            resultDiv.textContent = '⏳ Загрузка...';
-            resultDiv.className = 'result loading';
+        // Setup event listeners
+        function setupEventListeners() {
+            // View filters
+            document.querySelectorAll('.filter-btn[data-view]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn[data-view]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentView = btn.dataset.view;
+                    renderGames();
+                });
+            });
 
-            try {
-                const response = await fetch(url, options);
-                const data = await response.json();
-                
-                resultDiv.textContent = JSON.stringify(data, null, 2);
-                resultDiv.className = 'result';
-            } catch (error) {
-                resultDiv.textContent = `❌ Ошибка: ${error.message}`;
-                resultDiv.className = 'result error';
+            // Status filters
+            document.querySelectorAll('.filter-btn[data-status]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn[data-status]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentStatus = btn.dataset.status;
+                    
+                    // Sync period filter with status for live/upcoming/finished
+                    const periodSelect = document.getElementById('periodSelect');
+                    if (btn.dataset.status === 'live') {
+                        periodSelect.value = 'live';
+                        loadGames();
+                    } else if (btn.dataset.status === 'upcoming') {
+                        periodSelect.value = 'upcoming';
+                        loadGames();
+                    } else if (btn.dataset.status === 'finished') {
+                        periodSelect.value = 'ended';
+                        loadGames();
+                    } else {
+                        // 'all' - load by date
+                        periodSelect.value = 'day';
+                        loadGames();
+                    }
+                });
+            });
+
+            // League items in sidebar
+            document.querySelectorAll('.sidebar-item[data-league]').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    currentLeague = item.dataset.league;
+                    loadGames();
+                });
+            });
+
+            // Modal tabs
+            document.querySelectorAll('.modal-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+                });
+            });
+        }
+
+        // Toggle sidebar section
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.fa-chevron-down, .fa-chevron-up');
+            
+            if (content.style.maxHeight === '0px') {
+                content.style.maxHeight = '300px';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                content.style.maxHeight = '0px';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
             }
         }
 
-        async function testHealth() {
-            await makeRequest('/health');
+        // Date functions
+        function setToday() {
+            currentDate = new Date();
+            document.getElementById('dateInput').value = formatDate(currentDate);
+            loadGames();
         }
 
-        async function testGames() {
-            await makeRequest('/api/games?limit=5');
+        function changeDate(days) {
+            currentDate.setDate(currentDate.getDate() + days);
+            document.getElementById('dateInput').value = formatDate(currentDate);
+            loadGames();
         }
 
-        async function testTeams() {
-            await makeRequest('/api/teams?limit=5');
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
         }
 
-        async function testPlayers() {
-            await makeRequest('/api/players?limit=5');
+        function formatDisplayDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
         }
 
-        async function testMetrics() {
-            await makeRequest('/metrics');
+        function formatTime(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         }
+
+        // Load all leagues from API (using local proxy with caching)
+        async function loadAllLeagues() {
+            const leaguesList = document.getElementById('allLeaguesList');
+            
+            try {
+                console.log('Loading leagues...');
+                const result = await cachedFetch(`${API_BASE}/leagues`, 'leagues');
+                
+                if (result.data && Array.isArray(result.data)) {
+                    allLeagues = result.data;
+                    renderLeaguesSidebar();
+                } else {
+                    throw new Error('Invalid response');
+                }
+            } catch (error) {
+                console.error('Error loading leagues:', error);
+                leaguesList.innerHTML = `
+                    <div style="padding: 15px; text-align: center; color: var(--text-muted);">
+                        <i class="fas fa-exclamation-circle"></i> Ошибка загрузки лиг
+                    </div>
+                `;
+            }
+        }
+
+        // Render leagues sidebar
+        function renderLeaguesSidebar(searchTerm = '') {
+            const leaguesList = document.getElementById('allLeaguesList');
+            
+            // Filter leagues if search term provided
+            let filteredLeagues = allLeagues;
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                filteredLeagues = allLeagues.filter(league => 
+                    league.name?.toLowerCase().includes(term) ||
+                    league.country?.name?.toLowerCase().includes(term)
+                );
+            }
+
+            // Sort by country and name
+            const sortedLeagues = [...filteredLeagues].sort((a, b) => {
+                const countryA = a.country?.name || '';
+                const countryB = b.country?.name || '';
+                if (countryA !== countryB) return countryA.localeCompare(countryB);
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+            // Limit to first 100 for performance
+            const displayLeagues = sortedLeagues.slice(0, 100);
+
+            leaguesList.innerHTML = `
+                <div class="sidebar-search">
+                    <input type="text" placeholder="Поиск лиги..." oninput="searchLeagues(this.value)" value="${searchTerm}">
+                </div>
+                ${displayLeagues.length === 0 ? `
+                    <div style="padding: 15px; text-align: center; color: var(--text-muted);">
+                        Лиги не найдены
+                    </div>
+                ` : displayLeagues.map(league => `
+                    <div class="sidebar-item ${currentLeague == league.id ? 'active' : ''}" data-league="${league.id}" onclick="selectLeague(${league.id})">
+                        <img src="${getCountryFlag(league.country?.name || '')}" alt="">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${league.name || 'Unknown'}</div>
+                            <div class="league-item-country">${league.country?.name || ''}</div>
+                        </div>
+                    </div>
+                `).join('')}
+                ${sortedLeagues.length > 100 ? `
+                    <div style="padding: 10px; text-align: center; color: var(--text-muted); font-size: 0.85em;">
+                        Показано 100 из ${sortedLeagues.length}. Используйте поиск.
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Search leagues
+        function searchLeagues(term) {
+            renderLeaguesSidebar(term);
+        }
+
+        // Select league from sidebar
+        function selectLeague(leagueId) {
+            currentLeague = leagueId;
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll(`.sidebar-item[data-league="${leagueId}"]`).forEach(i => i.classList.add('active'));
+            currentPage = 1;
+            loadGames();
+        }
+
+        // Load countries for sidebar
+        async function loadCountries() {
+            const countriesList = document.getElementById('countriesList');
+            
+            // Static list of major countries
+            const countries = [
+                { code: 'gb-eng', name: 'England' },
+                { code: 'es', name: 'Spain' },
+                { code: 'it', name: 'Italy' },
+                { code: 'de', name: 'Germany' },
+                { code: 'fr', name: 'France' },
+                { code: 'pt', name: 'Portugal' },
+                { code: 'nl', name: 'Netherlands' },
+                { code: 'ru', name: 'Russia' },
+                { code: 'tr', name: 'Turkey' },
+                { code: 'br', name: 'Brazil' },
+                { code: 'ar', name: 'Argentina' },
+                { code: 'us', name: 'USA' },
+                { code: 'mx', name: 'Mexico' },
+                { code: 'jp', name: 'Japan' },
+                { code: 'cn', name: 'China' },
+                { code: 'au', name: 'Australia' },
+                { code: 'sa', name: 'Saudi Arabia' },
+                { code: 'ae', name: 'UAE' }
+            ];
+
+            countriesList.innerHTML = countries.map(c => `
+                <div class="sidebar-item" data-country="${c.name}" onclick="filterByCountry('${c.name}')">
+                    <img src="https://flagcdn.com/w20/${c.code}.png" alt="${c.name}">
+                    <span>${c.name}</span>
+                </div>
+            `).join('');
+        }
+
+        // Filter leagues by country
+        function filterByCountry(countryName) {
+            const searchInput = document.querySelector('#allLeaguesList .sidebar-search input');
+            if (searchInput) {
+                searchInput.value = countryName;
+            }
+            searchLeagues(countryName);
+            
+            // Toggle section to show leagues
+            const leaguesContent = document.getElementById('allLeaguesList');
+            leaguesContent.style.maxHeight = '400px';
+        }
+
+        // Current filter state
+        let currentFilters = {
+            team: null,
+            period: 'day',
+            dateFrom: null,
+            dateTo: null
+        };
+
+        // Load games from API (using local proxy with caching)
+        async function loadGames() {
+            const gamesList = document.getElementById('gamesList');
+            gamesList.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner spinner"></i>
+                    <div>Загрузка матчей...</div>
+                </div>
+            `;
+
+            try {
+                const dateStr = document.getElementById('dateInput').value;
+                const periodSelect = document.getElementById('periodSelect').value;
+                
+                // Build API URL based on filters - using local proxy
+                let url = `${API_BASE}/games/list?`;
+                let params = [];
+
+                // Period/date filters
+                switch (periodSelect) {
+                    case 'today':
+                        params.push('today=true');
+                        break;
+                    case 'live':
+                        params.push('Live=true');
+                        break;
+                    case 'upcoming':
+                        params.push('Upcoming=true');
+                        break;
+                    case 'ended':
+                        // Get ended games without date filter (use Year filter instead)
+                        params.push('Ended=true');
+                        params.push('Order=-1');
+                        break;
+                    case 'range':
+                        const dateFrom = document.getElementById('dateFromInput').value;
+                        const dateTo = document.getElementById('dateToInput').value;
+                        if (dateFrom && dateTo) {
+                            params.push(`From=${dateFrom}T00:00:00`);
+                            params.push(`To=${dateTo}T23:59:59`);
+                        } else {
+                            params.push(`Date=${dateStr}`);
+                        }
+                        break;
+                    default:
+                        params.push(`Date=${dateStr}`);
+                }
+
+                // TimeZone
+                params.push('TimeZone=3');
+
+                // League filter
+                if (currentLeague) {
+                    params.push(`LeagueId=${currentLeague}`);
+                }
+
+                // Team search filter
+                if (currentFilters.team) {
+                    params.push(`Team=${currentFilters.team}`);
+                }
+
+                // Always include odds for all games
+                params.push('IncludeOdds=true');
+
+                // Year filter
+                const yearFilter = document.getElementById('yearSelect').value;
+                if (yearFilter) {
+                    params.push(`Year=${yearFilter}`);
+                }
+
+                // Pagination
+                params.push(`Limit=${pageSize}`);
+                const offset = (currentPage - 1) * pageSize;
+                if (offset > 0) {
+                    params.push(`Offset=${offset}`);
+                }
+
+                url += params.join('&');
+
+                console.log('Loading games from:', url);
+
+                const result = await cachedFetch(url, periodSelect === 'live' ? 'games-live' : 'games-list');
+
+                // Handle response - local proxy returns { success, data, total }
+                const games = result.data || result;
+                if (Array.isArray(games)) {
+                    allGames = games;
+                    totalGames = result.total || games.length;
+                    console.log(`Loaded ${games.length} games, fromCache: ${result.fromCache || false}`);
+                    renderGames();
+                    updateActiveFiltersDisplay();
+                    updatePagination();
+                    
+                    // Load odds for games that don't have them (async, non-blocking)
+                    loadMissingOdds(games);
+                } else {
+                    throw new Error('No data received');
+                }
+            } catch (error) {
+                console.error('Error loading games:', error);
+                gamesList.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--danger-color);"></i>
+                        <div>Ошибка загрузки данных</div>
+                        <div style="font-size: 0.9em; margin-top: 5px; color: var(--text-muted);">${error.message}</div>
+                        <button class="filter-btn" onclick="loadGames()" style="margin-top: 10px;">
+                            <i class="fas fa-redo"></i> Повторить
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Handle period change
+        function handlePeriodChange() {
+            const period = document.getElementById('periodSelect').value;
+            const dateRangeGroup = document.querySelector('.date-range-group');
+            
+            if (period === 'range') {
+                dateRangeGroup.style.display = 'flex';
+            } else {
+                dateRangeGroup.style.display = 'none';
+                loadGames();
+            }
+        }
+
+        // Load games for date range
+        function loadGamesRange() {
+            loadGames();
+        }
+
+        // Team search handler
+        function handleTeamSearch(event) {
+            if (event.key === 'Enter') {
+                searchByTeam();
+            }
+        }
+
+        // Handle year filter change
+        function handleYearChange() {
+            currentPage = 1;
+            loadGames();
+        }
+
+        // Search by team name or game ID
+        async function searchByTeam() {
+            const searchInput = document.getElementById('teamSearchInput').value.trim();
+            
+            if (!searchInput) {
+                currentFilters.team = null;
+                loadGames();
+                return;
+            }
+
+            const gamesList = document.getElementById('gamesList');
+            gamesList.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner spinner"></i>
+                    <div>Поиск "${searchInput}"...</div>
+                </div>
+            `;
+
+            try {
+                // Check if input is a game ID (numeric)
+                if (/^\d+$/.test(searchInput)) {
+                    // Search by game ID - navigate directly
+                    window.location.href = `/game.html?id=${searchInput}`;
+                    return;
+                }
+
+                // First, try to search for games with team name in the response
+                // Since API doesn't support text search, we'll load games and filter client-side
+                // Or use the Team ID if we can find it
+                
+                const dateStr = document.getElementById('dateInput').value;
+                const url = `${API_BASE}/games/list?Date=${dateStr}&TimeZone=3&Limit=1000`;
+                
+                const result = await cachedFetch(url, 'games-list');
+                const games = result.data || result;
+
+                if (Array.isArray(games)) {
+                    // Filter by team name on client side
+                    const searchLower = searchInput.toLowerCase();
+                    allGames = games.filter(game => {
+                        const homeTeam = (game.homeTeam?.name || game.HomeTeamName || '').toLowerCase();
+                        const awayTeam = (game.awayTeam?.name || game.AwayTeamName || '').toLowerCase();
+                        return homeTeam.includes(searchLower) || awayTeam.includes(searchLower);
+                    });
+                    
+                    currentFilters.team = searchInput;
+                    renderGames();
+                    updateActiveFiltersDisplay();
+                    updatePagination();
+                } else {
+                    throw new Error('No data received');
+                }
+            } catch (error) {
+                console.error('Error searching:', error);
+                gamesList.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--danger-color);"></i>
+                        <div>Ошибка поиска</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Reset all filters
+        function resetFilters() {
+            // Reset filter state
+            currentFilters = {
+                team: null,
+                period: 'day',
+                dateFrom: null,
+                dateTo: null
+            };
+            currentLeague = null;
+            currentStatus = 'all';
+            currentPage = 1;
+
+            // Reset UI
+            document.getElementById('teamSearchInput').value = '';
+            document.getElementById('periodSelect').value = 'day';
+            document.getElementById('yearSelect').value = '2025';
+            document.querySelector('.date-range-group').style.display = 'none';
+            
+            // Reset status buttons
+            document.querySelectorAll('[data-status]').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.status === 'all') btn.classList.add('active');
+            });
+
+            // Reset league selection
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Reset league search
+            const leagueSearchInput = document.querySelector('#allLeaguesList .sidebar-search input');
+            if (leagueSearchInput) {
+                leagueSearchInput.value = '';
+                renderLeaguesSidebar();
+            }
+
+            // Set today's date
+            setToday();
+        }
+
+        // Update active filters display
+        function updateActiveFiltersDisplay() {
+            const container = document.getElementById('activeFiltersDisplay');
+            const list = document.getElementById('activeFiltersList');
+            const filters = [];
+
+            // Check active filters
+            if (currentLeague) {
+                filters.push({ type: 'league', label: `Лига: ${currentLeague}`, value: currentLeague });
+            }
+            if (currentFilters.team) {
+                filters.push({ type: 'team', label: `Команда: ${currentFilters.team}`, value: currentFilters.team });
+            }
+            if (currentStatus !== 'all') {
+                const statusLabels = { live: 'Live', finished: 'Завершённые', upcoming: 'Предстоящие' };
+                filters.push({ type: 'status', label: statusLabels[currentStatus], value: currentStatus });
+            }
+
+            const period = document.getElementById('periodSelect').value;
+            if (period !== 'day') {
+                const periodLabels = { today: 'Сегодня (API)', range: 'Диапазон дат', live: 'Только Live', upcoming: 'Только предстоящие', ended: 'Только завершённые' };
+                filters.push({ type: 'period', label: periodLabels[period], value: period });
+            }
+
+            const yearFilter = document.getElementById('yearSelect').value;
+            if (yearFilter) {
+                filters.push({ type: 'year', label: `Год: ${yearFilter}`, value: yearFilter });
+            }
+
+            if (filters.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            list.innerHTML = filters.map(f => `
+                <span class="active-filter-tag">
+                    ${f.label}
+                    <button onclick="removeFilter('${f.type}')">&times;</button>
+                </span>
+            `).join('');
+        }
+
+        // Remove a specific filter
+        function removeFilter(type) {
+            switch (type) {
+                case 'league':
+                    currentLeague = null;
+                    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                    break;
+                case 'team':
+                    currentFilters.team = null;
+                    document.getElementById('teamSearchInput').value = '';
+                    break;
+                case 'status':
+                    currentStatus = 'all';
+                    document.querySelectorAll('[data-status]').forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.dataset.status === 'all') btn.classList.add('active');
+                    });
+                    break;
+                case 'period':
+                    document.getElementById('periodSelect').value = 'day';
+                    document.querySelector('.date-range-group').style.display = 'none';
+                    break;
+                case 'year':
+                    document.getElementById('yearSelect').value = '';
+                    break;
+            }
+            currentPage = 1;
+            loadGames();
+        }
+
+        // Filter games by status
+        function filterByStatus(games) {
+            if (currentStatus === 'all') return games;
+            
+            return games.filter(game => {
+                const status = game.Status || game.status;
+                switch (currentStatus) {
+                    case 'live':
+                        return [3, 4, 5, 6, 7, 11, 18, 19].includes(status);
+                    case 'finished':
+                        return [8, 9, 10, 17, 18].includes(status);
+                    case 'upcoming':
+                        return [1, 2].includes(status);
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        // Render games
+        function renderGames() {
+            const gamesList = document.getElementById('gamesList');
+            let games = filterByStatus(allGames);
+
+            if (games.length === 0) {
+                gamesList.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-calendar-times"></i>
+                        <div>Нет матчей для выбранной даты</div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (currentView === 'leagues') {
+                renderByLeagues(games);
+            } else {
+                renderByTime(games);
+            }
+        }
+
+        // Render games grouped by leagues
+        function renderByLeagues(games) {
+            const gamesList = document.getElementById('gamesList');
+            
+            // Group by league
+            const leagueGroups = {};
+            games.forEach(game => {
+                const leagueName = game.season?.league?.name || game.LeagueName || game.Season?.League?.Name || 'Unknown League';
+                const countryName = game.season?.league?.country?.name || game.CountryName || game.Season?.League?.Country?.Name || '';
+                const key = `${countryName}|${leagueName}`;
+                
+                if (!leagueGroups[key]) {
+                    leagueGroups[key] = {
+                        league: leagueName,
+                        country: countryName,
+                        games: []
+                    };
+                }
+                leagueGroups[key].games.push(game);
+            });
+
+            // Sort leagues by country and name
+            const sortedLeagues = Object.values(leagueGroups).sort((a, b) => {
+                if (a.country !== b.country) return a.country.localeCompare(b.country);
+                return a.league.localeCompare(b.league);
+            });
+
+            gamesList.innerHTML = sortedLeagues.map(group => `
+                <div class="games-section">
+                    <div class="league-header">
+                        <img class="league-flag" src="${getCountryFlag(group.country)}" alt="${group.country}">
+                        <span class="league-country">${group.country}:</span>
+                        <span class="league-name">${group.league}</span>
+                        <span class="league-count">${group.games.length}</span>
+                    </div>
+                    <div class="games-table">
+                        ${group.games.map(game => renderGameRow(game)).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render games by time
+        function renderByTime(games) {
+            const gamesList = document.getElementById('gamesList');
+            
+            // Sort by time
+            const sortedGames = [...games].sort((a, b) => {
+                const dateA = new Date(a.Date || a.date);
+                const dateB = new Date(b.Date || b.date);
+                return dateA - dateB;
+            });
+
+            gamesList.innerHTML = `
+                <div class="games-section">
+                    <div class="games-table">
+                        ${sortedGames.map(game => renderGameRow(game, true)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Parse odds from API response (array format)
+        // Supports: direct odds object, market array from Games/list, and bookmaker array from Odds endpoint
+        function parseOdds(oddsData) {
+            if (!oddsData) return { home: '-', draw: '-', away: '-' };
+            
+            // If already parsed format (simple object)
+            if (oddsData.winner1 || oddsData.home) {
+                return {
+                    home: oddsData.winner1 || oddsData.home || '-',
+                    draw: oddsData.winnerX || oddsData.draw || '-',
+                    away: oddsData.winner2 || oddsData.away || '-'
+                };
+            }
+            
+            // Array format from API
+            if (Array.isArray(oddsData) && oddsData.length > 0) {
+                // Check if it's bookmaker array (from /Odds endpoint)
+                if (oddsData[0].bookmakerId !== undefined) {
+                    // Try to find odds from preferred bookmakers in order
+                    const preferredBookmakers = [8, 4, 11, 2, 1]; // Bet365, Pinnacle, 1xBet, Marathonbet, 10Bet
+                    for (const bmId of preferredBookmakers) {
+                        const bookmaker = oddsData.find(b => b.bookmakerId === bmId);
+                        if (bookmaker && bookmaker.odds) {
+                            const market1 = bookmaker.odds.find(m => m.marketId === 1);
+                            if (market1 && market1.odds) {
+                                const homeOdd = market1.odds.find(o => o.name === 'Home');
+                                const drawOdd = market1.odds.find(o => o.name === 'Draw');
+                                const awayOdd = market1.odds.find(o => o.name === 'Away');
+                                if (homeOdd || drawOdd || awayOdd) {
+                                    return {
+                                        home: homeOdd?.value?.toFixed(2) || '-',
+                                        draw: drawOdd?.value?.toFixed(2) || '-',
+                                        away: awayOdd?.value?.toFixed(2) || '-'
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    // Fallback: use first available bookmaker with 1X2 market
+                    for (const bookmaker of oddsData) {
+                        if (bookmaker.odds) {
+                            const market1 = bookmaker.odds.find(m => m.marketId === 1);
+                            if (market1 && market1.odds) {
+                                const homeOdd = market1.odds.find(o => o.name === 'Home');
+                                const drawOdd = market1.odds.find(o => o.name === 'Draw');
+                                const awayOdd = market1.odds.find(o => o.name === 'Away');
+                                if (homeOdd || drawOdd || awayOdd) {
+                                    return {
+                                        home: homeOdd?.value?.toFixed(2) || '-',
+                                        draw: drawOdd?.value?.toFixed(2) || '-',
+                                        away: awayOdd?.value?.toFixed(2) || '-'
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Market array format from Games/list - find market 1 (1X2)
+                const market1 = oddsData.find(m => m.marketId === 1);
+                if (market1 && market1.odds) {
+                    const homeOdd = market1.odds.find(o => o.name === 'Home');
+                    const drawOdd = market1.odds.find(o => o.name === 'Draw');
+                    const awayOdd = market1.odds.find(o => o.name === 'Away');
+                    return {
+                        home: homeOdd?.value?.toFixed(2) || '-',
+                        draw: drawOdd?.value?.toFixed(2) || '-',
+                        away: awayOdd?.value?.toFixed(2) || '-'
+                    };
+                }
+            }
+            
+            return { home: '-', draw: '-', away: '-' };
+        }
+
+        // Load odds for games that don't have them (fallback from multiple bookmakers)
+        async function loadMissingOdds(games) {
+            const gamesWithoutOdds = games.filter(g => {
+                const odds = parseOdds(g.odds);
+                return odds.home === '-' && odds.draw === '-' && odds.away === '-';
+            });
+            
+            if (gamesWithoutOdds.length === 0) return;
+            
+            console.log(`Loading odds for ${gamesWithoutOdds.length} games without odds...`);
+            
+            // Load odds in parallel (max 5 at a time to avoid rate limiting)
+            const batchSize = 5;
+            for (let i = 0; i < gamesWithoutOdds.length; i += batchSize) {
+                const batch = gamesWithoutOdds.slice(i, i + batchSize);
+                await Promise.all(batch.map(async (game) => {
+                    const gameId = game.id || game.Id;
+                    try {
+                        const result = await cachedFetch(`${API_BASE}/odds/${gameId}`, 'odds');
+                        if (result.data && result.data.length > 0) {
+                            // Find the game in allGames and update its odds
+                            const gameIndex = allGames.findIndex(g => (g.id || g.Id) === gameId);
+                            if (gameIndex !== -1) {
+                                allGames[gameIndex].odds = result.data;
+                            }
+                        }
+                    } catch (err) {
+                        console.log(`Failed to load odds for game ${gameId}`);
+                    }
+                }));
+            }
+            
+            // Re-render games with updated odds
+            renderGames();
+        }
+
+        // Render single game row
+        function renderGameRow(game, showLeague = false) {
+            const gameId = game.id || game.Id;
+            const homeTeam = game.homeTeam?.name || game.HomeTeamName || game.HomeTeam?.Name || 'Home';
+            const awayTeam = game.awayTeam?.name || game.AwayTeamName || game.AwayTeam?.Name || 'Away';
+            const homeScore = game.homeFTResult ?? game.homeResult ?? game.ScoreHomeFT ?? '-';
+            const awayScore = game.awayFTResult ?? game.awayResult ?? game.ScoreAwayFT ?? '-';
+            const homeScoreHT = game.homeHTResult ?? game.ScoreHomeHT;
+            const awayScoreHT = game.awayHTResult ?? game.ScoreAwayHT;
+            const date = game.date || game.Date;
+            const status = game.status || game.Status;
+            const odds = parseOdds(game.odds);
+            
+            const statusInfo = getStatusInfo(status);
+            const time = formatTime(date);
+            const halfScore = (homeScoreHT !== undefined && homeScoreHT !== null && awayScoreHT !== undefined && awayScoreHT !== null) 
+                ? `(${homeScoreHT}:${awayScoreHT})` : '';
+
+            const leagueInfo = showLeague ? `
+                <div style="font-size: 0.8em; color: var(--text-muted); margin-bottom: 5px;">
+                    ${game.season?.league?.country?.name || game.CountryName || ''} - ${game.season?.league?.name || game.LeagueName || ''}
+                </div>
+            ` : '';
+
+            return `
+                <div class="game-row" onclick="openGameModal(${gameId})">
+                    <div class="game-time">
+                        <div class="time">${time}</div>
+                        ${statusInfo.isLive ? `<span class="game-status status-live">${statusInfo.text}</span>` : ''}
+                        ${status >= 8 && status <= 18 ? `<span class="game-status status-finished">FT</span>` : ''}
+                    </div>
+                    <div class="team home">
+                        <span class="team-name">${homeTeam}</span>
+                    </div>
+                    <div class="score-box">
+                        <span class="score">${homeScore}</span>
+                        <span class="score-separator">-</span>
+                        <span class="score">${awayScore}</span>
+                        ${halfScore ? `<div class="half-score">${halfScore}</div>` : ''}
+                    </div>
+                    <div class="team away">
+                        <span class="team-name">${awayTeam}</span>
+                    </div>
+                    <div class="odds-box">
+                        <div class="odd home">
+                            <span class="odd-label">1</span>
+                            <span class="odd-value">${odds.home}</span>
+                        </div>
+                        <div class="odd draw">
+                            <span class="odd-label">X</span>
+                            <span class="odd-value">${odds.draw}</span>
+                        </div>
+                        <div class="odd away">
+                            <span class="odd-label">2</span>
+                            <span class="odd-value">${odds.away}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get status info
+        function getStatusInfo(status) {
+            const statuses = {
+                1: { text: 'NS', isLive: false },
+                2: { text: 'NS', isLive: false },
+                3: { text: '1T', isLive: true },
+                4: { text: 'HT', isLive: true },
+                5: { text: '2T', isLive: true },
+                6: { text: 'ET', isLive: true },
+                7: { text: 'PEN', isLive: true },
+                8: { text: 'FT', isLive: false },
+                9: { text: 'AET', isLive: false },
+                10: { text: 'AP', isLive: false },
+                11: { text: 'HT', isLive: true },
+                12: { text: 'SUSP', isLive: false },
+                13: { text: 'INT', isLive: false },
+                14: { text: 'PP', isLive: false },
+                15: { text: 'CAN', isLive: false },
+                17: { text: 'W/O', isLive: false },
+                18: { text: 'AWD', isLive: false },
+                19: { text: 'LIVE', isLive: true }
+            };
+            return statuses[status] || { text: 'NS', isLive: false };
+        }
+
+        // Get country flag URL
+        function getCountryFlag(country) {
+            const flagCodes = {
+                'England': 'gb-eng',
+                'Spain': 'es',
+                'Italy': 'it',
+                'Germany': 'de',
+                'France': 'fr',
+                'Portugal': 'pt',
+                'Netherlands': 'nl',
+                'Russia': 'ru',
+                'Turkey': 'tr',
+                'Brazil': 'br',
+                'Argentina': 'ar',
+                'USA': 'us',
+                'Scotland': 'gb-sct',
+                'Wales': 'gb-wls',
+                'Belgium': 'be',
+                'Austria': 'at',
+                'Switzerland': 'ch',
+                'Poland': 'pl',
+                'Ukraine': 'ua',
+                'Greece': 'gr',
+                'World': 'un',
+                'Europe': 'eu'
+            };
+            
+            const code = flagCodes[country] || 'un';
+            return `https://flagcdn.com/w20/${code}.png`;
+        }
+
+        // Open game modal or navigate to game page
+        async function openGameModal(gameId) {
+            // Option 1: Navigate to game details page
+            window.location.href = `/game.html?id=${gameId}`;
+            return;
+            
+            // Option 2: Open modal (commented out)
+            /*
+            const modal = document.getElementById('gameModal');
+            modal.classList.add('active');
+
+            // Reset tabs
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('.modal-tab[data-tab="summary"]').classList.add('active');
+            document.getElementById('tab-summary').classList.add('active');
+
+            // Find game in loaded data
+            const game = allGames.find(g => (g.Id || g.id) == gameId);
+            
+            if (game) {
+                const homeTeam = game.HomeTeamName || game.HomeTeam?.Name || 'Home';
+                const awayTeam = game.AwayTeamName || game.AwayTeam?.Name || 'Away';
+                const homeScore = game.ScoreHomeFT ?? game.HomeResult ?? '-';
+                const awayScore = game.ScoreAwayFT ?? game.AwayResult ?? '-';
+                const homeScoreHT = game.ScoreHomeHT ?? game.HomeResultHT;
+                const awayScoreHT = game.ScoreAwayHT ?? game.AwayResultHT;
+                const status = getStatusInfo(game.Status || game.status);
+                
+                // Update modal header
+                document.getElementById('modalLeagueInfo').textContent = 
+                    `${game.CountryName || ''} - ${game.LeagueName || ''}`;
+                document.getElementById('modalHomeTeamName').textContent = homeTeam;
+                document.getElementById('modalAwayTeamName').textContent = awayTeam;
+                document.getElementById('modalScore').textContent = `${homeScore} - ${awayScore}`;
+                document.getElementById('modalHalfScore').textContent = 
+                    homeScoreHT !== undefined ? `Первый тайм: ${homeScoreHT} - ${awayScoreHT}` : '';
+                document.getElementById('modalStatus').innerHTML = 
+                    `<span class="game-status ${status.isLive ? 'status-live' : 'status-finished'}">${status.text}</span>`;
+                
+                // Update team names in stats
+                document.getElementById('summaryHomeTeam').textContent = homeTeam;
+                document.getElementById('summaryAwayTeam').textContent = awayTeam;
+                document.getElementById('summaryHomeTeam2').textContent = homeTeam;
+                document.getElementById('summaryAwayTeam2').textContent = awayTeam;
+
+                // Load detailed stats
+                loadGameDetails(gameId, homeTeam, awayTeam);
+            }
+        }
+
+        // Close modal
+        function closeGameModal() {
+            document.getElementById('gameModal').classList.remove('active');
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target === document.getElementById('gameModal')) {
+                closeGameModal();
+            }
+        }
+
+        // Load game details
+        async function loadGameDetails(gameId, homeTeam, awayTeam) {
+            // Reset loading state
+            document.getElementById('homeProfit').innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i></div>';
+            document.getElementById('awayProfit').innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i></div>';
+            document.getElementById('homeStats').innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i></div>';
+            document.getElementById('awayStats').innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i></div>';
+
+            try {
+                // Try to get text summary from API using local proxy
+                const summaryData = await cachedFetch(`${API_BASE}/games/text-summary?id=${gameId}&limit=10&sameLeague=true`, 'text-summary');
+
+                if (summaryData.data) {
+                    renderSummaryData(summaryData.data, homeTeam, awayTeam);
+                } else {
+                    renderPlaceholderStats(homeTeam, awayTeam);
+                }
+            } catch (error) {
+                console.error('Error loading game details:', error);
+                renderPlaceholderStats(homeTeam, awayTeam);
+            }
+        }
+
+        // Render summary data
+        function renderSummaryData(data, homeTeam, awayTeam) {
+            // Home team profit
+            if (data.homeProfit) {
+                document.getElementById('homeProfit').innerHTML = renderProfitTable(data.homeProfit);
+            }
+            
+            // Away team profit
+            if (data.awayProfit) {
+                document.getElementById('awayProfit').innerHTML = renderProfitTable(data.awayProfit);
+            }
+
+            // Home team stats
+            if (data.homeStats) {
+                document.getElementById('homeStats').innerHTML = renderTeamStats(data.homeStats);
+            }
+
+            // Away team stats
+            if (data.awayStats) {
+                document.getElementById('awayStats').innerHTML = renderTeamStats(data.awayStats);
+            }
+        }
+
+        // Render profit table
+        function renderProfitTable(profit) {
+            const rows = [
+                { label: 'Победа', key: 'win' },
+                { label: 'Ничья', key: 'draw' },
+                { label: 'Поражение', key: 'loss' },
+                { label: 'Победа или ничья', key: 'winOrDraw' },
+                { label: 'Победа или поражение', key: 'winOrLoss' },
+                { label: 'Поражение или ничья', key: 'lossOrDraw' }
+            ];
+
+            return `
+                <table class="profit-table">
+                    <thead>
+                        <tr>
+                            <th>Тип ставки</th>
+                            <th>Прибыль</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => {
+                            const value = profit[row.key] || 0;
+                            const className = value >= 0 ? 'profit-positive' : 'profit-negative';
+                            return `
+                                <tr>
+                                    <td>${row.label}</td>
+                                    <td class="${className}">${value >= 0 ? '+' : ''}${value.toFixed(2)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Render team stats
+        function renderTeamStats(stats) {
+            const rows = [
+                { label: '% побед', key: 'winPercent', suffix: '%' },
+                { label: '% ничьих', key: 'drawPercent', suffix: '%' },
+                { label: '% поражений', key: 'lossPercent', suffix: '%' },
+                { label: 'Голов забито', key: 'goalsScored' },
+                { label: 'Голов пропущено', key: 'goalsConceded' },
+                { label: 'Средний коэф. на победу', key: 'avgWinOdds' },
+                { label: 'Ударов нанесено', key: 'shotsFor' },
+                { label: 'Угловых', key: 'corners' }
+            ];
+
+            return rows.map(row => {
+                const value = stats[row.key];
+                if (value === undefined) return '';
+                const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
+                return `
+                    <div class="stat-row">
+                        <span class="stat-label">${row.label}</span>
+                        <span class="stat-value">${displayValue}${row.suffix || ''}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render placeholder stats
+        function renderPlaceholderStats(homeTeam, awayTeam) {
+            const placeholderProfit = `
+                <table class="profit-table">
+                    <tbody>
+                        <tr><td>Победа</td><td>-</td></tr>
+                        <tr><td>Ничья</td><td>-</td></tr>
+                        <tr><td>Поражение</td><td>-</td></tr>
+                    </tbody>
+                </table>
+            `;
+
+            const placeholderStats = `
+                <div class="stat-row"><span class="stat-label">Данные загружаются...</span></div>
+            `;
+
+            document.getElementById('homeProfit').innerHTML = placeholderProfit;
+            document.getElementById('awayProfit').innerHTML = placeholderProfit;
+            document.getElementById('homeStats').innerHTML = placeholderStats;
+            document.getElementById('awayStats').innerHTML = placeholderStats;
+        }
+
+        */
+        }
+
+        // Teams Search from /Teams/list API
+        function handleTeamsSearchInput(event) {
+            if (event.key === 'Enter') {
+                searchTeams();
+            }
+        }
+
+        async function searchTeams() {
+            const searchInput = document.getElementById('teamsSearchInput').value.trim();
+            const resultsContainer = document.getElementById('teamsSearchResults');
+            
+            if (!searchInput || searchInput.length < 2) {
+                resultsContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted);">Введите минимум 2 символа</div>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '<div class="loading" style="padding:20px;"><i class="fas fa-spinner spinner"></i> Поиск команд...</div>';
+
+            try {
+                const result = await cachedFetch(`${API_BASE}/teams/list?Name=${encodeURIComponent(searchInput)}&Limit=20`, 'teams');
+                const teams = result.data || result;
+
+                if (Array.isArray(teams) && teams.length > 0) {
+                    resultsContainer.innerHTML = teams.map(team => `
+                        <div class="sidebar-item" onclick="selectTeamForSearch(${team.id}, '${team.name?.replace(/'/g, "\\'")}')">
+                            <img src="${getCountryFlag(team.country?.name || '')}" alt="" style="width:20px;height:15px;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">${team.name || 'Unknown'}</div>
+                                <div style="font-size:0.75em;color:var(--text-muted);">${team.country?.name || ''}</div>
+                            </div>
+                        </div>
+                    `).join('') + `<div style="padding:10px;font-size:0.8em;color:var(--text-muted);text-align:center;">
+                        <strong>API:</strong> /Teams/list?Name=${searchInput}
+                    </div>`;
+                } else {
+                    resultsContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-search"></i> Команды не найдены</div>';
+                }
+            } catch (error) {
+                console.error('Error searching teams:', error);
+                resultsContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);"><i class="fas fa-exclamation-triangle"></i> Ошибка поиска</div>';
+            }
+        }
+
+        function selectTeamForSearch(teamId, teamName) {
+            document.getElementById('teamSearchInput').value = teamName;
+            currentFilters.team = teamId;
+            currentPage = 1;
+            loadGames();
+            updateActiveFiltersDisplay();
+        }
+
+        // Players Search from /Players/find API
+        function handlePlayersSearchInput(event) {
+            if (event.key === 'Enter') {
+                searchPlayers();
+            }
+        }
+
+        async function searchPlayers() {
+            const searchInput = document.getElementById('playersSearchInput').value.trim();
+            const resultsContainer = document.getElementById('playersSearchResults');
+            
+            if (!searchInput || searchInput.length < 1) {
+                resultsContainer.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Введите имя игрока</div>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '<div class="loading" style="padding:20px;"><i class="fas fa-spinner spinner"></i> Поиск игроков...</div>';
+
+            try {
+                const result = await cachedFetch(`${API_BASE}/players/find?name=${encodeURIComponent(searchInput)}`, 'players');
+                const players = result.data || result;
+
+                if (Array.isArray(players) && players.length > 0) {
+                    resultsContainer.innerHTML = players.slice(0, 15).map(player => `
+                        <div class="sidebar-item" style="cursor:default;">
+                            <div style="width:35px;height:35px;background:var(--primary-color);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8em;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">${player.name || 'Unknown'}</div>
+                                <div style="font-size:0.75em;color:var(--text-muted);">
+                                    ${player.team?.name || player.currentTeam?.name || 'Нет команды'}
+                                    ${player.position ? ` • ${player.position}` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('') + `
+                    ${players.length > 15 ? `<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.85em;">Показано 15 из ${players.length}</div>` : ''}
+                    <div style="padding:10px;font-size:0.8em;color:var(--text-muted);text-align:center;">
+                        <strong>API:</strong> /Players/find?name=${searchInput}
+                    </div>`;
+                } else {
+                    resultsContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-search"></i> Игроки не найдены</div>';
+                }
+            } catch (error) {
+                console.error('Error searching players:', error);
+                resultsContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);"><i class="fas fa-exclamation-triangle"></i> Ошибка поиска</div>';
+            }
+        }
+
+        // Pagination functions
+        function updatePagination() {
+            const paginationContainer = document.getElementById('pagination');
+            const paginationInfo = document.getElementById('paginationInfo');
+            const pageIndicator = document.getElementById('pageIndicator');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+
+            // Calculate total pages
+            const filteredGames = filterByStatus(allGames);
+            const displayedCount = filteredGames.length;
+            const totalPages = Math.ceil(totalGames / pageSize);
+
+            // Show/hide pagination
+            if (totalGames > pageSize || allGames.length >= pageSize) {
+                paginationContainer.style.display = 'flex';
+                
+                // Update info
+                const startItem = (currentPage - 1) * pageSize + 1;
+                const endItem = Math.min(currentPage * pageSize, totalGames);
+                paginationInfo.innerHTML = `Показано ${startItem}-${endItem} из ${totalGames} матчей`;
+                
+                // Update page indicator
+                pageIndicator.textContent = `Страница ${currentPage}`;
+                
+                // Enable/disable buttons
+                prevBtn.disabled = currentPage <= 1;
+                nextBtn.disabled = allGames.length < pageSize;
+                
+                prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+                nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+            } else {
+                paginationContainer.style.display = 'none';
+            }
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage < 1) return;
+            if (delta > 0 && allGames.length < pageSize) return; // No more pages
+            
+            currentPage = newPage;
+            loadGames();
+            
+            // Scroll to top of games list
+            document.getElementById('gamesList').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeGameModal();
+            }
+        });
     </script>
 </body>
 </html>

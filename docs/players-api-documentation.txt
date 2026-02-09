@@ -1,0 +1,186 @@
+================================================================================
+PLAYERS API DOCUMENTATION
+================================================================================
+
+Endpoints:
+  - GET /api/players/find
+  - GET /api/players/:id/events
+
+Description: Работа с игроками и их событиями
+Version: 1.0.0
+Date: 2026-01-31
+
+================================================================================
+ENDPOINT 1: PLAYER SEARCH
+================================================================================
+
+GET /api/players/find
+---------------------
+
+Description: Поиск футболистов по имени или части имени
+
+Parameters:
+- name (required): Имя или часть имени (минимум 1 символ)
+
+Features:
+- Case-insensitive search
+- Partial name matching
+- Max 100 results
+- Includes current team info
+
+Examples:
+curl "http://158.69.195.140:3001/api/players/find?name=ronaldo"
+curl "http://158.69.195.140:3001/api/players/find?name=messi"
+
+Response:
+{
+  "success": true,
+  "status": "OK",
+  "count": 5,
+  "data": [
+    {
+      "id": 123,
+      "name": "Cristiano Ronaldo",
+      "team": {
+        "id": 42,
+        "name": "Al-Nassr",
+        "flashId": "abc123",
+        "logoUrl": "https://...",
+        "country": {
+          "code": "SA",
+          "name": "Saudi Arabia"
+        }
+      }
+    }
+  ]
+}
+
+================================================================================
+ENDPOINT 2: PLAYER EVENTS
+================================================================================
+
+GET /api/players/:id/events
+----------------------------
+
+Description: Получить события игрока (голы, карточки, замены)
+
+Parameters:
+- id (required, path): Player ID
+- includeAssists (optional, default: false): Include assist events
+- offset (optional, default: 0): Pagination offset
+- limit (optional, default: 1000, max: 1000): Results limit
+
+Features:
+- Chronological order (newest first)
+- Pagination support
+- Optional assists inclusion
+- Event types: goals, cards, substitutions
+
+Examples:
+curl "http://158.69.195.140:3001/api/players/123/events"
+curl "http://158.69.195.140:3001/api/players/123/events?includeAssists=true&limit=50"
+
+Response:
+{
+  "success": true,
+  "status": "OK",
+  "count": 25,
+  "offset": 0,
+  "limit": 1000,
+  "data": [
+    {
+      "id": 1,
+      "teamId": 42,
+      "elapsed": 45,
+      "extra": 2,
+      "type": 1,
+      "name": "Goal",
+      "player": {
+        "id": 123,
+        "name": "Player Name"
+      },
+      "assistPlayer": {
+        "id": 456,
+        "name": "Assistant Name"
+      }
+    }
+  ]
+}
+
+Event Types:
+1 - Goal
+2 - Yellow Card
+3 - Red Card
+4 - Substitution In
+5 - Substitution Out
+
+================================================================================
+USE CASES
+================================================================================
+
+1. Player Statistics Dashboard
+   - Search player
+   - Get all events
+   - Calculate stats (goals, assists, cards)
+
+2. Team Squad Search
+   - Find all players by team name part
+   - Display squad with current teams
+
+3. Player Career Analysis
+   - Get events with pagination
+   - Analyze performance over time
+   - Track goal/assist rates
+
+4. Match Event Attribution
+   - Link events to specific players
+   - Build event timelines
+   - Assist network analysis
+
+================================================================================
+INTEGRATION EXAMPLE
+================================================================================
+
+// Search and get player stats
+async function getPlayerStats(playerName) {
+  // 1. Search player
+  const searchRes = await fetch(
+    `/api/players/find?name=${playerName}`
+  );
+  const players = await searchRes.json();
+  
+  if (players.count === 0) {
+    return null;
+  }
+  
+  const player = players.data[0];
+  
+  // 2. Get events
+  const eventsRes = await fetch(
+    `/api/players/${player.id}/events?includeAssists=true`
+  );
+  const events = await eventsRes.json();
+  
+  // 3. Calculate stats
+  const goals = events.data.filter(e => e.type === 1).length;
+  const assists = events.data.filter(e => 
+    e.assistPlayer && e.assistPlayer.id === player.id
+  ).length;
+  const yellowCards = events.data.filter(e => e.type === 2).length;
+  const redCards = events.data.filter(e => e.type === 3).length;
+  
+  return {
+    player,
+    stats: {
+      goals,
+      assists,
+      yellowCards,
+      redCards,
+      totalEvents: events.count
+    }
+  };
+}
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================

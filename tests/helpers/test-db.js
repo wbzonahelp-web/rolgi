@@ -24,7 +24,7 @@ class TestDatabase {
 
     const dbConfig = {
       host: process.env.TEST_DB_HOST || 'localhost',
-      port: process.env.TEST_DB_PORT || 5432,
+      port: process.env.TEST_DB_PORT || 5433,
       database: process.env.TEST_DB_NAME || 'rolgi_v6_test',
       user: process.env.TEST_DB_USER || 'postgres',
       password: process.env.TEST_DB_PASSWORD || 'postgres',

@@ -1,0 +1,315 @@
+Games ​Copy link
+GamesOperations
+get
+/Games/list
+get
+/Games/{id}
+get
+/Games/glicko/{id}
+post
+/Games/query-games
+post
+/Games/query
+get
+/Games/season-table
+get
+/Games/last-games-stats
+get
+/Games/text-summary
+get
+/Games/profits
+get
+/Games/injuries
+Список матчей​Copy link
+Извлечение списка матчей. Данные о каждом матче возвращаются в сокращенном варианте (Id, время, статус, счет, названия команд их их ID, сезон, тур, коэффициенты).
+Коэффициенты в сокращенном варианте: 1X2, Total. (на момент ближе к закрытию линии)
+
+Для получения полной информации о конкретном матче используется /games/{id}
+
+Одним запросом можно извлечь не более 1000 матчей. Чтобы извлечь остальные, нужно использовать несколько запросов, увеличивая &offset=N.
+
+Например:
+&amp;offset=0&amp;limit=10 - отобразит первые 10 матчей
+&amp;offset=10&amp;limit=10 - отобразит следующие 10 матчей (пропуская первые 10)
+
+Примеры:
+Извлечение всех матчей по id лиги и году сезона
+https://api.sstats.net/games/list?leagueid=183&amp;year=2022
+
+Извлечение всех матчей по id сезона 1DC9CB60-0958-11EE-B462-879841420925
+https://api.sstats.net/games/list?seasonUid=1DC9CB60-0958-11EE-B462-879841420925
+
+Извлечение всех матчей по id лиги и временному интервалу
+https://api.sstats.net/games/list?leagueid=183&amp;from=2022-10-30&amp;to=2022-12-30
+
+Предстоящие матчи команды
+https://api.sstats.net/games/list?upcoming=true&amp;team=529
+
+Прошедшие матчи между командами когда они играли друг с другом (Head 2 Head)
+https://api.sstats.net/games/list?ended=true&amp;bothTeams=529,541
+
+Query Parameters
+IdCopy link to Id
+Type:string
+Pattern:^\d+(?:,\d+)*$
+Example
+Id матча. Один или несколько через запятую.
+
+FlashIdCopy link to FlashId
+Type:string
+Pattern:^\w+(?:,\w+)*$
+Id матча c Flashscore. Один или несколько через запятую. "vyHkOT87,SYAMaLNi"
+
+LeagueIdCopy link to LeagueId
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+1
+max:  
+2147483647
+Example
+Id лиги Список лиг можно получить через /leagues
+
+SeasonUidCopy link to SeasonUid
+Type:string
+Format:uuid
+Example
+Уникальный идентификатор сезона
+
+YearCopy link to Year
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+2011
+max:  
+2070
+Example
+Год сезона
+
+DateCopy link to Date
+Type:string
+Format:date
+Конкретная дата. В выборку будут включены все матчи за выбранный день. Чтобы указать часовой пояс, используйте параметр TimeZone. "2025-06-02"
+
+SingleDayCopy link to SingleDay
+Type:string
+Format:date-time
+the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+
+FromCopy link to From
+Type:string
+Example
+Начальная дата. Если указана только дата без времени, то будут включены все матчи за текущую дату, начиная с полуночи. Если не указывается время с часовым поясом (2025-06-17T14:23:30+02:00), то часовой пояс необходимо передать отдельно в параметре TimeZone Дата + время + часовой пояс: 2025-06-17T14:23:30+02:00 Дата + время: 2025-06-17T14:23:30 Дата + время (без секунд): 2025-06-17T14:23 Дата: 2025-06-17
+
+FromDateCopy link to FromDate
+Type:string
+Format:date-time
+the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+
+ToCopy link to To
+Type:string
+Example
+Конечная дата. Фильтруются все матчи строго до этой даты. Если указана только дата, без времени, то в выборку включаются все матчи до полуночи указанной даты. Для всех дат, где не указан часовой пояс (+02:00) необходимо указать часовой пояс отдельно в параметре TimeZone Например: если To = 2025-06-02, то в выборку попадут все матчи до 2025-06-02 00:00:00. Т.е матчи за само 2025-06-02 уже выборку не попадают Дата + время + часовой пояс: 2025-06-17T14:23:30+02:00 Дата + время: 2025-06-17T14:23:30 Дата + время (без секунд): 2025-06-17T14:23 Дата: 2025-06-17
+
+ToDateCopy link to ToDate
+Type:string
+Format:date-time
+the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+
+StatusCopy link to Status
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:uint8
+min:  
+1
+max:  
+20
+Example
+Статус (см таблицу статусов)
+
+HomeTeamCopy link to HomeTeam
+Type:string
+Pattern:^\d+(?:,\d+)*$
+Id команды хозяев (один, или несколько через запятую) "18047,8045"
+
+AwayTeamCopy link to AwayTeam
+Type:string
+Pattern:^\d+(?:,\d+)*$
+Id команды гостей (один, или несколько через запятую) "18047,8045"
+
+TeamCopy link to Team
+Type:string
+Pattern:^\d+(?:,\d+)*$
+Id одной из команд (один, или несколько через запятую). Если указано несколько Id, то выборку попадут все матчи, где хотя бы одна из команд в это списке "18047,8045"
+
+BothTeamsCopy link to BothTeams
+Type:string
+Pattern:^\d+,\d+$
+Id двух команд через запятую. Матчи двух команд между собой "18047,8045"
+
+EndedCopy link to Ended
+Type:boolean
+Завершенные матчи (8, 9, 10, 17, 18). Учитывается только True, False не учитывается
+
+LiveCopy link to Live
+Type:boolean
+Лайв матчи (статусы 3, 4, 5, 6, 7, 11, 18, 19). Учитывается только True, False не учитывается
+
+UpcomingCopy link to Upcoming
+Type:boolean
+Предстоящие матчи (дата начала матча больше текущего времени + статус: 1,2). Учитывается только True, False не учитывается
+
+TodayCopy link to Today
+Type:boolean
+Матчи за сегодня. Учитывается только True, False не учитывается
+
+OffsetCopy link to Offset
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+0
+max:  
+2147483647
+Пропустить указанное количество матчей от начала выборки. По умолчанию = 0 Количество матчей выводимое за раз ограничено лимитом 1000 матчей. Чтобы извлечь остальные матчи, используется Offset c указанием количества, которое надо пропустить offset=2000 - пропустить первые 2000 матчей и получить следущие 1000 2000
+
+LimitCopy link to Limit
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+1
+max:  
+1000
+Ограничить выборку указанным количеством матчей (от 1 до 1000)
+
+OrderCopy link to Order
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+-1
+max:  
+1
+Example
+Сортировать по убыванию (Order=-1) или по возрастанию (Order=1) даты начала матча
+
+TimeZoneCopy link to TimeZone
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+-12
+max:  
+12
+default: 
+3
+Example
+Ваш часовой пояс (от -12 до 12). По умолчанию = 3
+
+Responses
+
+200
+OK
+
+400
+Bad Request
+Request Example forget/Games/list
+Python http.client
+
+import http.client
+
+conn = http.client.HTTPSConnection("api.sstats.net")
+
+conn.request("GET", "/Games/list")
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
+
+Test Request
+(get /Games/list)
+Status:200
+Status:400
+
+{
+  "status": "string",
+  "count": null,
+  "data": [
+    {
+      "id": 1,
+      "flashId": null,
+      "date": null,
+      "dateUtc": null,
+      "status": null,
+      "periods": [
+        "2026-01-17T08:09:03.461Z"
+      ],
+      "statusName": null,
+      "elapsed": null,
+      "extraMinutes": null,
+      "homeResult": null,
+      "awayResult": null,
+      "homeHTResult": null,
+      "awayHTResult": null,
+      "homeFTResult": null,
+      "awayFTResult": null,
+      "homeTeam": {
+        "id": 1,
+        "name": "string",
+        "flashId": null,
+        "logoUrl": null,
+        "country": {
+          "code": "string",
+          "name": "string"
+        }
+      },
+      "awayTeam": {
+        "id": 1,
+        "name": "string",
+        "flashId": null,
+        "logoUrl": null,
+        "country": {
+          "code": "string",
+          "name": "string"
+        }
+      },
+      "season": {
+        "uid": "123e4567-e89b-12d3-a456-426614174000",
+        "year": 1,
+        "league": {
+          "id": 1,
+          "name": "string",
+          "country": {
+            "code": "string",
+            "name": "string"
+          },
+          "flashScoreId": null
+        }
+      },
+      "roundName": null,
+      "odds": [
+        {
+          "marketId": 1,
+          "marketName": "string",
+          "odds": [
+            {
+              "name": "string",
+              "value": 1,
+              "openingValue": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "requestQuery": null,
+  "message": null,
+  "offset": null,
+  "TotalCount": null,
+  "traceId": null
+}
+OK

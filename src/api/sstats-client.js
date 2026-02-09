@@ -85,9 +85,10 @@ class SStatsClient {
       timeout: this.config.timeout,
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(this.config.apiKey && { 'Authorization': `ApiKey ${this.config.apiKey}` })
-      }
+        'Accept': 'application/json'
+      },
+      // Add API key to all requests as query parameter (per OpenAPI spec)
+      params: this.config.apiKey ? { apikey: this.config.apiKey } : {}
     });
 
     // Rate limiter (300 req/min с ключом)
@@ -644,14 +645,424 @@ class SStatsClient {
   }
 
   /**
-   * Получить турнирную таблицу
+   * Получить турнирную таблицу (Flashscore)
    * @param {Object} params
-   * @param {number} params.leagueId
-   * @param {string} params.season
+   * @param {string} params.leagueId - ID лиги
+   * @param {string} params.season - Сезон (необязательно)
    * @returns {Promise<Object>} Standings
    */
   async getStandings(params) {
     return this.get('/Ls/Standings', params);
+  }
+
+  // ============================================================
+  // FLASHSCORE API ENDPOINTS (/Ls/*)
+  // ============================================================
+
+  /**
+   * Получить список матчей Flashscore с фильтрацией
+   * 
+   * ⚠️ ВАЖНО: Обязательно укажите хотя бы один параметр фильтрации!
+   * 
+   * Основные возможности:
+   * - Фильтрация по дате, лигам, командам, сезонам
+   * - Поддержка пагинации (до 1000 матчей за запрос)
+   * - Информация о счёте, времени, статусе матча
+   * - Live, завершённые и предстоящие матчи
+   * - Сортировка по дате
+   * 
+   * @param {Object} params - Параметры фильтрации
+   * 
+   * @param {string} [params.Id] - ID матча(ей) через запятую
+   *   Пример: "abc123" или "abc123,def456"
+   * 
+   * @param {string} [params.LeagueId] - ID лиги
+   *   Пример: "england/premier-league"
+   * 
+   * @param {string} [params.SeasonId] - Уникальный идентификатор сезона
+   * 
+   * @param {string} [params.Years] - Года сезона
+   *   Пример: "2024-2025"
+   * 
+   * @param {string} [params.Date] - Конкретная дата (все матчи за день)
+   *   Формат: YYYY-MM-DD
+   *   Пример: "2025-06-21"
+   * 
+   * @param {string} [params.From] - Начальная дата/время
+   *   Форматы:
+   *   - Дата + время + часовой пояс: "2025-06-17T14:23:30+02:00"
+   *   - Дата + время: "2025-06-17T14:23:30"
+   *   - Дата + время (без секунд): "2025-06-17T14:23"
+   *   - Дата: "2025-06-17"
+   * 
+   * @param {string} [params.To] - Конечная дата/время (строго до)
+   *   Форматы аналогичны From
+   *   ⚠️ Матчи ДО указанной даты, не включая её
+   * 
+   * @param {number|string} [params.Status] - Статус матча
+   *   Статусы:
+   *   - 1: Не начался
+   *   - 2: В прямом эфире  
+   *   - 3: Завершён
+   *   - 5: Отменён
+   *   - 6: Дополнительное время
+   *   - 7: Пенальти
+   *   - 9: Техническая победа
+   *   - 10: После дополнительного времени
+   *   - 11: После пенальти
+   *   - 12: Первый тайм
+   *   - 13: Второй тайм
+   *   - 36: Прерван
+   *   - 42: Ожидание обновлений
+   *   - 43: Отложен
+   *   - 45: К завершению
+   *   - 46: Технический перерыв
+   *   - 54: Присуждён
+   * 
+   * @param {string} [params.HomeTeam] - ID команды(-д) хозяев через запятую
+   *   Примеры: "jk-arsenal/MgkAqSU0" или "MgkAqSU0,ALztxK6e"
+   * 
+   * @param {string} [params.AwayTeam] - ID команды(-д) гостей через запятую
+   * 
+   * @param {string} [params.Team] - ID одной из команд (хозяева ИЛИ гости)
+   *   Примеры: "arsenal/hA1Zm19f" или "hA1Zm19f"
+   * 
+   * @param {string} [params.BothTeams] - ID двух команд для H2H (Head-to-Head)
+   *   Формат: "teamId1,teamId2"
+   *   Пример: "villa/ALztxK6e,chelsea/4fGZN2oK"
+   * 
+   * @param {boolean} [params.Ended] - Только завершенные матчи
+   *   Статусы: 8, 9, 10, 17, 18
+   * 
+   * @param {boolean} [params.Live] - Только live матчи
+   *   Статусы: 3, 4, 5, 6, 7, 11, 18, 19
+   * 
+   * @param {boolean} [params.Upcoming] - Только предстоящие матчи
+   *   Дата начала > текущего времени + статусы: 1, 2
+   * 
+   * @param {number} [params.Offset=0] - Пропустить N матчей (0-2147483647)
+   *   Для пагинации: сначала получаем 1000, потом Offset=1000, потом 2000...
+   * 
+   * @param {number} [params.Limit=1000] - Лимит результатов (1-1000)
+   * 
+   * @param {number} [params.Order] - Сортировка по дате
+   *   - 1: по возрастанию (старые → новые)
+   *   - -1: по убыванию (новые → старые)
+   * 
+   * @param {number} [params.TimeZone=3] - Часовой пояс (-12 до 12)
+   *   По умолчанию: 3 (UTC+3)
+   * 
+   * @returns {Promise<Object>} FlashscoreGamesList
+   *   {
+   *     status: "OK",
+   *     count: 321,
+   *     data: [...],
+   *     offset: 0,
+   *     TotalCount: 321
+   *   }
+   * 
+   * @example
+   * // Матчи за конкретную дату
+   * const games = await client.getFlashscoreGames({
+   *   Date: '2025-06-21',
+   *   TimeZone: 3
+   * });
+   * 
+   * @example
+   * // Матчи за период
+   * const periodGames = await client.getFlashscoreGames({
+   *   From: '2025-06-01',
+   *   To: '2025-06-30'
+   * });
+   * 
+   * @example
+   * // Завершенные матчи лиги
+   * const leagueGames = await client.getFlashscoreGames({
+   *   LeagueId: 'england/premier-league',
+   *   Ended: true
+   * });
+   * 
+   * @example
+   * // Текущие live матчи команды
+   * const liveGames = await client.getFlashscoreGames({
+   *   Team: 'arsenal/hA1Zm19f',
+   *   Live: true
+   * });
+   * 
+   * @example
+   * // История встреч двух команд (H2H)
+   * const h2h = await client.getFlashscoreGames({
+   *   BothTeams: 'villa/ALztxK6e,chelsea/4fGZN2oK'
+   * });
+   * 
+   * @example
+   * // Пагинация - получить следующие 1000 матчей
+   * const nextPage = await client.getFlashscoreGames({
+   *   LeagueId: 'england/premier-league',
+   *   Offset: 1000,
+   *   Limit: 1000
+   * });
+   * 
+   * @example
+   * // Предстоящие матчи сезона, сортировка по дате
+   * const upcoming = await client.getFlashscoreGames({
+   *   Years: '2024-2025',
+   *   Upcoming: true,
+   *   Order: 1  // от ближайших к дальним
+   * });
+   */
+  async getFlashscoreGames(params = {}) {
+    return this.get('/Ls/List', params);
+  }
+
+  /**
+   * Получить детальную информацию о матче Flashscore
+   * 
+   * Возвращает:
+   * - Полные данные о матче
+   * - Составы команд
+   * - События матча (голы, карточки, замены)
+   * - Букмекерские коэффициенты
+   * - Статистику матча
+   * - Хронологию событий
+   * 
+   * @param {string} gameId - ID матча Flashscore
+   *   Пример: "000agg7D"
+   * 
+   * @returns {Promise<Object>} FlashscoreGameInfo
+   * 
+   * @example
+   * // Получить полную информацию о матче
+   * const gameInfo = await client.getFlashscoreGameInfo('000agg7D');
+   * console.log(gameInfo.lineups);  // Составы
+   * console.log(gameInfo.events);   // События
+   * console.log(gameInfo.odds);     // Коэффициенты
+   * console.log(gameInfo.stats);    // Статистика
+   */
+  async getFlashscoreGameInfo(gameId) {
+    return this.get(`/Ls/GameInfo`, { id: gameId });
+  }
+
+  /**
+   * Получить список лиг Flashscore с фильтрацией
+   * 
+   * Варианты использования:
+   * - Без параметров: возвращает ВСЕ доступные лиги
+   * - По GUID: получение конкретной лиги (наивысший приоритет)
+   * - По ID: поиск по строковому идентификатору
+   * - По названию: поиск лиг, содержащих подстроку (регистр НЕ учитывается)
+   * 
+   * Приоритет фильтров: GUID > ID > название
+   * 
+   * ⚠️ Если указан GUID, остальные параметры игнорируются
+   * Фильтры ID и название могут применяться совместно
+   * 
+   * @param {Object} params - Параметры фильтрации
+   * 
+   * @param {string} [params.guid] - Уникальный GUID лиги
+   *   Формат: UUID
+   *   Пример: "4a491dde-d6f7-ed11-aee5-96d15e4a6f69"
+   *   При указании возвращается только одна конкретная лига
+   *   Приоритет: НАИВЫСШИЙ
+   * 
+   * @param {string} [params.id] - Строковый ID лиги
+   *   Примеры: "england/premier-league", "spain/la-liga"
+   *   Точный поиск
+   *   Приоритет: СРЕДНИЙ
+   * 
+   * @param {string} [params.name] - Часть названия лиги
+   *   Примеры: "Premier", "Liga", "Champions"
+   *   Поиск по подстроке, регистр НЕ учитывается
+   *   Приоритет: НИЗШИЙ
+   * 
+   * @returns {Promise<Object>} FlashscoreLeaguesList
+   *   {
+   *     status: "OK",
+   *     count: 50,
+   *     data: [...]
+   *   }
+   * 
+   * @example
+   * // Получить все лиги
+   * const allLeagues = await client.getFlashscoreLeagues();
+   * 
+   * @example
+   * // Поиск лиги по названию
+   * const premierLeague = await client.getFlashscoreLeagues({
+   *   name: 'Premier League'
+   * });
+   * 
+   * @example
+   * // Поиск по ID
+   * const league = await client.getFlashscoreLeagues({
+   *   id: 'england/premier-league'
+   * });
+   * 
+   * @example
+   * // Поиск по GUID (конкретная лига)
+   * const leagueByGuid = await client.getFlashscoreLeagues({
+   *   guid: '4a491dde-d6f7-ed11-aee5-96d15e4a6f69'
+   * });
+   * 
+   * @example
+   * // Все лиги с "Champions" в названии
+   * const championsLeagues = await client.getFlashscoreLeagues({
+   *   name: 'Champions'
+   * });
+   */
+  async getFlashscoreLeagues(params = {}) {
+    return this.get('/Ls/Leagues', params);
+  }
+
+  /**
+   * Получить список сезонов для лиги Flashscore
+   * 
+   * Возвращает все сезоны указанной футбольной лиги.
+   * 
+   * ⚠️ ВАЖНО: Необходимо указать хотя бы один параметр идентификации лиги!
+   * 
+   * Способы идентификации лиги:
+   * 1. По уникальному GUID (leagueUid)
+   * 2. По строковому ID (leagueId)
+   * 
+   * @param {Object} params - Параметры запроса
+   * 
+   * @param {string} [params.leagueUid] - Уникальный GUID лиги
+   *   Формат: UUID
+   *   Пример: "4a491dde-d6f7-ed11-aee5-96d15e4a6f69"
+   * 
+   * @param {string} [params.leagueId] - Строковый ID лиги
+   *   Примеры: "england/premier-league", "spain/la-liga"
+   *   Альтернатива leagueUid
+   * 
+   * @returns {Promise<Object>} FlashscoreSeasons
+   *   {
+   *     status: "OK",
+   *     count: 10,
+   *     data: [
+   *       {
+   *         uid: "...",
+   *         id: "england/premier-league-2024-2025",
+   *         years: "2024-2025",
+   *         league: { ... }
+   *       }
+   *     ]
+   *   }
+   * 
+   * @example
+   * // Получить сезоны по ID лиги
+   * const seasons = await client.getFlashscoreSeasons({
+   *   leagueId: 'england/premier-league'
+   * });
+   * 
+   * @example
+   * // Получить сезоны по GUID лиги
+   * const seasonsByGuid = await client.getFlashscoreSeasons({
+   *   leagueUid: '4a491dde-d6f7-ed11-aee5-96d15e4a6f69'
+   * });
+   * 
+   * @example
+   * // Использование результата
+   * const seasons = await client.getFlashscoreSeasons({
+   *   leagueId: 'spain/la-liga'
+   * });
+   * console.log(`Найдено сезонов: ${seasons.count}`);
+   * seasons.data.forEach(season => {
+   *   console.log(`${season.years}: ${season.id}`);
+   * });
+   */
+  async getFlashscoreSeasons(params = {}) {
+    return this.get('/Ls/Seasons', params);
+  }
+
+  /**
+   * Поиск команд Flashscore по различным критериям
+   * 
+   * ⚠️ ВАЖНО: Должен быть указан хотя бы один параметр поиска!
+   * 
+   * Параметры поиска обрабатываются в порядке приоритета:
+   * 1. uid (наивысший приоритет)
+   * 2. id
+   * 3. name
+   * 
+   * При поиске по названию используется частичное совпадение.
+   * Возвращается максимум 100 команд.
+   * 
+   * @param {Object} params - Параметры поиска
+   * 
+   * @param {string} [params.uid] - Уникальный GUID команды
+   *   Формат: UUID (GUID)
+   *   Пример: "00a849a9-021a-11ee-a159-d8cb8ac15be9"
+   *   Приоритет: ВЫСШИЙ
+   * 
+   * @param {string} [params.id] - Строковый ID команды
+   *   Примеры: "arsenal/hA1Zm19f" или "hA1Zm19f"
+   *   Приоритет: СРЕДНИЙ
+   * 
+   * @param {string} [params.name] - Название команды или его часть
+   *   Пример: "Arsenal" или "Манчестер"
+   *   Приоритет: НИЗШИЙ
+   *   Поиск: частичное совпадение (содержит подстроку)
+   * 
+   * @returns {Promise<Object>} FlashscoreTeamsList
+   *   {
+   *     status: "OK",
+   *     count: 2,
+   *     data: [...]
+   *   }
+   * 
+   * @example
+   * // Поиск по названию (частичное совпадение)
+   * const teams = await client.getFlashscoreTeams({
+   *   name: 'Arsenal'
+   * });
+   * 
+   * @example
+   * // Поиск по строковому ID
+   * const team = await client.getFlashscoreTeams({
+   *   id: 'arsenal/hA1Zm19f'
+   * });
+   * 
+   * @example
+   * // Поиск по GUID (наивысший приоритет)
+   * const teamByGuid = await client.getFlashscoreTeams({
+   *   uid: '00a849a9-021a-11ee-a159-d8cb8ac15be9'
+   * });
+   * 
+   * @example
+   * // Поиск команд Манчестера (вернет Manchester City, Manchester United)
+   * const manchesterTeams = await client.getFlashscoreTeams({
+   *   name: 'Manchester'
+   * });
+   */
+  async getFlashscoreTeams(params = {}) {
+    return this.get('/Ls/Teams', params);
+  }
+
+  /**
+   * Получить детальную информацию о команде Flashscore
+   * 
+   * Возвращает:
+   * - Полные данные о клубе
+   * - История выступлений
+   * - Состав команды
+   * - Статистика
+   * 
+   * @param {string} teamId - ID команды в формате "team-name/ID" или просто "ID"
+   *   Примеры: "arsenal/hA1Zm19f" или "hA1Zm19f"
+   * 
+   * @returns {Promise<Object>} FlashscoreTeamDetails
+   * 
+   * @example
+   * // С полным форматом
+   * const arsenal = await client.getFlashscoreTeamInfo('arsenal/hA1Zm19f');
+   * 
+   * @example
+   * // Только ID
+   * const team = await client.getFlashscoreTeamInfo('hA1Zm19f');
+   */
+  async getFlashscoreTeamInfo(teamId) {
+    return this.get(`/Ls/Teams/${teamId}`);
   }
 
   /**
@@ -842,9 +1253,140 @@ class SStatsClient {
     return this.get(`/Games/${gameId}/profits`, params);
   }
 
-  async queryGamesAdvanced(queryData) {
-    return this.post('/Games/query', queryData);
+  /**
+   * Продвинутый поиск игр с гибкой фильтрацией (Advanced Query)
+   * 
+   * Поддерживает:
+   * - Сложные SQL-подобные условия (AND/OR логика)
+   * - Выбор произвольных полей и вычисляемых выражений
+   * - Математические операции в полях
+   * - Гибкую сортировку
+   * - Экспорт в JSON или CSV
+   * 
+   * @param {Object} queryParams - Параметры запроса
+   * @param {string} queryParams.Condition - SQL-подобное условие фильтрации
+   *   Примеры:
+   *   - "LeagueId = 39 AND Year = 2024"
+   *   - "(Winner1 >= 1.3 AND Winner1 <= 1.7) OR (Winner2 >= 1.3 AND Winner2 <= 1.7)"
+   *   - "(ScoreHomeFT + ScoreAwayFT) > 3"
+   *   - "HomeTeamName LIKE 'Arsenal' AND AwayTeamName LIKE '%Manchester%'"
+   *   - "ExpectedGoalsHome > 0 AND (ScoreHomeFT - ExpectedGoalsHome) > 1"
+   *   - "(TotalShotsHome + TotalShotsAway) > 30 AND (ScoreHomeFT + ScoreAwayFT) < 2"
+   * 
+   * @param {Array<string>} queryParams.Fields - Массив полей для вывода
+   *   Поддерживает:
+   *   - Простые поля: ["Date", "HomeTeamName", "AwayTeamName"]
+   *   - Математические выражения: ["ScoreHomeFT + ScoreAwayFT AS TotalGoals"]
+   *   - Вычисляемые поля: ["(TotalShotsHome + TotalShotsAway) / (ScoreHomeFT + ScoreAwayFT + 0.1) AS ShotsPerGoal"]
+   * 
+   * @param {string} [queryParams.Order] - Порядок сортировки (необязательно)
+   *   Примеры:
+   *   - "Date DESC"
+   *   - "TotalGoals DESC"
+   *   - "OverPerformance DESC"
+   * 
+   * @param {string} [queryParams.format="json"] - Формат ответа (json или csv)
+   * 
+   * @returns {Promise<Object|string>} 
+   *   - Если format="json": объект с массивом игр
+   *   - Если format="csv": строка в CSV формате
+   * 
+   * @example
+   * // Пример 1: Простой поиск матчей лиги
+   * const result = await client.queryGamesAdvanced({
+   *   Condition: "LeagueId = 39 AND Year = 2024",
+   *   Fields: ["Date", "HomeTeamName", "AwayTeamName", "ScoreHomeFT", "ScoreAwayFT"],
+   *   format: "json"
+   * });
+   * 
+   * @example
+   * // Пример 2: Поиск матчей с определенными коэффициентами
+   * const result = await client.queryGamesAdvanced({
+   *   Condition: "(Winner1 >= 1.3 AND Winner1 <= 1.7) OR (Winner2 >= 1.3 AND Winner2 <= 1.7)",
+   *   Fields: ["Date", "HomeTeamName", "AwayTeamName", "Winner1", "WinnerX", "Winner2"],
+   *   Order: "Date DESC",
+   *   format: "json"
+   * });
+   * 
+   * @example
+   * // Пример 3: Результативные матчи с вычисляемым полем
+   * const result = await client.queryGamesAdvanced({
+   *   Condition: "(ScoreHomeFT + ScoreAwayFT) > 3",
+   *   Fields: [
+   *     "Date", "LeagueName", "HomeTeamName", "AwayTeamName",
+   *     "ScoreHomeFT", "ScoreAwayFT",
+   *     "ScoreHomeFT + ScoreAwayFT AS TotalGoals"
+   *   ],
+   *   Order: "TotalGoals DESC"
+   * });
+   * 
+   * @example
+   * // Пример 4: Анализ xG (ожидаемые голы)
+   * const result = await client.queryGamesAdvanced({
+   *   Condition: "ExpectedGoalsHome > 0 AND (ScoreHomeFT - ExpectedGoalsHome) > 1",
+   *   Fields: [
+   *     "Date", "HomeTeamName", "ScoreHomeFT", "ExpectedGoalsHome",
+   *     "ScoreHomeFT - ExpectedGoalsHome AS OverPerformance"
+   *   ],
+   *   Order: "OverPerformance DESC"
+   * });
+   * 
+   * @example
+   * // Пример 5: Поиск по названию команды
+   * const result = await client.queryGamesAdvanced({
+   *   Condition: "HomeTeamName LIKE 'Arsenal' AND AwayTeamName LIKE '%Manchester%'",
+   *   Fields: ["Id", "Date", "HomeTeamName", "AwayTeamName"],
+   *   Order: "Date DESC",
+   *   format: "csv"
+   * });
+   * 
+   * @example
+   * // Пример 6: Матчи с большим количеством ударов, но малым количеством голов
+   * const result = await client.queryGamesAdvanced({
+   *   Condition: "(TotalShotsHome + TotalShotsAway) > 30 AND (ScoreHomeFT + ScoreAwayFT) < 2",
+   *   Fields: [
+   *     "Date", "HomeTeamName", "AwayTeamName",
+   *     "TotalShotsHome", "TotalShotsAway",
+   *     "ScoreHomeFT", "ScoreAwayFT",
+   *     "(TotalShotsHome + TotalShotsAway) / (ScoreHomeFT + ScoreAwayFT + 0.1) AS ShotsPerGoal"
+   *   ],
+   *   Order: "ShotsPerGoal DESC"
+   * });
+   */
+  async queryGamesAdvanced(queryParams) {
+    // Валидация обязательных параметров
+    if (!queryParams.Condition) {
+      throw new Error('queryGamesAdvanced: параметр "Condition" обязателен');
+    }
+    
+    if (!queryParams.Fields || !Array.isArray(queryParams.Fields) || queryParams.Fields.length === 0) {
+      throw new Error('queryGamesAdvanced: параметр "Fields" должен быть непустым массивом');
+    }
+
+    // Формируем тело запроса
+    const requestBody = {
+      Condition: queryParams.Condition,
+      Fields: queryParams.Fields,
+      ...(queryParams.Order && { Order: queryParams.Order }),
+      format: queryParams.format || 'json'
+    };
+
+    logger.debug({
+      condition: requestBody.Condition,
+      fieldsCount: requestBody.Fields.length,
+      format: requestBody.format,
+      hasOrder: !!requestBody.Order
+    }, 'Executing advanced games query');
+
+    // Если запрос в CSV формате, нужно изменить responseType
+    const options = requestBody.format === 'csv' 
+      ? { responseType: 'text', skipValidation: true }
+      : {};
+
+    return this.post('/Games/query', requestBody, options);
   }
+
+  /**
    * Очистить кэш
    */
   clearCache() {
