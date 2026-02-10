@@ -50,3 +50,5 @@ yarn.lock
 pnpm-lock.yaml
 nginx/ssl/*.pem
 nginx/ssl/*.key
+*.tar.gz
+*.sql.gz

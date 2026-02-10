@@ -1,0 +1,2592 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Скаут - Учёт событий | Rolgi SStats</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        .header {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header h1 i { color: #667eea; }
+        
+        .header-nav { display: flex; gap: 15px; }
+        
+        .header-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .header-nav a:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+            padding: 5px;
+            border-radius: 12px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .tab.active { background: #667eea; color: white; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat-card .value {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-card .label {
+            color: #94a3b8;
+            font-size: 0.8em;
+            margin-top: 3px;
+        }
+        
+        .stat-card.green .value { color: #10b981; }
+        .stat-card.red .value { color: #ef4444; }
+        .stat-card.yellow .value { color: #f59e0b; }
+        .stat-card.blue .value { color: #3b82f6; }
+        
+        /* Upload Section */
+        .upload-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 2px dashed rgba(102,126,234,0.3);
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .upload-section:hover {
+            border-color: rgba(102,126,234,0.6);
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .upload-section.dragover {
+            border-color: #667eea;
+            background: rgba(102,126,234,0.1);
+        }
+        
+        .upload-icon { font-size: 3em; color: #667eea; margin-bottom: 15px; }
+        .upload-text { margin-bottom: 15px; }
+        .upload-text h3 { margin-bottom: 8px; }
+        .upload-text p { color: #94a3b8; font-size: 0.9em; }
+        .file-input { display: none; }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+        }
+        
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85em; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        /* Results Section */
+        .results-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .results-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+        
+        .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .filter-group label {
+            color: #94a3b8;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+        
+        .filter-group select,
+        .filter-group input[type="text"],
+        .filter-group input[type="date"],
+        .filter-group input[type="number"] {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: #e2e8f0;
+            font-size: 0.85em;
+        }
+        
+        .filter-group input[type="number"] { width: 70px; }
+        
+        /* Sources Filter */
+        .sources-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .source-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.05);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .source-checkbox:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .source-checkbox input {
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+        
+        .source-checkbox span {
+            font-size: 0.85em;
+            color: #e2e8f0;
+        }
+        
+        .source-checkbox .count {
+            background: rgba(102,126,234,0.3);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            margin-left: 4px;
+        }
+        
+        /* Table */
+        .table-container { overflow-x: auto; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9em;
+        }
+        
+        th {
+            background: rgba(255,255,255,0.03);
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+        
+        tr:hover { background: rgba(255,255,255,0.03); }
+        
+        /* Status Badges */
+        .status-badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .status-badge.found { background: rgba(16,185,129,0.2); color: #10b981; }
+        .status-badge.not-found { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .status-badge.pending { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        
+        .score {
+            font-weight: 700;
+            font-size: 1em;
+        }
+        
+        .score.found { color: #10b981; }
+        .score.not-found { color: #94a3b8; }
+        .score.pending { color: #f59e0b; }
+        
+        /* Total Badge */
+        .total-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        
+        .total-badge.over { background: rgba(16,185,129,0.2); color: #10b981; }
+        .total-badge.under { background: rgba(239,68,68,0.2); color: #ef4444; }
+        
+        /* History Cards */
+        .uploads-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+        }
+        
+        .upload-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upload-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(102,126,234,0.5);
+        }
+        
+        .upload-card.selected {
+            border-color: #667eea;
+            background: rgba(102,126,234,0.1);
+        }
+        
+        .upload-info h4 { margin-bottom: 5px; }
+        .upload-info small { color: #94a3b8; }
+        
+        .upload-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .upload-stat { text-align: center; }
+        .upload-stat .value { font-size: 1.2em; font-weight: 700; }
+        .upload-stat .label { font-size: 0.8em; color: #94a3b8; }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 40px;
+            color: #94a3b8;
+        }
+        
+        .loading i { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: #1e293b;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        
+        .modal-body { padding: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #94a3b8; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+        }
+        
+        /* Source tag */
+        .source-tag {
+            display: inline-block;
+            background: rgba(102,126,234,0.2);
+            color: #a5b4fc;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin: 1px;
+        }
+        
+        @media (max-width: 768px) {
+            .header { flex-direction: column; gap: 15px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            th, td { padding: 8px 6px; font-size: 0.8em; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1><i class="fas fa-binoculars"></i> Скаут - Учёт событий</h1>
+        <nav class="header-nav">
+            <a href="/"><i class="fas fa-home"></i> Главная</a>
+            <a href="/leagues.html"><i class="fas fa-trophy"></i> Лиги</a>
+            <span id="authInfo" style="display: flex; align-items: center; gap: 10px; margin-left: 20px;">
+                <span id="userDisplay" style="color: #10b981; display: none;"></span>
+                <button class="btn btn-primary btn-sm" id="loginBtn" onclick="showLoginModal()">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+                <button class="btn btn-secondary btn-sm" id="logoutBtn" onclick="logout()" style="display: none;">
+                    <i class="fas fa-sign-out-alt"></i> Выход
+                </button>
+            </span>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('upload')">
+                <i class="fas fa-upload"></i> Загрузка
+            </button>
+            <button class="tab" onclick="switchTab('history')" id="tabHistory">
+                <i class="fas fa-history"></i> История
+            </button>
+            <button class="tab" onclick="switchTab('all-events')" id="tabAllEvents">
+                <i class="fas fa-list"></i> Все события
+            </button>
+            <button class="tab" onclick="switchTab('admin')" id="tabAdmin" style="display:none;">
+                <i class="fas fa-users-cog"></i> Пользователи
+            </button>
+        </div>
+        
+        <!-- Upload Tab -->
+        <div class="tab-content active" id="tab-upload">
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="value" id="statTotal">0</div>
+                    <div class="label">Всего</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="statFootball">0</div>
+                    <div class="label">Футбол</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="value" id="statFound">0</div>
+                    <div class="label">Найдено</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="value" id="statNotFound">0</div>
+                    <div class="label">Не найдено</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="value" id="statTotalOver">0</div>
+                    <div class="label">ТБ 2.5</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="value" id="statTotalUnder">0</div>
+                    <div class="label">ТМ 2.5</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="statDbGames">-</div>
+                    <div class="label">Игр в БД</div>
+                </div>
+            </div>
+            
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadArea">
+                <div class="upload-icon"><i class="fas fa-file-excel"></i></div>
+                <div class="upload-text">
+                    <h3>Загрузите Excel файл</h3>
+                    <p>Перетащите файл сюда или нажмите для выбора</p>
+                    <p>Поддерживаются форматы: .xlsx, .xls</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-upload"></i> Выбрать файл
+                </button>
+                <div class="progress-bar" id="progressBar" style="display: none;">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-header">
+                    <h2><i class="fas fa-table"></i> Загруженные события</h2>
+                    <div class="results-actions">
+                        <button class="btn btn-success" onclick="findAllResults()" id="btnFindResults">
+                            <i class="fas fa-search"></i> Найти результаты
+                        </button>
+                        <button class="btn btn-primary" onclick="saveUpload()" id="btnSave" style="display:none;">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportResults()">
+                            <i class="fas fa-download"></i> CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Sources Filter -->
+                <div class="sources-filter" id="sourcesFilter" style="display:none;"></div>
+                
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>Статус:</label>
+                        <select id="filterStatus" onchange="applyFilters()">
+                            <option value="all">Все</option>
+                            <option value="found">Найдено</option>
+                            <option value="not-found">Не найдено</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Тотал:</label>
+                        <select id="filterTotal" onchange="applyFilters()">
+                            <option value="all">Все</option>
+                            <option value="over-1.5">ТБ 1.5</option>
+                            <option value="under-1.5">ТМ 1.5</option>
+                            <option value="over-2.5">ТБ 2.5</option>
+                            <option value="under-2.5">ТМ 2.5</option>
+                            <option value="over-3.5">ТБ 3.5</option>
+                            <option value="under-3.5">ТМ 3.5</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Поиск:</label>
+                        <input type="text" id="filterSearch" placeholder="Команда или соревнование..." oninput="applyFilters()">
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Дата</th>
+                                <th>Соревнование</th>
+                                <th>Событие</th>
+                                <th>Источники</th>
+                                <th>Результат</th>
+                                <th>Тотал</th>
+                                <th>Статус</th>
+                                <th>БД матч</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsTable"></tbody>
+                    </table>
+                </div>
+                
+                <div class="loading" id="loadingResults" style="display: none;">
+                    <i class="fas fa-spinner"></i> Поиск результатов...
+                </div>
+            </div>
+        </div>
+        
+        <!-- History Tab -->
+        <div class="tab-content" id="tab-history">
+            <!-- Auth Required Message -->
+            <div id="historyAuthRequired" class="empty-state" style="display:none;">
+                <i class="fas fa-lock"></i>
+                <h3>Требуется авторизация</h3>
+                <p>Для просмотра истории загрузок необходимо войти в систему</p>
+                <button class="btn btn-primary" onclick="showLoginModal()" style="margin-top: 15px;">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+            </div>
+            <div id="historyContent" class="results-section">
+                <div class="results-header">
+                    <h2><i class="fas fa-history"></i> История загрузок</h2>
+                    <button class="btn btn-secondary" onclick="loadUploads()">
+                        <i class="fas fa-sync"></i> Обновить
+                    </button>
+                </div>
+                <div id="uploadsList" class="uploads-list">
+                    <div class="loading"><i class="fas fa-spinner"></i> Загрузка...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- All Events Tab -->
+        <div class="tab-content" id="tab-all-events">
+            <!-- Auth Required Message -->
+            <div id="allEventsAuthRequired" class="empty-state" style="display:none;">
+                <i class="fas fa-lock"></i>
+                <h3>Требуется авторизация</h3>
+                <p>Для просмотра событий необходимо войти в систему</p>
+                <button class="btn btn-primary" onclick="showLoginModal()" style="margin-top: 15px;">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+            </div>
+            <div id="allEventsContent">
+            <!-- Summary Stats -->
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="value" id="summaryTotal">0</div>
+                    <div class="label">Всего событий</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="value" id="summaryMatched">0</div>
+                    <div class="label">Сопоставлено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="summaryBets">0</div>
+                    <div class="label">Со ставками</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="value" id="summaryWins">0</div>
+                    <div class="label">Выигрышей</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="value" id="summaryLosses">0</div>
+                    <div class="label">Проигрышей</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="value" id="summaryProfit">0</div>
+                    <div class="label">Профит</div>
+                </div>
+            </div>
+            
+            <div class="results-section">
+                <div class="results-header">
+                    <h2><i class="fas fa-list"></i> Все события</h2>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="btn btn-primary btn-sm" onclick="rematchEvents()" id="btnRematch" title="Пересопоставить ненайденные события">
+                            <i class="fas fa-sync-alt"></i> Пересопоставить
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="refreshScores()" id="btnRefreshScores" title="Обновить счета из БД">
+                            <i class="fas fa-database"></i> Обновить счета
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportAllEvents()">
+                            <i class="fas fa-download"></i> CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Sources Filter for All Events -->
+                <div class="sources-filter" id="allEventsSourcesFilter" style="display:none;"></div>
+                
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>Статус:</label>
+                        <select id="allFilterStatus" onchange="loadAllEvents()">
+                            <option value="">Все</option>
+                            <option value="true">Сопоставлено</option>
+                            <option value="false">Не сопоставлено</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Результат:</label>
+                        <select id="allFilterBetResult" onchange="loadAllEvents()">
+                            <option value="">Все</option>
+                            <option value="win">Выигрыш</option>
+                            <option value="lose">Проигрыш</option>
+                            <option value="pending">Ожидает</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Дата с:</label>
+                        <input type="date" id="allFilterDateFrom" onchange="loadAllEvents()">
+                    </div>
+                    <div class="filter-group">
+                        <label>Дата по:</label>
+                        <input type="date" id="allFilterDateTo" onchange="loadAllEvents()">
+                    </div>
+                    <div class="filter-group">
+                        <label>Поиск:</label>
+                        <input type="text" id="allFilterSearch" placeholder="Команда или лига..." oninput="debounceLoadAllEvents()">
+                    </div>
+                </div>
+                
+                <!-- Сводка статистики -->
+                <div id="allEventsStats" style="display:none; margin-bottom: 16px; padding: 12px 16px; background: linear-gradient(135deg, #f0f4ff 0%, #e8f5e9 100%); border-radius: 8px; border: 1px solid #c8d6e5;">
+                    <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center; font-size: 14px;">
+                        <span><strong>Всего:</strong> <span id="statTotal">0</span></span>
+                        <span style="color: #27ae60;"><i class="fas fa-check-circle"></i> Сопоставлено: <strong id="statMatched">0</strong></span>
+                        <span style="color: #e74c3c;"><i class="fas fa-times-circle"></i> Не найдено: <strong id="statUnmatched">0</strong></span>
+                        <span style="color: #2980b9;"><i class="fas fa-futbol"></i> Со счётом: <strong id="statWithScore">0</strong></span>
+                        <span style="color: #8e44ad;"><i class="fas fa-flag-checkered"></i> Завершено: <strong id="statFinished">0</strong></span>
+                    </div>
+                    <div id="statsHint" style="display:none; margin-top: 8px; padding: 8px 12px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
+                        <i class="fas fa-info-circle"></i> <span id="statsHintText"></span>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Соревнование</th>
+                                <th>Событие</th>
+                                <th>Источники</th>
+                                <th>Счёт</th>
+                                <th>Ставка</th>
+                                <th>Результат</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allEventsTable"></tbody>
+                    </table>
+                </div>
+                
+                <div id="allEventsLoading" class="loading" style="display:none;">
+                    <i class="fas fa-spinner"></i> Загрузка...
+                </div>
+                
+                <div id="allEventsEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-inbox"></i>
+                    <h3>Нет событий</h3>
+                    <p>Загрузите Excel файл на вкладке "Загрузка"</p>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <!-- Admin Tab -->
+        <div class="tab-content" id="tab-admin">
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="value" id="adminTotalUsers">0</div>
+                    <div class="label">Всего пользователей</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="value" id="adminActiveUsers">0</div>
+                    <div class="label">Активных</div>
+                </div>
+            </div>
+            
+            <div class="results-section">
+                <div class="results-header">
+                    <h2><i class="fas fa-users-cog"></i> Управление пользователями</h2>
+                    <div class="results-actions">
+                        <button class="btn btn-secondary" onclick="loadUsers()">
+                            <i class="fas fa-sync"></i> Обновить
+                        </button>
+                        <button class="btn btn-success" onclick="showCreateUserModal()">
+                            <i class="fas fa-user-plus"></i> Создать пользователя
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Логин</th>
+                                <th>Имя</th>
+                                <th>Email</th>
+                                <th>Статус</th>
+                                <th>Последний вход</th>
+                                <th>Права</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable"></tbody>
+                    </table>
+                </div>
+                <div id="usersLoading" class="loading" style="display:none;">
+                    <i class="fas fa-spinner"></i> Загрузка...
+                </div>
+            </div>
+            
+            <!-- Тестирование входа -->
+            <div class="results-section" style="margin-top: 20px;">
+                <div class="results-header">
+                    <h2><i class="fas fa-vial"></i> Проверка учётных данных</h2>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Выберите пользователя</label>
+                            <select id="testLoginUser" style="min-width: 200px;">
+                                <option value="">-- Выберите --</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Пароль для проверки</label>
+                            <input type="text" id="testLoginPassword" placeholder="Введите пароль" style="min-width: 200px;">
+                        </div>
+                        <button class="btn btn-primary" onclick="testUserLogin()">
+                            <i class="fas fa-check-circle"></i> Проверить вход
+                        </button>
+                    </div>
+                    <div id="testLoginResult" style="margin-top: 15px; padding: 15px; border-radius: 8px; display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create User Modal -->
+    <div class="modal" id="createUserModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Создать пользователя</h3>
+                <button class="modal-close" onclick="closeCreateUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="createUserError" style="display: none; background: rgba(239,68,68,0.2); color: #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 15px;"></div>
+                <div id="createUserSuccess" style="display: none; background: rgba(16,185,129,0.2); color: #10b981; padding: 10px; border-radius: 8px; margin-bottom: 15px;"></div>
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Логин *</label>
+                    <input type="text" id="newUsername" placeholder="Логин для входа">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Пароль *</label>
+                    <input type="text" id="newPassword" placeholder="Пароль">
+                    <small style="color: #94a3b8;">Пароль будет показан только сейчас</small>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> Отображаемое имя</label>
+                    <input type="text" id="newDisplayName" placeholder="Имя пользователя">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="newEmail" placeholder="email@example.com">
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="newCanSave" checked style="width: auto;">
+                        <span>Может сохранять результаты</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="newCanEdit" checked style="width: auto;">
+                        <span>Может редактировать события</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="newCanHistory" checked style="width: auto;">
+                        <span>Может просматривать историю</span>
+                    </label>
+                </div>
+                <button class="btn btn-success" onclick="createUser()" style="width:100%;">
+                    <i class="fas fa-user-plus"></i> Создать
+                </button>
+                <div id="createdUserInfo" style="display: none; margin-top: 15px; background: rgba(16,185,129,0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.3);">
+                    <h4 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-check-circle"></i> Пользователь создан!</h4>
+                    <p style="margin-bottom: 5px;"><strong>Логин:</strong> <span id="createdUsername" style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;"></span></p>
+                    <p style="margin-bottom: 10px;"><strong>Пароль:</strong> <span id="createdPassword" style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;"></span></p>
+                    <small style="color: #94a3b8;"><i class="fas fa-exclamation-triangle"></i> Сохраните пароль! Он не будет показан снова.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit User Modal -->
+    <div class="modal" id="editUserModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-edit"></i> Редактировать пользователя</h3>
+                <button class="modal-close" onclick="closeEditUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="editUserError" style="display: none; background: rgba(239,68,68,0.2); color: #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 15px;"></div>
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Логин</label>
+                    <input type="text" id="editUsername" disabled style="opacity: 0.7;">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Новый пароль (оставьте пустым, чтобы не менять)</label>
+                    <input type="text" id="editPassword" placeholder="Новый пароль">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> Отображаемое имя</label>
+                    <input type="text" id="editDisplayName" placeholder="Имя пользователя">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="editEmail" placeholder="email@example.com">
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="editIsActive" style="width: auto;">
+                        <span>Активен</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="editCanSave" style="width: auto;">
+                        <span>Может сохранять результаты</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="editCanEdit" style="width: auto;">
+                        <span>Может редактировать события</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="editCanHistory" style="width: auto;">
+                        <span>Может просматривать историю</span>
+                    </label>
+                </div>
+                <button class="btn btn-success" onclick="updateUser()" style="width:100%;">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-sign-in-alt"></i> Вход в систему</h3>
+                <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="loginError" style="display: none; background: rgba(239,68,68,0.2); color: #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 15px;"></div>
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Логин</label>
+                    <input type="text" id="loginUsername" placeholder="Введите логин" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Пароль</label>
+                    <input type="password" id="loginPassword" placeholder="Введите пароль" autocomplete="current-password">
+                </div>
+                <button class="btn btn-success" onclick="login()" style="width:100%;">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+                <p style="text-align: center; margin-top: 15px; color: #94a3b8; font-size: 0.85em;">
+                    Для получения доступа обратитесь к администратору
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Event Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Редактирование события</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="editEventInfo" style="margin-bottom:20px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px;"></div>
+                <div class="form-group">
+                    <label>Тип ставки</label>
+                    <input type="text" id="editBetType" placeholder="П1, X, П2, ТБ 2.5...">
+                </div>
+                <div class="form-group">
+                    <label>Значение</label>
+                    <input type="text" id="editBetValue" placeholder="2.5, -1.5...">
+                </div>
+                <div class="form-group">
+                    <label>Коэффициент</label>
+                    <input type="number" step="0.01" id="editBetOdds" placeholder="1.85">
+                </div>
+                <div class="form-group">
+                    <label>Сумма ставки</label>
+                    <input type="number" step="0.01" id="editBetAmount" placeholder="100">
+                </div>
+                <div class="form-group">
+                    <label>Результат</label>
+                    <select id="editBetResult">
+                        <option value="pending">Ожидает</option>
+                        <option value="win">Выигрыш</option>
+                        <option value="lose">Проигрыш</option>
+                        <option value="return">Возврат</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Заметки</label>
+                    <input type="text" id="editNotes" placeholder="Комментарий...">
+                </div>
+                <button class="btn btn-success" onclick="saveEventEdit()" style="width:100%;">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let uploadedEvents = [];
+        let filteredEvents = [];
+        let currentFilename = '';
+        let currentEditEventId = null;
+        let debounceTimer = null;
+        let availableSources = new Set();
+        let selectedSources = new Set();
+        let allEventsAvailableSources = [];
+        let allEventsSelectedSources = new Set();
+        let allEventsExcludedSources = new Set(); // Исключенные источники
+        let excludedSources = new Set(); // Исключенные источники для вкладки Загрузка
+        let authToken = localStorage.getItem('scoutAuthToken');
+        let currentUser = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDbStats();
+            setupDragAndDrop();
+            checkAuth();
+        });
+        
+        // Check authentication
+        async function checkAuth() {
+            if (!authToken) {
+                updateAuthUI(null);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/scout/auth/check', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    currentUser = data.user;
+                    updateAuthUI(data.user);
+                } else {
+                    authToken = null;
+                    localStorage.removeItem('scoutAuthToken');
+                    updateAuthUI(null);
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                updateAuthUI(null);
+            }
+        }
+        
+        // Update UI based on auth state
+        function updateAuthUI(user) {
+            const authInfo = document.getElementById('authInfo');
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userDisplay = document.getElementById('userDisplay');
+            const btnSave = document.getElementById('btnSave');
+            
+            if (user) {
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-flex';
+                userDisplay.textContent = user.displayName || user.username;
+                userDisplay.style.display = 'inline';
+                
+                // Показываем кнопку сохранения только если есть права
+                if (btnSave && user.canSaveResults) {
+                    btnSave.dataset.canSave = 'true';
+                }
+                
+                // Показываем вкладку администратора если есть права
+                if (user.canManageUsers) {
+                    document.getElementById('tabAdmin').style.display = 'inline-flex';
+                }
+            } else {
+                loginBtn.style.display = 'inline-flex';
+                logoutBtn.style.display = 'none';
+                userDisplay.style.display = 'none';
+                document.getElementById('tabAdmin').style.display = 'none';
+                
+                if (btnSave) {
+                    btnSave.dataset.canSave = 'false';
+                }
+            }
+            
+            // Обновляем видимость защищённых вкладок
+            updateProtectedTabs();
+        }
+        
+        // Обновление видимости защищённых вкладок
+        function updateProtectedTabs() {
+            const isAuth = currentUser && authToken;
+            const canViewHistory = isAuth && currentUser.canViewHistory;
+            
+            // История
+            document.getElementById('historyAuthRequired').style.display = canViewHistory ? 'none' : 'block';
+            document.getElementById('historyContent').style.display = canViewHistory ? 'block' : 'none';
+            
+            // Все события
+            document.getElementById('allEventsAuthRequired').style.display = canViewHistory ? 'none' : 'block';
+            document.getElementById('allEventsContent').style.display = canViewHistory ? 'block' : 'none';
+        }
+        
+        // Show login modal
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.add('active');
+            document.getElementById('loginUsername').focus();
+        }
+        
+        // Close login modal
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('active');
+            document.getElementById('loginError').style.display = 'none';
+        }
+        
+        // Login
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            
+            if (!username || !password) {
+                errorEl.textContent = 'Введите логин и пароль';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/scout/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('scoutAuthToken', authToken);
+                    closeLoginModal();
+                    updateAuthUI(data.user);
+                } else {
+                    errorEl.textContent = data.error || 'Ошибка авторизации';
+                    errorEl.style.display = 'block';
+                }
+            } catch (error) {
+                errorEl.textContent = 'Ошибка связи с сервером';
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        // Logout
+        async function logout() {
+            if (authToken) {
+                try {
+                    await fetch('/api/scout/auth/logout', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            }
+            
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('scoutAuthToken');
+            updateAuthUI(null);
+        }
+        
+        // Handle enter key in login form
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.getElementById('loginModal').classList.contains('active')) {
+                login();
+            }
+        });
+        
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            if (tabName === 'history') {
+                updateProtectedTabs();
+                if (currentUser && currentUser.canViewHistory) loadUploads();
+            }
+            if (tabName === 'all-events') { 
+                updateProtectedTabs();
+                if (currentUser && currentUser.canViewHistory) {
+                    loadSummary(); 
+                    loadAllEventsSources(); 
+                    loadAllEvents();
+                }
+            }
+            if (tabName === 'admin') {
+                if (currentUser && currentUser.canManageUsers) loadUsers();
+            }
+        }
+        
+        // Load DB statistics
+        async function loadDbStats() {
+            try {
+                const response = await fetch('/api/scout/stats');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('statDbGames').textContent = parseInt(data.stats.total_games).toLocaleString();
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        // Setup drag and drop
+        function setupDragAndDrop() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            
+            uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+            uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) handleFile(e.target.files[0]);
+            });
+        }
+        
+        // Handle file upload
+        async function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                alert('Пожалуйста, загрузите Excel файл (.xlsx или .xls)');
+                return;
+            }
+            
+            currentFilename = file.name;
+            const progressBar = document.getElementById('progressBar');
+            const progress = document.getElementById('progress');
+            
+            progressBar.style.display = 'block';
+            progress.style.width = '30%';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                progress.style.width = '60%';
+                const response = await fetch('/api/scout/upload', { method: 'POST', body: formData });
+                progress.style.width = '90%';
+                const data = await response.json();
+                
+                if (data.success) {
+                    uploadedEvents = data.data;
+                    filteredEvents = [...uploadedEvents];
+                    
+                    // Extract sources
+                    extractSources();
+                    
+                    updateStats();
+                    renderTable();
+                    document.getElementById('resultsSection').style.display = 'block';
+                    document.getElementById('btnSave').style.display = 'none';
+                    progress.style.width = '100%';
+                    setTimeout(() => progressBar.style.display = 'none', 500);
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                alert('Ошибка загрузки: ' + error.message);
+                progressBar.style.display = 'none';
+            }
+        }
+        
+        // Extract unique sources from events
+        function extractSources() {
+            availableSources.clear();
+            selectedSources.clear();
+            
+            uploadedEvents.forEach(event => {
+                if (event.sources) {
+                    const sources = event.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+                    sources.forEach(s => availableSources.add(s));
+                }
+            });
+            
+            // Select all sources by default
+            availableSources.forEach(s => selectedSources.add(s));
+            
+            renderSourcesFilter();
+        }
+        
+        // Render sources filter checkboxes
+        function renderSourcesFilter() {
+            const container = document.getElementById('sourcesFilter');
+            
+            if (availableSources.size === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'flex';
+            
+            // Count events per source
+            const sourceCounts = {};
+            uploadedEvents.forEach(event => {
+                if (event.sources) {
+                    const sources = event.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+                    sources.forEach(s => {
+                        sourceCounts[s] = (sourceCounts[s] || 0) + 1;
+                    });
+                }
+            });
+            
+            container.innerHTML = `
+                <label class="source-checkbox">
+                    <input type="checkbox" checked onchange="toggleAllSources(this.checked)">
+                    <span>Все источники</span>
+                </label>
+                ${Array.from(availableSources).map(source => `
+                    <label class="source-checkbox">
+                        <input type="checkbox" ${selectedSources.has(source) ? 'checked' : ''} 
+                               value="${source}" onchange="toggleSource('${source}', this.checked)">
+                        <span>${source}</span>
+                        <span class="count">${sourceCounts[source] || 0}</span>
+                    </label>
+                `).join('')}
+                <span style="margin-left: 20px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px; color: #ef4444;">
+                    <i class="fas fa-ban"></i> Исключить:
+                </span>
+                ${Array.from(availableSources).map(source => `
+                    <label class="source-checkbox" style="background: rgba(239,68,68,0.1);">
+                        <input type="checkbox" ${excludedSources.has(source) ? 'checked' : ''} 
+                               value="${source}" onchange="toggleExcludeSource('${source}', this.checked)">
+                        <span style="color: #f87171;">✘ ${source}</span>
+                    </label>
+                `).join('')}
+            `;
+        }
+        
+        // Toggle all sources
+        function toggleAllSources(checked) {
+            if (checked) {
+                availableSources.forEach(s => selectedSources.add(s));
+            } else {
+                selectedSources.clear();
+            }
+            
+            // Update checkboxes
+            document.querySelectorAll('.sources-filter input[type="checkbox"]').forEach((cb, index) => {
+                if (index > 0) cb.checked = checked;
+            });
+            
+            applyFilters();
+        }
+        
+        // Toggle single source
+        function toggleSource(source, checked) {
+            if (checked) {
+                selectedSources.add(source);
+                excludedSources.delete(source); // Снимаем исключение
+            } else {
+                selectedSources.delete(source);
+            }
+            applyFilters();
+        }
+        
+        // Toggle exclude source
+        function toggleExcludeSource(source, checked) {
+            if (checked) {
+                excludedSources.add(source);
+                selectedSources.delete(source); // Снимаем включение
+            } else {
+                excludedSources.delete(source);
+            }
+            renderSourcesFilter(); // Обновляем UI
+            applyFilters();
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const total = uploadedEvents.length;
+            const found = uploadedEvents.filter(e => e.matchFound).length;
+            const notFound = uploadedEvents.filter(e => e.matchFound === false).length;
+            
+            // Calculate totals
+            let totalOver = 0;
+            let totalUnder = 0;
+            
+            uploadedEvents.forEach(e => {
+                if (e.dbMatch) {
+                    const homeScore = e.dbMatch.teamsSwapped ? e.dbMatch.awayScore : e.dbMatch.homeScore;
+                    const awayScore = e.dbMatch.teamsSwapped ? e.dbMatch.homeScore : e.dbMatch.awayScore;
+                    
+                    if (homeScore !== null && homeScore !== undefined && awayScore !== null && awayScore !== undefined) {
+                        const totalGoals = (homeScore || 0) + (awayScore || 0);
+                        if (totalGoals > 2.5) totalOver++;
+                        else totalUnder++;
+                    }
+                }
+            });
+            
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statFootball').textContent = total;
+            document.getElementById('statFound').textContent = found;
+            document.getElementById('statNotFound').textContent = notFound;
+            document.getElementById('statTotalOver').textContent = totalOver;
+            document.getElementById('statTotalUnder').textContent = totalUnder;
+        }
+        
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('eventsTable');
+            
+            if (filteredEvents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px; color:#94a3b8;">Нет событий</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filteredEvents.map((event, index) => {
+                const statusClass = event.matchFound ? 'found' : 'not-found';
+                const statusText = event.matchFound ? 'Найдено' : 'Не найдено';
+                
+                let score = '—';
+                let totalGoals = null;
+                let totalBadge = '';
+                
+                if (event.dbMatch) {
+                    const rawHome = event.dbMatch.teamsSwapped ? event.dbMatch.awayScore : event.dbMatch.homeScore;
+                    const rawAway = event.dbMatch.teamsSwapped ? event.dbMatch.homeScore : event.dbMatch.awayScore;
+                    
+                    if (rawHome !== null && rawHome !== undefined && rawAway !== null && rawAway !== undefined) {
+                        score = `${rawHome}:${rawAway}`;
+                        totalGoals = (rawHome || 0) + (rawAway || 0);
+                        
+                        if (totalGoals > 2.5) {
+                            totalBadge = `<span class="total-badge over">ТБ ${totalGoals}</span>`;
+                        } else {
+                            totalBadge = `<span class="total-badge under">ТМ ${totalGoals}</span>`;
+                        }
+                    } else if (event.dbMatch.isFinished) {
+                        score = 'Ожидается';
+                    }
+                }
+                
+                // Format sources
+                const sourcesHtml = event.sources 
+                    ? event.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean)
+                        .map(s => `<span class="source-tag">${s}</span>`).join('')
+                    : '—';
+                
+                return `
+                    <tr>
+                        <td>${event.rowNum}</td>
+                        <td>${event.dateFormatted || '—'}</td>
+                        <td><small>${event.competition || '—'}</small></td>
+                        <td>
+                            <strong>${event.homeTeam || '—'}</strong> vs ${event.awayTeam || '—'}
+                        </td>
+                        <td>${sourcesHtml}</td>
+                        <td><span class="score ${statusClass}">${score}</span></td>
+                        <td>${totalBadge}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>
+                            ${event.dbMatch ? `
+                                <small>
+                                    ${event.dbMatch.teamsSwapped ? '⇄ ' : ''}
+                                    ${event.dbMatch.homeTeam} vs ${event.dbMatch.awayTeam}
+                                    <br>${event.dbMatch.league || ''}
+                                </small>
+                            ` : '—'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Find all results
+        async function findAllResults() {
+            const btn = document.getElementById('btnFindResults');
+            const loading = document.getElementById('loadingResults');
+            
+            btn.disabled = true;
+            loading.style.display = 'flex';
+            
+            try {
+                const events = uploadedEvents.map(e => ({
+                    homeTeam: e.homeTeam,
+                    awayTeam: e.awayTeam,
+                    date: e.date,
+                    competition: e.competition
+                }));
+                
+                const response = await fetch('/api/scout/find-results-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ events })
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Сервер вернул ошибку ${response.status}: ${text.substring(0, 200)}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Сервер вернул не-JSON ответ. Попробуйте позже или обновите страницу.');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    data.data.forEach((result, index) => {
+                        uploadedEvents[index].matchFound = result.matchFound;
+                        uploadedEvents[index].dbMatch = result.dbMatch;
+                    });
+                    
+                    filteredEvents = [...uploadedEvents];
+                    updateStats();
+                    renderTable();
+                    document.getElementById('btnSave').style.display = 'inline-flex';
+                } else {
+                    throw new Error(data.error || 'Неизвестная ошибка сервера');
+                }
+            } catch (error) {
+                alert('Ошибка поиска: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Save upload to DB (requires auth)
+        async function saveUpload() {
+            // Check if user is logged in
+            if (!authToken || !currentUser) {
+                alert('Для сохранения результатов необходимо авторизоваться');
+                showLoginModal();
+                return;
+            }
+            
+            // Check permissions
+            if (!currentUser.canSaveResults) {
+                alert('У вас нет прав на сохранение результатов. Обратитесь к администратору.');
+                return;
+            }
+            
+            const btn = document.getElementById('btnSave');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+            
+            try {
+                const response = await fetch('/api/scout/save-upload-auth', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        filename: currentFilename,
+                        events: uploadedEvents
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Сохранено! ID загрузки: ${data.uploadId}\nСохранил: ${data.savedBy}`);
+                    btn.style.display = 'none';
+                } else {
+                    if (response.status === 401) {
+                        alert('Сессия истекла. Пожалуйста, войдите снова.');
+                        logout();
+                        showLoginModal();
+                    } else {
+                        throw new Error(data.error);
+                    }
+                }
+            } catch (error) {
+                alert('Ошибка сохранения: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Сохранить';
+            }
+        }
+        
+        // Apply filters
+        function applyFilters() {
+            const status = document.getElementById('filterStatus').value;
+            const totalFilter = document.getElementById('filterTotal').value;
+            const search = document.getElementById('filterSearch').value.toLowerCase();
+            
+            filteredEvents = uploadedEvents.filter(event => {
+                // Status filter
+                if (status === 'found' && !event.matchFound) return false;
+                if (status === 'not-found' && event.matchFound !== false) return false;
+                
+                // Sources filter - включение
+                if (selectedSources.size > 0 && event.sources) {
+                    const eventSources = event.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+                    const hasSelectedSource = eventSources.some(s => selectedSources.has(s));
+                    if (!hasSelectedSource) return false;
+                }
+                
+                // Sources filter - исключение
+                if (excludedSources.size > 0 && event.sources) {
+                    const eventSources = event.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+                    const hasExcludedSource = eventSources.some(s => excludedSources.has(s));
+                    if (hasExcludedSource) return false;
+                }
+                
+                // Total filter
+                if (totalFilter !== 'all' && event.dbMatch) {
+                    const homeScore = event.dbMatch.teamsSwapped ? event.dbMatch.awayScore : event.dbMatch.homeScore;
+                    const awayScore = event.dbMatch.teamsSwapped ? event.dbMatch.homeScore : event.dbMatch.awayScore;
+                    
+                    if (homeScore === null || homeScore === undefined || awayScore === null || awayScore === undefined) return false;
+                    const totalGoals = (homeScore || 0) + (awayScore || 0);
+                    
+                    const [direction, threshold] = totalFilter.split('-');
+                    const thresholdNum = parseFloat(threshold);
+                    
+                    if (direction === 'over' && totalGoals <= thresholdNum) return false;
+                    if (direction === 'under' && totalGoals >= thresholdNum) return false;
+                }
+                
+                // Search filter
+                if (search) {
+                    const searchFields = [event.homeTeam, event.awayTeam, event.competition, event.sources].filter(Boolean).join(' ').toLowerCase();
+                    if (!searchFields.includes(search)) return false;
+                }
+                
+                return true;
+            });
+            
+            renderTable();
+        }
+        
+        // Export results
+        function exportResults() {
+            const csvContent = [
+                ['#', 'Дата', 'Соревнование', 'Хозяева', 'Гости', 'Источники', 'Счёт', 'Тотал', 'Статус', 'БД Хозяева', 'БД Гости', 'Лига БД'].join(';'),
+                ...uploadedEvents.map(e => {
+                    let totalGoals = '';
+                    if (e.dbMatch?.isFinished) {
+                        const homeScore = e.dbMatch.teamsSwapped ? e.dbMatch.awayScore : e.dbMatch.homeScore;
+                        const awayScore = e.dbMatch.teamsSwapped ? e.dbMatch.homeScore : e.dbMatch.awayScore;
+                        totalGoals = (homeScore || 0) + (awayScore || 0);
+                    }
+                    return [
+                        e.rowNum, e.dateFormatted || '', e.competition || '',
+                        e.homeTeam || '', e.awayTeam || '', e.sources || '',
+                        e.dbMatch?.score && e.dbMatch.score !== 'Ожидается' ? e.dbMatch.score : '', totalGoals,
+                        e.matchFound ? 'Найдено' : 'Не найдено',
+                        e.dbMatch?.homeTeam || '', e.dbMatch?.awayTeam || '', e.dbMatch?.league || ''
+                    ].join(';');
+                })
+            ].join('\n');
+            
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `scout_results_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+        
+        // Load uploads history
+        async function loadUploads() {
+            const container = document.getElementById('uploadsList');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Загрузка...</div>';
+            
+            try {
+                const response = await fetch('/api/scout/uploads');
+                const data = await response.json();
+                
+                if (data.uploads.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>Нет загрузок</h3></div>';
+                    return;
+                }
+                
+                container.innerHTML = data.uploads.map(u => `
+                    <div class="upload-card" onclick="viewUpload('${u.id}')">
+                        <div class="upload-info">
+                            <h4><i class="fas fa-file-excel"></i> ${u.filename || 'Без имени'}</h4>
+                            <small>${new Date(u.upload_date).toLocaleString('ru-RU')}</small>
+                        </div>
+                        <div class="upload-stats">
+                            <div class="upload-stat">
+                                <div class="value">${u.total_rows}</div>
+                                <div class="label">Всего</div>
+                            </div>
+                            <div class="upload-stat">
+                                <div class="value" style="color:#10b981">${u.matched_rows}</div>
+                                <div class="label">Найдено</div>
+                            </div>
+                            <div class="upload-stat">
+                                <div class="value">${u.match_rate || 0}%</div>
+                                <div class="label">Точность</div>
+                            </div>
+                            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteUpload('${u.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Ошибка загрузки</h3></div>';
+            }
+        }
+        
+        // View upload events
+        async function viewUpload(uploadId) {
+            switchTab('all-events');
+        }
+        
+        // Delete upload
+        async function deleteUpload(uploadId) {
+            if (!confirm('Удалить эту загрузку и все её события?')) return;
+            
+            try {
+                const response = await fetch(`/api/scout/uploads/${uploadId}`, { method: 'DELETE' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadUploads();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                alert('Ошибка удаления: ' + error.message);
+            }
+        }
+        
+        // Load summary
+        async function loadSummary() {
+            try {
+                const response = await fetch('/api/scout/summary');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const s = data.summary;
+                    document.getElementById('summaryTotal').textContent = s.total_events;
+                    document.getElementById('summaryMatched').textContent = s.matched_events;
+                    document.getElementById('summaryBets').textContent = s.events_with_bets;
+                    document.getElementById('summaryWins').textContent = s.wins;
+                    document.getElementById('summaryLosses').textContent = s.losses;
+                    document.getElementById('summaryProfit').textContent = parseFloat(s.total_profit).toFixed(2);
+                }
+            } catch (error) {
+                console.error('Error loading summary:', error);
+            }
+        }
+        
+        // Load sources for All Events tab
+        async function loadAllEventsSources() {
+            try {
+                const response = await fetch('/api/scout/sources');
+                const data = await response.json();
+                
+                if (data.success && data.sources.length > 0) {
+                    allEventsAvailableSources = data.sources;
+                    allEventsSelectedSources.clear();
+                    data.sources.forEach(s => allEventsSelectedSources.add(s.name));
+                    renderAllEventsSourcesFilter();
+                } else {
+                    document.getElementById('allEventsSourcesFilter').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading sources:', error);
+            }
+        }
+        
+        // Render sources filter for All Events
+        function renderAllEventsSourcesFilter() {
+            const container = document.getElementById('allEventsSourcesFilter');
+            
+            if (allEventsAvailableSources.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'flex';
+            
+            container.innerHTML = `
+                <label class="source-checkbox">
+                    <input type="checkbox" checked onchange="toggleAllEventsSources(this.checked)">
+                    <span>Все источники</span>
+                </label>
+                ${allEventsAvailableSources.map(source => `
+                    <label class="source-checkbox">
+                        <input type="checkbox" ${allEventsSelectedSources.has(source.name) ? 'checked' : ''} 
+                               value="${source.name}" onchange="toggleAllEventsSource('${source.name}', this.checked)">
+                        <span>${source.name}</span>
+                        <span class="count">${source.count || 0}</span>
+                    </label>
+                `).join('')}
+                <span style="margin-left: 20px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px; color: #ef4444;">
+                    <i class="fas fa-ban"></i> Исключить:
+                </span>
+                ${allEventsAvailableSources.map(source => `
+                    <label class="source-checkbox" style="background: rgba(239,68,68,0.1);">
+                        <input type="checkbox" ${allEventsExcludedSources.has(source.name) ? 'checked' : ''} 
+                               value="${source.name}" onchange="toggleAllEventsExcludeSource('${source.name}', this.checked)">
+                        <span style="color: #f87171;">✘ ${source.name}</span>
+                    </label>
+                `).join('')}
+            `;
+        }
+        
+        // Toggle all sources in All Events
+        function toggleAllEventsSources(checked) {
+            if (checked) {
+                allEventsAvailableSources.forEach(s => allEventsSelectedSources.add(s.name));
+            } else {
+                allEventsSelectedSources.clear();
+            }
+            
+            document.querySelectorAll('#allEventsSourcesFilter input[type="checkbox"]').forEach((cb, index) => {
+                if (index > 0) cb.checked = checked;
+            });
+            
+            loadAllEvents();
+        }
+        
+        // Toggle single source in All Events
+        function toggleAllEventsSource(source, checked) {
+            if (checked) {
+                allEventsSelectedSources.add(source);
+                allEventsExcludedSources.delete(source);
+            } else {
+                allEventsSelectedSources.delete(source);
+            }
+            loadAllEvents();
+        }
+        
+        // Toggle exclude source in All Events
+        function toggleAllEventsExcludeSource(source, checked) {
+            if (checked) {
+                allEventsExcludedSources.add(source);
+                allEventsSelectedSources.delete(source);
+            } else {
+                allEventsExcludedSources.delete(source);
+            }
+            renderAllEventsSourcesFilter();
+            loadAllEvents();
+        }
+        
+        // Debounced load all events
+        function debounceLoadAllEvents() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(loadAllEvents, 300);
+        }
+        
+        // Load all events
+        async function loadAllEvents() {
+            const container = document.getElementById('allEventsTable');
+            const loading = document.getElementById('allEventsLoading');
+            const empty = document.getElementById('allEventsEmpty');
+            
+            loading.style.display = 'flex';
+            empty.style.display = 'none';
+            
+            const params = new URLSearchParams();
+            
+            const matchFound = document.getElementById('allFilterStatus').value;
+            if (matchFound) params.append('matchFound', matchFound);
+            
+            const betResult = document.getElementById('allFilterBetResult').value;
+            if (betResult) params.append('betResult', betResult);
+            
+            const dateFrom = document.getElementById('allFilterDateFrom').value;
+            if (dateFrom) params.append('dateFrom', dateFrom);
+            
+            const dateTo = document.getElementById('allFilterDateTo').value;
+            if (dateTo) params.append('dateTo', dateTo);
+            
+            const search = document.getElementById('allFilterSearch').value;
+            if (search) params.append('search', search);
+            
+            // Add sources filter
+            if (allEventsSelectedSources.size > 0 && allEventsSelectedSources.size < allEventsAvailableSources.length) {
+                params.append('sources', Array.from(allEventsSelectedSources).join(','));
+            }
+            
+            // Add exclude sources filter
+            if (allEventsExcludedSources.size > 0) {
+                params.append('excludeSources', Array.from(allEventsExcludedSources).join(','));
+            }
+            
+            try {
+                const response = await fetch('/api/scout/events-v2?' + params.toString());
+                const data = await response.json();
+                
+                // Обновляем сводку статистики
+                const statsBlock = document.getElementById('allEventsStats');
+                if (data.stats) {
+                    const s = data.stats;
+                    const total = parseInt(s.total) || 0;
+                    const matched = parseInt(s.matched) || 0;
+                    const unmatched = total - matched;
+                    const withScore = parseInt(s.with_score) || 0;
+                    const finished = parseInt(s.finished) || 0;
+                    
+                    document.getElementById('statTotal').textContent = total;
+                    document.getElementById('statMatched').textContent = matched;
+                    document.getElementById('statUnmatched').textContent = unmatched;
+                    document.getElementById('statWithScore').textContent = withScore;
+                    document.getElementById('statFinished').textContent = finished;
+                    statsBlock.style.display = 'block';
+                    
+                    // Подсказка если много не сопоставленных
+                    const hintBlock = document.getElementById('statsHint');
+                    const hintText = document.getElementById('statsHintText');
+                    if (unmatched > 0 && unmatched > total * 0.1) {
+                        hintText.textContent = `${unmatched} событий не сопоставлено. Возможные причины: матчи ещё не состоялись, женские/молодёжные лиги отсутствуют в БД, или данные за будущие даты ещё не загружены. Нажмите "Пересопоставить" после загрузки новых данных.`;
+                        hintBlock.style.display = 'block';
+                    } else {
+                        hintBlock.style.display = 'none';
+                    }
+                }
+                
+                if (data.events.length === 0) {
+                    container.innerHTML = '';
+                    empty.style.display = 'block';
+                    return;
+                }
+                
+                container.innerHTML = data.events.map(e => {
+                    const score = (e.home_score !== null && e.home_score !== undefined && e.away_score !== null && e.away_score !== undefined) ? `${e.home_score}:${e.away_score}` : '—';
+                    const betInfo = e.bet_amount ? `${e.bet_type || '?'} @ ${e.bet_odds} (${e.bet_amount})` : '—';
+                    const resultClass = e.bet_result === 'win' ? 'found' : e.bet_result === 'lose' ? 'not-found' : 'pending';
+                    
+                    // Format sources
+                    const sourcesHtml = e.sources 
+                        ? e.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean)
+                            .map(s => `<span class="source-tag">${s}</span>`).join('')
+                        : '—';
+                    
+                    return `
+                        <tr>
+                            <td>${e.event_date ? new Date(e.event_date).toLocaleDateString('ru-RU') : '—'}</td>
+                            <td><small>${e.competition || '—'}</small></td>
+                            <td><strong>${e.home_team_original}</strong> vs ${e.away_team_original}</td>
+                            <td>${sourcesHtml}</td>
+                            <td><span class="score ${e.matched_game_sstats_id ? 'found' : 'not-found'}">${score}</span></td>
+                            <td><small>${betInfo}</small></td>
+                            <td><span class="status-badge ${resultClass}">${e.bet_result || 'pending'}</span></td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="editEvent(${e.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading events:', error);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Пересопоставить ненайденные события
+        async function rematchEvents() {
+            const btn = document.getElementById('btnRematch');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+            
+            try {
+                const response = await fetch('/api/scout/rematch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ onlyUnmatched: true })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Server error: ' + response.status);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Пересопоставление завершено!\n\nОбработано: ${data.total}\nНайдено: ${data.matched}\nОбновлено: ${data.updated}${data.errors ? '\nОшибок: ' + data.errors : ''}`);
+                    loadAllEvents();
+                    loadSummary();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Пересопоставить';
+            }
+        }
+        
+        // Обновить счета из БД
+        async function refreshScores() {
+            const btn = document.getElementById('btnRefreshScores');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обновление...';
+            
+            try {
+                const response = await fetch('/api/scout/refresh-scores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Server error: ' + response.status);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const s = data.stats;
+                    alert(`Счета обновлены!\n\nОбновлено записей: ${data.updated}\nВсего событий: ${s.total}\nСопоставлено: ${s.matched}\nСо счетом: ${s.with_score}\nЗавершено: ${s.finished}`);
+                    loadAllEvents();
+                    loadSummary();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-database"></i> Обновить счета';
+            }
+        }
+        
+        // Edit event
+        async function editEvent(eventId) {
+            currentEditEventId = eventId;
+            
+            try {
+                const response = await fetch(`/api/scout/events?search=&limit=1000`);
+                const data = await response.json();
+                const event = data.events.find(e => e.id === eventId);
+                
+                if (!event) return;
+                
+                document.getElementById('editEventInfo').innerHTML = `
+                    <strong>${event.home_team_original} vs ${event.away_team_original}</strong><br>
+                    <small>${event.competition} - ${new Date(event.event_date).toLocaleDateString('ru-RU')}</small>
+                    ${event.sources ? `<br><small>Источники: ${event.sources}</small>` : ''}
+                `;
+                
+                document.getElementById('editBetType').value = event.bet_type || '';
+                document.getElementById('editBetValue').value = event.bet_value || '';
+                document.getElementById('editBetOdds').value = event.bet_odds || '';
+                document.getElementById('editBetAmount').value = event.bet_amount || '';
+                document.getElementById('editBetResult').value = event.bet_result || 'pending';
+                document.getElementById('editNotes').value = event.notes || '';
+                
+                document.getElementById('editModal').classList.add('active');
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            }
+        }
+        
+        // Save event edit
+        async function saveEventEdit() {
+            if (!currentEditEventId) return;
+            
+            try {
+                const response = await fetch(`/api/scout/events/${currentEditEventId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        betType: document.getElementById('editBetType').value,
+                        betValue: document.getElementById('editBetValue').value,
+                        betOdds: parseFloat(document.getElementById('editBetOdds').value) || null,
+                        betAmount: parseFloat(document.getElementById('editBetAmount').value) || null,
+                        betResult: document.getElementById('editBetResult').value,
+                        notes: document.getElementById('editNotes').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeEditModal();
+                    loadAllEvents();
+                    loadSummary();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                alert('Ошибка сохранения: ' + error.message);
+            }
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditEventId = null;
+        }
+        
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') closeEditModal();
+        });
+        
+        document.getElementById('loginModal').addEventListener('click', (e) => {
+            if (e.target.id === 'loginModal') closeLoginModal();
+        });
+        
+        // Export all events to CSV
+        async function exportAllEvents() {
+            const params = new URLSearchParams();
+            params.append('limit', '10000');
+            
+            const matchFound = document.getElementById('allFilterStatus').value;
+            if (matchFound) params.append('matchFound', matchFound);
+            
+            const betResult = document.getElementById('allFilterBetResult').value;
+            if (betResult) params.append('betResult', betResult);
+            
+            const dateFrom = document.getElementById('allFilterDateFrom').value;
+            if (dateFrom) params.append('dateFrom', dateFrom);
+            
+            const dateTo = document.getElementById('allFilterDateTo').value;
+            if (dateTo) params.append('dateTo', dateTo);
+            
+            const search = document.getElementById('allFilterSearch').value;
+            if (search) params.append('search', search);
+            
+            if (allEventsSelectedSources.size > 0 && allEventsSelectedSources.size < allEventsAvailableSources.length) {
+                params.append('sources', Array.from(allEventsSelectedSources).join(','));
+            }
+            
+            // Add exclude sources filter
+            if (allEventsExcludedSources.size > 0) {
+                params.append('excludeSources', Array.from(allEventsExcludedSources).join(','));
+            }
+            
+            try {
+                const response = await fetch('/api/scout/events-v2?' + params.toString());
+                const data = await response.json();
+                
+                if (!data.events || data.events.length === 0) {
+                    alert('Нет событий для экспорта');
+                    return;
+                }
+                
+                const csvContent = [
+                    ['Дата', 'Соревнование', 'Хозяева', 'Гости', 'Источники', 'Счёт', 'Тип ставки', 'Коэффициент', 'Сумма', 'Результат'].join(';'),
+                    ...data.events.map(e => [
+                        e.event_date ? new Date(e.event_date).toLocaleDateString('ru-RU') : '',
+                        e.competition || '',
+                        e.home_team_original || '',
+                        e.away_team_original || '',
+                        e.sources || '',
+                        (e.home_score !== null && e.away_score !== null) ? `${e.home_score}:${e.away_score}` : '',
+                        e.bet_type || '',
+                        e.bet_odds || '',
+                        e.bet_amount || '',
+                        e.bet_result || 'pending'
+                    ].join(';'))
+                ].join('\n');
+                
+                const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `scout_all_events_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+            } catch (error) {
+                alert('Ошибка экспорта: ' + error.message);
+            }
+        }
+        
+        // ==================== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ====================
+        
+        let usersData = [];
+        
+        // Load users
+        async function loadUsers() {
+            const container = document.getElementById('usersTable');
+            const loading = document.getElementById('usersLoading');
+            
+            loading.style.display = 'flex';
+            
+            try {
+                const response = await fetch('/api/scout/users', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+                
+                usersData = data.users;
+                
+                // Update stats
+                document.getElementById('adminTotalUsers').textContent = usersData.length;
+                document.getElementById('adminActiveUsers').textContent = usersData.filter(u => u.is_active).length;
+                
+                // Update test login dropdown
+                const testSelect = document.getElementById('testLoginUser');
+                testSelect.innerHTML = '<option value="">-- Выберите --</option>' + 
+                    usersData.map(u => `<option value="${u.id}">${u.username} (${u.display_name || u.username})</option>`).join('');
+                
+                // Render table
+                container.innerHTML = usersData.map(u => {
+                    const permissions = [];
+                    if (u.can_save_results) permissions.push('<span class="source-tag" style="background: rgba(16,185,129,0.2); color: #10b981;">Сохранять</span>');
+                    if (u.can_edit_events) permissions.push('<span class="source-tag" style="background: rgba(59,130,246,0.2); color: #3b82f6;">Редактировать</span>');
+                    if (u.can_view_history) permissions.push('<span class="source-tag" style="background: rgba(139,92,246,0.2); color: #8b5cf6;">История</span>');
+                    if (u.can_manage_users) permissions.push('<span class="source-tag" style="background: rgba(239,68,68,0.2); color: #ef4444;">Админ</span>');
+                    
+                    const lastLogin = u.last_login 
+                        ? new Date(u.last_login).toLocaleString('ru-RU') 
+                        : '<span style="color: #64748b;">Никогда</span>';
+                    
+                    return `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td><strong>${u.username}</strong></td>
+                            <td>${u.display_name || '—'}</td>
+                            <td>${u.email || '—'}</td>
+                            <td>
+                                <span class="status-badge ${u.is_active ? 'found' : 'not-found'}">
+                                    ${u.is_active ? 'Активен' : 'Отключен'}
+                                </span>
+                            </td>
+                            <td><small>${lastLogin}</small></td>
+                            <td>${permissions.join(' ') || '—'}</td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="editUser(${u.id})" title="Редактировать">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${!u.can_manage_users ? `
+                                    <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.username}')" title="Удалить">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                container.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #ef4444;">Ошибка: ${error.message}</td></tr>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Show create user modal
+        function showCreateUserModal() {
+            document.getElementById('createUserError').style.display = 'none';
+            document.getElementById('createUserSuccess').style.display = 'none';
+            document.getElementById('createdUserInfo').style.display = 'none';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('newDisplayName').value = '';
+            document.getElementById('newEmail').value = '';
+            document.getElementById('newCanSave').checked = true;
+            document.getElementById('newCanEdit').checked = true;
+            document.getElementById('newCanHistory').checked = true;
+            document.getElementById('createUserModal').classList.add('active');
+        }
+        
+        function closeCreateUserModal() {
+            document.getElementById('createUserModal').classList.remove('active');
+        }
+        
+        // Create user
+        async function createUser() {
+            const errorEl = document.getElementById('createUserError');
+            const successEl = document.getElementById('createUserSuccess');
+            const createdInfo = document.getElementById('createdUserInfo');
+            
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+            createdInfo.style.display = 'none';
+            
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newPassword').value;
+            const displayName = document.getElementById('newDisplayName').value.trim();
+            const email = document.getElementById('newEmail').value.trim();
+            const canSaveResults = document.getElementById('newCanSave').checked;
+            const canEditEvents = document.getElementById('newCanEdit').checked;
+            const canViewHistory = document.getElementById('newCanHistory').checked;
+            
+            if (!username || !password) {
+                errorEl.textContent = 'Введите логин и пароль';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/scout/users', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        displayName,
+                        email,
+                        canSaveResults,
+                        canEditEvents,
+                        canViewHistory
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show created user info
+                    document.getElementById('createdUsername').textContent = username;
+                    document.getElementById('createdPassword').textContent = password;
+                    createdInfo.style.display = 'block';
+                    
+                    successEl.textContent = `Пользователь ${username} создан!`;
+                    successEl.style.display = 'block';
+                    
+                    // Clear form
+                    document.getElementById('newUsername').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('newDisplayName').value = '';
+                    document.getElementById('newEmail').value = '';
+                    
+                    // Reload users
+                    loadUsers();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        // Edit user
+        function editUser(userId) {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUsername').value = user.username;
+            document.getElementById('editPassword').value = '';
+            document.getElementById('editDisplayName').value = user.display_name || '';
+            document.getElementById('editEmail').value = user.email || '';
+            document.getElementById('editIsActive').checked = user.is_active;
+            document.getElementById('editCanSave').checked = user.can_save_results;
+            document.getElementById('editCanEdit').checked = user.can_edit_events;
+            document.getElementById('editCanHistory').checked = user.can_view_history;
+            
+            document.getElementById('editUserError').style.display = 'none';
+            document.getElementById('editUserModal').classList.add('active');
+        }
+        
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').classList.remove('active');
+        }
+        
+        // Update user
+        async function updateUser() {
+            const errorEl = document.getElementById('editUserError');
+            errorEl.style.display = 'none';
+            
+            const userId = document.getElementById('editUserId').value;
+            const password = document.getElementById('editPassword').value;
+            const displayName = document.getElementById('editDisplayName').value.trim();
+            const email = document.getElementById('editEmail').value.trim();
+            const isActive = document.getElementById('editIsActive').checked;
+            const canSaveResults = document.getElementById('editCanSave').checked;
+            const canEditEvents = document.getElementById('editCanEdit').checked;
+            const canViewHistory = document.getElementById('editCanHistory').checked;
+            
+            try {
+                const body = {
+                    displayName,
+                    email,
+                    isActive,
+                    canSaveResults,
+                    canEditEvents,
+                    canViewHistory
+                };
+                
+                if (password) {
+                    body.password = password;
+                }
+                
+                const response = await fetch(`/api/scout/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeEditUserModal();
+                    loadUsers();
+                    alert('Пользователь обновлён');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        // Delete user
+        async function deleteUser(userId, username) {
+            if (!confirm(`Удалить пользователя "${username}"?`)) return;
+            
+            try {
+                const response = await fetch(`/api/scout/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadUsers();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                alert('Ошибка удаления: ' + error.message);
+            }
+        }
+        
+        // Test user login
+        async function testUserLogin() {
+            const userId = document.getElementById('testLoginUser').value;
+            const password = document.getElementById('testLoginPassword').value;
+            const resultEl = document.getElementById('testLoginResult');
+            
+            if (!userId) {
+                resultEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Выберите пользователя';
+                resultEl.style.display = 'block';
+                resultEl.style.background = 'rgba(245,158,11,0.2)';
+                resultEl.style.color = '#f59e0b';
+                return;
+            }
+            
+            if (!password) {
+                resultEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Введите пароль для проверки';
+                resultEl.style.display = 'block';
+                resultEl.style.background = 'rgba(245,158,11,0.2)';
+                resultEl.style.color = '#f59e0b';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/scout/users/${userId}/test-login`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.loginTest) {
+                    const test = data.loginTest;
+                    if (test.canLogin) {
+                        resultEl.style.background = 'rgba(16,185,129,0.2)';
+                        resultEl.style.color = '#10b981';
+                    } else if (test.passwordValid) {
+                        resultEl.style.background = 'rgba(245,158,11,0.2)';
+                        resultEl.style.color = '#f59e0b';
+                    } else {
+                        resultEl.style.background = 'rgba(239,68,68,0.2)';
+                        resultEl.style.color = '#ef4444';
+                    }
+                    resultEl.innerHTML = `
+                        <strong>${test.message}</strong><br>
+                        <small>Пользователь: ${test.username} | Активен: ${test.isActive ? 'Да' : 'Нет'}</small>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Неизвестная ошибка');
+                }
+            } catch (error) {
+                resultEl.style.background = 'rgba(239,68,68,0.2)';
+                resultEl.style.color = '#ef4444';
+                resultEl.innerHTML = `<i class="fas fa-times-circle"></i> Ошибка: ${error.message}`;
+            }
+            
+            resultEl.style.display = 'block';
+        }
+        
+        // Modal click handlers
+        document.getElementById('createUserModal').addEventListener('click', (e) => {
+            if (e.target.id === 'createUserModal') closeCreateUserModal();
+        });
+        
+        document.getElementById('editUserModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editUserModal') closeEditUserModal();
+        });
+    </script>
+</body>
+</html>

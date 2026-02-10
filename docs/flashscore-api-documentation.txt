@@ -1,0 +1,458 @@
+Ls ​Copy link
+Ls
+get
+/Ls/List
+get
+/Ls/Teams
+get
+/Ls/Leagues
+get
+/Ls/Seasons
+get
+/Ls/GameInfo
+Список матчей​Copy link
+Получение списка футбольных матчей с гибкими возможностями фильтрации и сортировки.
+
+Основные возможности:
+
+Поиск по конкретным матчам, лигам, сезонам и командам
+Фильтрация по временным периодам (конкретная дата или диапазон)
+Отбор матчей по статусу: завершенные, текущие (лайв) или предстоящие
+Пагинация результатов (до 1000 матчей за запрос)
+Сортировка по дате проведения матча
+Примеры использования:
+
+?Date=2025-06-21 - все матчи за конкретный день
+?From=2025-06-01&amp;To=2025-06-30 - матчи за период
+?LeagueId=england/premier-league&amp;Ended=true - завершенные матчи лиги
+?Team=arsenal/hA1Zm19f&amp;Live=true - текущие матчи команды
+?BothTeams=villa/ALztxK6e,chelsea/4fGZN2oK - матчи между двумя командами
+⚠️ Обязательно укажите хотя бы один параметр фильтрации, иначе запрос будет отклонен.
+
+Статусы матча
+Id	Название
+1	Не начался
+45	К завершению
+42	Ожидание обновлений
+2	В прямом эфире
+12	Первый тайм
+13	Второй тайм
+6	Дополнительное время
+7	Пенальти
+46	Технический перерыв
+3	Завершён
+10	После дополнительного времени
+11	После пенальти
+9	Техническая победа
+43	Отложен
+36	Прерван
+5	Отменён
+54	Присуждён
+Query Parameters
+IdCopy link to Id
+Type:string
+max length:  
+300
+Pattern:^\w+(?:,\w+)*$
+Example
+Id матча. Один или несколько через запятую.
+
+LeagueIdCopy link to LeagueId
+Type:string
+max length:  
+255
+Id лиги Список лиг можно получить через /Ls/Leagues
+
+SeasonIdCopy link to SeasonId
+Type:string
+Уникальный идентификатор сезона
+
+YearsCopy link to Years
+Type:string
+Example
+Года сезона (Например: 2024-2025)
+
+DateCopy link to Date
+Type:string
+Format:date
+Конкретная дата. В выборку будут включены все матчи за выбранный день. Чтобы указать часовой пояс, используйте параметр TimeZone. 2025-06-02
+
+SingleDayCopy link to SingleDay
+Type:string
+Format:date-time
+the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+
+FromCopy link to From
+Type:string
+Начальная дата. Если указана только дата без времени, то будут включены все матчи за текущую дату, начиная с полуночи. Если не указывается время с часовым поясом (2025-06-17T14:23:30+02:00), то часовой пояс необходимо передать отдельно в параметре TimeZone Дата + время + часовой пояс: 2025-06-17T14:23:30+02:00 Дата + время: 2025-06-17T14:23:30 Дата + время (без секунд): 2025-06-17T14:23 Дата: 2025-06-17
+
+FromDateCopy link to FromDate
+Type:string
+Format:date-time
+the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+
+ToCopy link to To
+Type:string
+Конечная дата. Фильтруются все матчи строго до этой даты. Если указана только дата, без времени, то в выборку включаются все матчи до полуночи указанной даты. Для всех дат, где не указан часовой пояс (+02:00) необходимо указать часовой пояс отдельно в параметре TimeZone Например: если To = 2025-06-02, то в выборку попадут все матчи до 2025-06-02 00:00:00. Т.е матчи за само 2025-06-02 уже выборку не попадают Дата + время + часовой пояс: 2025-06-17T14:23:30+02:00 Дата + время: 2025-06-17T14:23:30 Дата + время (без секунд): 2025-06-17T14:23 Дата: 2025-06-17
+
+ToDateCopy link to ToDate
+Type:string
+Format:date-time
+the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+
+StatusCopy link to Status
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:uint8
+Статус
+
+HomeTeamCopy link to HomeTeam
+Type:string
+max length:  
+300
+Pattern:^[\w\/\-]+(?:,[\w\/\-]+)*$
+Id команды хозяев (один, или несколько через запятую) "jk-arsenal/MgkAqSU0 или jk-arsenal/MgkAqSU0,villa/ALztxK6e"
+
+AwayTeamCopy link to AwayTeam
+Type:string
+Pattern:^[\w\/\-]+(?:,[\w\/\-]+)*$
+Id команды гостей (один, или несколько через запятую) "123 или 123,456"
+
+TeamCopy link to Team
+Type:string
+Pattern:^[\w\/\-]+(?:,[\w\/\-]+)*$
+Id одной из команд (один, или несколько через запятую). Если указано несколько Id, то выборку попадут все матчи, где хотя бы одна из команд в это списке "123 или 123,456"
+
+BothTeamsCopy link to BothTeams
+Type:string
+Pattern:^[\w\/\-]+(?:,[\w\/\-]+)*$
+Id двух команд через запятую. Матчи двух команд между собой "123,456"
+
+EndedCopy link to Ended
+Type:boolean
+Завершенные матчи (8, 9, 10, 17, 18)
+
+LiveCopy link to Live
+Type:boolean
+Лайв матчи (статусы 3, 4, 5, 6, 7, 11, 18, 19)
+
+UpcomingCopy link to Upcoming
+Type:boolean
+Предстоящие матчи (дата начала матча больше текущего времени + статус: 1,2)
+
+OffsetCopy link to Offset
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+0
+max:  
+2147483647
+Пропустить указанное количество матчей от начала выборки. По умолчанию = 0 Количество матчей выводимое за раз ограничено лимитом 1000 матчей. Чтобы извлечь остальные матчи, используется Offset c указанием количества, которое надо пропустить. offset=2000 - пропустить первые 2000 матчей и получить следущие 1000 2000
+
+LimitCopy link to Limit
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+1
+max:  
+1000
+Ограничить выборку указанным количеством матчей (от 1 до 1000)
+
+OrderCopy link to Order
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+-1
+max:  
+1
+Сортировать по убыванию (Order=-1) или по возрастанию (Order=1) даты начала матча
+
+TimeZoneCopy link to TimeZone
+Type:integer | string
+Pattern:^-?(?:0|[1-9]\d*)$
+Format:int32
+min:  
+-12
+max:  
+12
+default: 
+3
+Ваш часовой пояс (от -12 до 12). По умолчанию = 3
+
+Responses
+
+200
+OK
+
+400
+Bad Request
+Request Example forget/Ls/List
+Python http.client
+
+import http.client
+
+conn = http.client.HTTPSConnection("api.sstats.net")
+
+conn.request("GET", "/Ls/List")
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
+
+Test Request
+(get /Ls/List)
+Status:200
+Status:400
+
+{
+  "status": "string",
+  "count": null,
+  "data": null,
+  "requestQuery": null,
+  "message": null,
+  "offset": null,
+  "TotalCount": null,
+  "traceId": null
+}
+OK
+
+Команды​Copy link
+Поиск команды по заданным критериям поиска.
+
+Параметры поиска:
+
+Поиск выполняется по одному из параметров в порядке приоритета: uid → id → name
+При поиске по названию используется частичное совпадение (содержит указанную строку)
+Возвращается максимум 100 команд
+Обязательные условия:
+
+Должен быть указан хотя бы один из параметров поиска
+Query Parameters
+uidCopy link to uid
+Type:string
+Format:uuid
+Уникальный идентификатор команды (GUID). Имеет наивысший приоритет при поиске
+
+idCopy link to id
+Type:string
+Строковый идентификатор команды. Используется если не указан uid
+
+nameCopy link to name
+Type:string
+Название команды или его часть для поиска. Используется если не указаны uid и id
+
+Responses
+
+200
+OK
+
+400
+Bad Request
+Request Example forget/Ls/Teams
+Python http.client
+
+import http.client
+
+conn = http.client.HTTPSConnection("api.sstats.net")
+
+conn.request("GET", "/Ls/Teams")
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
+
+Test Request
+(get /Ls/Teams)
+Status:200
+Status:400
+
+{
+  "status": "string",
+  "count": null,
+  "data": null,
+  "requestQuery": null,
+  "message": null,
+  "offset": null,
+  "TotalCount": null,
+  "traceId": null
+}
+OK
+
+Лиги​Copy link
+Получение списка футбольных лиг с возможностью фильтрации по различным критериям.
+
+Варианты использования:
+
+Без параметров - возвращает все доступные лиги
+По GUID - получение конкретной лиги (приоритетный поиск)
+По ID - поиск лиги по строковому идентификатору
+По названию - поиск лиг, содержащих указанную подстроку (регистр не учитывается)
+Приоритет фильтров: GUID > ID > название
+
+Если указан GUID, остальные параметры игнорируются. Фильтры по ID и названию могут применяться совместно.
+
+Query Parameters
+guidCopy link to guid
+Type:string
+Format:uuid
+Уникальный идентификатор лиги (GUID). При указании возвращается только одна конкретная лига
+
+idCopy link to id
+Type:string
+Строковый идентификатор лиги для точного поиска
+
+nameCopy link to name
+Type:string
+Часть названия лиги для поиска (поиск по подстроке, регистр не учитывается)
+
+Responses
+
+200
+OK
+
+400
+Bad Request
+Request Example forget/Ls/Leagues
+Python http.client
+
+import http.client
+
+conn = http.client.HTTPSConnection("api.sstats.net")
+
+conn.request("GET", "/Ls/Leagues")
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
+
+Test Request
+(get /Ls/Leagues)
+Status:200
+Status:400
+
+{
+  "status": "string",
+  "count": null,
+  "data": null,
+  "requestQuery": null,
+  "message": null,
+  "offset": null,
+  "TotalCount": null,
+  "traceId": null
+}
+OK
+
+Сезоны​Copy link
+Возвращает список всех сезонов для указанной футбольной лиги.
+
+Метод позволяет получить информацию о сезонах, используя один из двух способов идентификации лиги:
+
+По уникальному идентификатору (leagueUid)
+По строковому идентификатору (leagueId)
+Примечание: Необходимо указать хотя бы один из параметров идентификации лиги.
+
+Query Parameters
+leagueUidCopy link to leagueUid
+Type:string
+Format:uuid
+Уникальный идентификатор лиги в формате GUID
+
+leagueIdCopy link to leagueId
+Type:string
+Строковый идентификатор лиги (альтернатива leagueUid)
+
+Responses
+
+200
+OK
+
+400
+Bad Request
+Request Example forget/Ls/Seasons
+Python http.client
+
+import http.client
+
+conn = http.client.HTTPSConnection("api.sstats.net")
+
+conn.request("GET", "/Ls/Seasons")
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
+
+Test Request
+(get /Ls/Seasons)
+Status:200
+Status:400
+
+{
+  "status": "string",
+  "count": null,
+  "data": null,
+  "requestQuery": null,
+  "message": null,
+  "offset": null,
+  "TotalCount": null,
+  "traceId": null
+}
+OK
+
+Матч​Copy link
+Возвращает детальную информацию о футбольном матче по его идентификатору.
+
+Включает:
+
+Основные данные матча (команды, счет, статус, время)
+Букмекерские коэффициенты (если доступны)
+События матча (голы, карточки, замены и др.)
+Примеры использования:
+
+Отображение подробной информации о матче в приложении
+Получение актуальных коэффициентов для ставок
+Просмотр хронологии событий матча
+Query Parameters
+idCopy link to id
+Type:string
+Уникальный идентификатор футбольного матча
+
+Responses
+
+200
+Объект с полной информацией о матче или сообщение об ошибке, если матч не найден
+Request Example forget/Ls/GameInfo
+Python http.client
+
+import http.client
+
+conn = http.client.HTTPSConnection("api.sstats.net")
+
+conn.request("GET", "/Ls/GameInfo")
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
+
+Test Request
+(get /Ls/GameInfo)
+Status:200
+
+{
+  "status": "string",
+  "count": null,
+  "data": null,
+  "requestQuery": null,
+  "message": null,
+  "offset": null,
+  "TotalCount": null,
+  "traceId": null
+}
+Объект с полной информацией о матче или сообщение об ошибке, если матч не найден

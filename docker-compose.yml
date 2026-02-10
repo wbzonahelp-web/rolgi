@@ -37,6 +37,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      PORT: 3000
       API_PORT: 3000
       API_HOST: 0.0.0.0
       DB_HOST: postgres
@@ -44,6 +45,7 @@ services:
       DB_NAME: rolgi_v6
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-postgres}@postgres:5432/rolgi_v6
       SSTATS_API_URL: ${SSTATS_API_URL:-https://api.sstats.net}
       SSTATS_API_KEY: ${SSTATS_API_KEY}
       LOG_LEVEL: ${LOG_LEVEL:-info}

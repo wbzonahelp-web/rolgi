@@ -1,0 +1,337 @@
+# Games API - Text Summary (Текстовая сводка)
+
+## Endpoint: GET /Games/text-summary
+
+Генерирует детальную текстовую сводку по футбольному матчу с комплексным анализом.
+
+### Query Parameters
+
+- **id** (integer | string, required): Уникальный идентификатор футбольного матча
+- **limit** (integer, optional): Лимит количества последних матчей (от 5 до 30). По умолчанию: 25
+- **sameLeague** (boolean, optional): Учитывать только матчи из той же лиги. По умолчанию: true
+- **homeAway** (boolean, optional): Учитывать только домашние/гостевые матчи. По умолчанию: false
+
+### Описание
+
+Endpoint генерирует подробную текстовую сводку матча, включающую:
+
+1. **Букмекерские коэффициенты**
+   - Коэффициенты на все основные исходы (победа, ничья)
+   - Коэффициенты на тоталы (Over/Under)
+   - Коэффициенты на обе забьют (BTTS)
+
+2. **Ожидаемые голы (xG)**
+   - xG по оценкам букмекеров
+   - Сравнение с историческими данными
+
+3. **Анализ прибыльности ставок**
+   - Прибыльность различных типов ставок
+   - Основано на исторических данных команд
+   - ROI (Return on Investment) для разных стратегий
+
+4. **Статистика команд**
+   - Проценты побед/ничьих/поражений
+   - Средние коэффициенты за период
+   - Динамика формы
+
+5. **Голевая статистика**
+   - Среднее количество забитых/пропущенных голов
+   - Точность прогнозов букмекеров
+   - Анализ результативности
+
+### Response Structure
+
+```json
+{
+  "status": "OK",
+  "data": {
+    "gameId": 1461496,
+    "summary": {
+      "match": {
+        "homeTeam": "Team A",
+        "awayTeam": "Team B",
+        "date": "2026-01-31T15:00:00Z",
+        "league": "Premier League",
+        "venue": "Stadium Name"
+      },
+      "odds": {
+        "homeWin": 1.75,
+        "draw": 3.50,
+        "awayWin": 4.20,
+        "over25": 1.85,
+        "under25": 1.95,
+        "btts": 1.70,
+        "bttsNo": 2.10
+      },
+      "expectedGoals": {
+        "home": 1.85,
+        "away": 1.25,
+        "total": 3.10
+      },
+      "profitability": {
+        "homeWin": {
+          "roi": 5.2,
+          "profitPerBet": 0.052,
+          "recommendation": "value"
+        },
+        "draw": {
+          "roi": -8.5,
+          "profitPerBet": -0.085,
+          "recommendation": "avoid"
+        },
+        "awayWin": {
+          "roi": -12.3,
+          "profitPerBet": -0.123,
+          "recommendation": "avoid"
+        },
+        "over25": {
+          "roi": 3.8,
+          "profitPerBet": 0.038,
+          "recommendation": "consider"
+        },
+        "btts": {
+          "roi": 7.5,
+          "profitPerBet": 0.075,
+          "recommendation": "value"
+        }
+      },
+      "teamStats": {
+        "home": {
+          "winRate": 0.52,
+          "drawRate": 0.24,
+          "lossRate": 0.24,
+          "avgOdds": 2.15,
+          "form": "WWDWL"
+        },
+        "away": {
+          "winRate": 0.36,
+          "drawRate": 0.28,
+          "lossRate": 0.36,
+          "avgOdds": 3.20,
+          "form": "LWDLL"
+        }
+      },
+      "goalStats": {
+        "home": {
+          "avgScored": 1.8,
+          "avgConceded": 1.2,
+          "scoringAccuracy": 0.85,
+          "cleanSheetRate": 0.36
+        },
+        "away": {
+          "avgScored": 1.4,
+          "avgConceded": 1.6,
+          "scoringAccuracy": 0.78,
+          "cleanSheetRate": 0.24
+        },
+        "combined": {
+          "avgTotal": 3.2,
+          "over25Rate": 0.64,
+          "bttsRate": 0.58
+        }
+      },
+      "textSummary": "Team A hosts Team B in a Premier League clash at Stadium Name. The home side comes into this match in strong form with 52% wins in their last 25 games, averaging 1.8 goals per game. Team B has struggled away from home with only 36% wins and 1.4 goals per game on average. Bookmakers favor the home win at 1.75, and the match is expected to be high-scoring with xG of 3.10 goals. The BTTS market offers value with 70% of recent matches seeing both teams score. Our analysis suggests backing the home win and BTTS as the most profitable strategies.",
+      "recommendations": [
+        {
+          "type": "home_win",
+          "confidence": "high",
+          "odds": 1.75,
+          "expectedValue": 5.2,
+          "reasoning": "Strong home form, favorable matchup"
+        },
+        {
+          "type": "btts_yes",
+          "confidence": "medium",
+          "odds": 1.70,
+          "expectedValue": 7.5,
+          "reasoning": "Both teams score regularly, high BTTS rate"
+        },
+        {
+          "type": "over_25",
+          "confidence": "medium",
+          "odds": 1.85,
+          "expectedValue": 3.8,
+          "reasoning": "High xG total, strong attacking sides"
+        }
+      ]
+    }
+  },
+  "traceId": "..."
+}
+```
+
+### Response Fields
+
+#### Match Info:
+- **homeTeam**, **awayTeam** - Названия команд
+- **date** - Дата и время матча
+- **league** - Название лиги
+- **venue** - Стадион
+
+#### Odds (Коэффициенты):
+- **homeWin**, **draw**, **awayWin** - Основные исходы
+- **over25**, **under25** - Тотал больше/меньше 2.5
+- **btts**, **bttsNo** - Обе забьют да/нет
+
+#### Expected Goals (xG):
+- **home**, **away** - Ожидаемые голы команд
+- **total** - Общий ожидаемый тотал
+
+#### Profitability (Прибыльность):
+- **roi** - Return on Investment (%)
+- **profitPerBet** - Прибыль на ставку
+- **recommendation** - Рекомендация: "value", "consider", "neutral", "avoid"
+
+#### Team Stats:
+- **winRate**, **drawRate**, **lossRate** - Проценты исходов
+- **avgOdds** - Средние коэффициенты
+- **form** - Форма последних 5 матчей (W-win, D-draw, L-loss)
+
+#### Goal Stats:
+- **avgScored**, **avgConceded** - Средние голы
+- **scoringAccuracy** - Точность прогнозов
+- **cleanSheetRate** - Процент сухих матчей
+- **over25Rate**, **bttsRate** - Проценты для тоталов и BTTS
+
+#### Text Summary:
+Полная текстовая сводка с анализом матча
+
+#### Recommendations:
+Список рекомендаций по ставкам с обоснованием
+
+### Интерпретация данных
+
+#### ROI (Return on Investment):
+- **> 10%**: Очень высокая ценность (strong value)
+- **5-10%**: Высокая ценность (good value)
+- **0-5%**: Небольшая ценность (slight value)
+- **0%**: Нейтральная ставка (neutral)
+- **< 0%**: Невыгодная ставка (avoid)
+
+#### Confidence Level:
+- **high**: Высокая уверенность (> 70%)
+- **medium**: Средняя уверенность (50-70%)
+- **low**: Низкая уверенность (< 50%)
+
+#### Form Analysis:
+- **WWWWW**: Отличная форма (5 побед подряд)
+- **WWWDL**: Хорошая форма (3+ победы из 5)
+- **WDWDL**: Средняя форма (2 победы из 5)
+- **LLLLL**: Плохая форма (5 поражений подряд)
+
+### Use Cases
+
+1. **Предматчевый анализ**
+   - Комплексная оценка матча перед ставкой
+   - Идентификация value bets
+   - Сравнение с букмекерскими оценками
+
+2. **Стратегия ставок**
+   - Выбор наиболее прибыльных рынков
+   - Определение размера ставки на основе EV
+   - Избежание невыгодных ставок
+
+3. **Исследование формы**
+   - Анализ текущей динамики команд
+   - Оценка стабильности результатов
+   - Прогнозирование будущих результатов
+
+4. **Образовательные цели**
+   - Понимание факторов, влияющих на исход
+   - Изучение связи между статистикой и результатами
+   - Обучение value betting
+
+5. **Автоматизация**
+   - Интеграция в betting bots
+   - Автоматический скрининг матчей
+   - Алерты на ценные ставки
+
+### Example Requests
+
+#### Базовый запрос
+```bash
+curl "https://api.sstats.net/Games/text-summary?id=1461496"
+```
+
+#### С кастомным лимитом (10 матчей)
+```bash
+curl "https://api.sstats.net/Games/text-summary?id=1461496&limit=10"
+```
+
+#### Без фильтра по лиге
+```bash
+curl "https://api.sstats.net/Games/text-summary?id=1461496&sameLeague=false"
+```
+
+#### С учетом домашних/выездных
+```bash
+curl "https://api.sstats.net/Games/text-summary?id=1461496&homeAway=true"
+```
+
+#### Через наш API
+```bash
+curl "http://158.69.195.140:3001/api/games/text-summary?id=1461496&limit=10"
+```
+
+### Best Practices
+
+1. **Использование фильтров**:
+   - `sameLeague=true` для более релевантной статистики
+   - `homeAway=true` для учета домашнего фактора
+   - `limit=10-15` для актуальной формы
+
+2. **Интерпретация ROI**:
+   - Ищите ROI > 5% для ценных ставок
+   - Учитывайте размер выборки (limit)
+   - Комбинируйте с другими источниками
+
+3. **Confidence Level**:
+   - Высокая confidence + положительный ROI = сильная ставка
+   - Средняя confidence = требуется дополнительный анализ
+   - Низкая confidence = избегайте или малая ставка
+
+4. **Комбинирование данных**:
+   - Text Summary + Glicko 2 = комплексная оценка
+   - Text Summary + Last Games Stats = детальный анализ формы
+   - Text Summary + H2H = полная картина противостояния
+
+### Responses
+
+#### 200 OK
+Успешный запрос с текстовой сводкой
+
+#### 400 Bad Request
+- Отсутствует id
+- Некорректный лимит (вне диапазона 5-30)
+- Некорректный формат параметров
+
+#### 404 Not Found
+Матч не найден или данные недоступны
+
+### Notes
+
+1. Сводка генерируется на основе исторических данных
+2. ROI рассчитывается на основе фактических результатов прошлых матчей
+3. Рекомендации не гарантируют прибыль
+4. Для более точных результатов используйте больше исторических данных
+5. Учитывайте актуальность данных (травмы, изменения в составе)
+6. xG может отличаться от букмекерского в зависимости от модели
+
+### Related Endpoints
+
+- `GET /Games/{id}` - Полная информация о матче
+- `GET /Games/glicko/{id}` - Glicko 2 рейтинги
+- `GET /Games/last-games-stats` - Средняя статистика
+- `GET /Odds/live/{id}` - Live коэффициенты
+
+### Disclaimer
+
+⚠️ **ВАЖНО**: Эта информация предоставляется только в образовательных целях. 
+Ставки на спорт связаны с риском потери денег. Всегда ставьте ответственно 
+и только те суммы, которые можете позволить себе потерять.
+
+### References
+
+- [Value Betting Guide](https://en.wikipedia.org/wiki/Value_betting)
+- [Expected Value in Sports Betting](https://www.pinnacle.com/en/betting-articles/betting-strategy/expected-value-in-sports-betting)
+- [Understanding ROI in Betting](https://help.smarkets.com/hc/en-gb/articles/214062369-What-is-ROI-)

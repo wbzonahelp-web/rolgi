@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игроки - Rolgi SStats</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1a5f7a;
+            --primary-dark: #134b5f;
+            --secondary-color: #57c5b6;
+            --accent-color: #159895;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --text-muted: #6c757d;
+            --border-color: #e0e0e0;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+        .logo i { color: var(--secondary-color); }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav-links a:hover { background: rgba(255,255,255,0.1); }
+        .nav-links a.active { background: var(--secondary-color); }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .search-section {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .search-title { font-size: 1.2em; margin-bottom: 15px; color: var(--primary-color); }
+        .search-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+        }
+        .search-input:focus { border-color: var(--primary-color); }
+        .search-btn {
+            padding: 12px 25px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        .search-btn:hover { background: var(--primary-dark); }
+        .results-section {
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .results-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .results-count { color: var(--text-muted); font-size: 0.9em; }
+        .player-list { list-style: none; }
+        .player-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .player-item:hover { background: #f8f9fa; }
+        .player-item:last-child { border-bottom: none; }
+        .player-photo {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 50%;
+            background: #f5f5f5;
+        }
+        .player-info { flex: 1; }
+        .player-name { font-weight: 600; margin-bottom: 3px; }
+        .player-meta { font-size: 0.85em; color: var(--text-muted); }
+        .player-position {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #e3f2fd;
+            color: var(--primary-color);
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .player-team { display: flex; align-items: center; gap: 8px; }
+        .team-logo {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .loading i { font-size: 2em; margin-bottom: 10px; color: var(--primary-color); }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .no-data i { font-size: 3em; margin-bottom: 15px; opacity: 0.5; }
+        .api-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        .api-info code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        /* Player Detail Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 15px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        .modal-close:hover { color: var(--danger-color); }
+        .modal-body { padding: 20px; }
+        .player-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .player-detail-photo {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: 3px solid var(--primary-color);
+        }
+        .player-detail-info h2 { margin-bottom: 5px; }
+        .player-detail-info p { color: var(--text-muted); }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .info-card-label { font-size: 0.85em; color: var(--text-muted); margin-bottom: 5px; }
+        .info-card-value { font-weight: 600; color: var(--primary-color); font-size: 1.1em; }
+        .transfer-history {
+            margin-top: 20px;
+        }
+        .transfer-history h4 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        .transfer-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .transfer-date { font-size: 0.85em; color: var(--text-muted); min-width: 80px; }
+        .transfer-teams {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .transfer-arrow { color: var(--primary-color); }
+        .transfer-fee {
+            font-weight: 600;
+            color: var(--success-color);
+        }
+        .events-list { margin-top: 20px; }
+        .events-list h4 { margin-bottom: 15px; color: var(--primary-color); }
+        .event-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .event-icon {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+        }
+        .event-icon.goal { background: var(--success-color); }
+        .event-icon.assist { background: var(--primary-color); }
+        .event-icon.yellow { background: var(--warning-color); color: #333; }
+        .event-icon.red { background: var(--danger-color); }
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-button {
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-button:hover { border-color: var(--primary-color); }
+        .tab-button.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <i class="fas fa-futbol"></i>
+                <span>Rolgi SStats</span>
+            </a>
+            <nav class="nav-links">
+                <a href="/"><i class="fas fa-home"></i> Матчи</a>
+                <a href="/teams.html"><i class="fas fa-users"></i> Команды</a>
+                <a href="/players.html" class="active"><i class="fas fa-user"></i> Игроки</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="search-section">
+            <h2 class="search-title"><i class="fas fa-search"></i> Поиск игроков</h2>
+            <div class="search-row">
+                <input type="text" class="search-input" id="searchInput" placeholder="Введите имя игрока..." onkeyup="if(event.key==='Enter')searchPlayers()">
+                <button class="search-btn" onclick="searchPlayers()">
+                    <i class="fas fa-search"></i> Найти
+                </button>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="results-header">
+                <h3><i class="fas fa-user"></i> Результаты</h3>
+                <span class="results-count" id="resultsCount">0 игроков</span>
+            </div>
+            <div id="playersContent">
+                <div class="no-data">
+                    <i class="fas fa-search"></i>
+                    <div>Введите имя игрока для поиска</div>
+                    <div style="font-size: 0.85em; margin-top: 10px; color: var(--text-muted);">
+                        Используется API: <code>GET /Players/find?name=...</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-info">
+            <i class="fas fa-info-circle"></i> <strong>Используемые API:</strong><br>
+            <code>GET /Players/find?name=...</code> - Поиск игрока по имени<br>
+            <code>GET /Players/{id}</code> - Полные данные по игроку: текущая команда и история трансферов<br>
+            <code>GET /Players/{id}/events</code> - События игрока (голы, карточки и т.д.)
+        </div>
+    </div>
+
+    <!-- Player Detail Modal -->
+    <div class="modal-overlay" id="playerModal" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Информация об игроке</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <div class="loading"><i class="fas fa-spinner spinner"></i><div>Загрузка...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration - use cached proxy for faster loading
+        const API_BASE = '/api/cached';
+        const API_KEY = 'fl3qjc4crvx8cppm';
+        
+        // Client-side cache
+        const clientCache = new Map();
+        const CACHE_TTL = { players: 3600000, playerDetails: 3600000, events: 300000 };
+        
+        // Helper to add API key to URL (fallback)
+        function withApiKey(url) {
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}apikey=${API_KEY}`;
+        }
+        
+        // Cached fetch - uses local proxy with server cache
+        async function cachedFetch(endpoint, params = {}, cacheType = 'players') {
+            const cacheKey = endpoint + JSON.stringify(params);
+            const cached = clientCache.get(cacheKey);
+            if (cached && Date.now() - cached.time < (CACHE_TTL[cacheType] || 300000)) {
+                console.log('Client cache hit:', endpoint);
+                return cached.data;
+            }
+            
+            const queryString = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+            const response = await fetch(API_BASE + endpoint + queryString);
+            const result = await response.json();
+            
+            if (result.success) {
+                clientCache.set(cacheKey, { data: result, time: Date.now() });
+                console.log('Loaded from server:', endpoint, 'fromCache:', result.fromCache);
+            }
+            return result;
+        }
+        
+        async function searchPlayers() {
+            const query = document.getElementById('searchInput').value.trim();
+            
+            if (!query) {
+                alert('Введите имя игрока');
+                return;
+            }
+
+            const container = document.getElementById('playersContent');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i><div>Поиск игроков...</div></div>';
+
+            try {
+                const result = await cachedFetch('/players/find', { name: query }, 'players');
+                const players = result.data || [];
+                renderPlayers(players);
+            } catch (error) {
+                console.error('Error searching players:', error);
+                container.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><div>Ошибка поиска</div></div>';
+            }
+        }
+
+        function renderPlayers(players) {
+            const container = document.getElementById('playersContent');
+            document.getElementById('resultsCount').textContent = `${players.length} игроков`;
+
+            if (!players || players.length === 0) {
+                container.innerHTML = '<div class="no-data"><i class="fas fa-user-slash"></i><div>Игроки не найдены</div></div>';
+                return;
+            }
+
+            const positionMap = {
+                'Goalkeeper': 'Вратарь',
+                'Defender': 'Защитник',
+                'Midfielder': 'Полузащитник',
+                'Attacker': 'Нападающий',
+                'Forward': 'Нападающий',
+                'G': 'Вратарь',
+                'D': 'Защитник',
+                'M': 'Полузащитник',
+                'A': 'Нападающий'
+            };
+
+            const html = players.map(player => {
+                const name = player.name || player.playerName || 'Неизвестно';
+                const photo = player.photo || player.photoUrl || '';
+                const position = positionMap[player.position] || player.position || '';
+                const team = player.team?.name || player.currentTeam?.name || player.teamName || '';
+                const teamLogo = player.team?.logo || player.currentTeam?.logo || '';
+                const nationality = player.nationality || player.country || '';
+                const id = player.id || player.playerId;
+                
+                return `
+                    <div class="player-item" onclick="openPlayerDetails(${id})">
+                        ${photo ? `<img src="${photo}" class="player-photo" alt="${name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f5f5f5%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2260%22 font-size=%2240%22 text-anchor=%22middle%22 fill=%22%23ccc%22>?</text></svg>'">` : '<div class="player-photo" style="display:flex;align-items:center;justify-content:center;"><i class="fas fa-user" style="font-size:1.5em;color:var(--text-muted);"></i></div>'}
+                        <div class="player-info">
+                            <div class="player-name">${name}</div>
+                            <div class="player-meta">
+                                ${nationality ? `<i class="fas fa-flag"></i> ${nationality}` : ''}
+                                ${team ? ` | ${team}` : ''}
+                            </div>
+                        </div>
+                        ${position ? `<span class="player-position">${position}</span>` : ''}
+                        <i class="fas fa-chevron-right" style="color: var(--text-muted);"></i>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `<ul class="player-list">${html}</ul>`;
+        }
+
+        async function openPlayerDetails(playerId) {
+            const modal = document.getElementById('playerModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            modal.classList.add('active');
+            modalBody.innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i><div>Загрузка...</div></div>';
+
+            try {
+                // Load player data from cached proxy
+                const [playerResult, eventsResult] = await Promise.all([
+                    cachedFetch('/players/' + playerId, {}, 'playerDetails'),
+                    cachedFetch('/players/' + playerId + '/events', { limit: 20 }, 'events')
+                ]);
+                
+                if (playerResult.data) {
+                    renderPlayerDetails(playerResult.data, eventsResult.data || []);
+                } else {
+                    modalBody.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><div>Данные недоступны</div></div>';
+                }
+            } catch (error) {
+                console.error('Error loading player details:', error);
+                modalBody.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><div>Ошибка загрузки</div></div>';
+            }
+        }
+
+        function renderPlayerDetails(player, events) {
+            const modalBody = document.getElementById('modalBody');
+            document.getElementById('modalTitle').textContent = player.name || 'Игрок';
+            
+            const positionMap = {
+                'Goalkeeper': 'Вратарь',
+                'Defender': 'Защитник',
+                'Midfielder': 'Полузащитник',
+                'Attacker': 'Нападающий',
+                'Forward': 'Нападающий'
+            };
+            
+            const photo = player.photo || player.photoUrl || '';
+            const position = positionMap[player.position] || player.position || '-';
+            const nationality = player.nationality || player.country || '-';
+            const age = player.age || (player.dateOfBirth ? calculateAge(player.dateOfBirth) : '-');
+            const height = player.height || '-';
+            const weight = player.weight || '-';
+            const team = player.team?.name || player.currentTeam?.name || '-';
+            const teamLogo = player.team?.logo || player.currentTeam?.logo || '';
+            const shirtNumber = player.shirtNumber || player.number || '-';
+            
+            // Transfer history
+            const transfers = player.transfers || player.transferHistory || [];
+            const transfersHtml = transfers.length > 0 ? `
+                <div class="transfer-history">
+                    <h4><i class="fas fa-exchange-alt"></i> История трансферов</h4>
+                    ${transfers.slice(0, 10).map(t => `
+                        <div class="transfer-item">
+                            <div class="transfer-date">${t.date ? new Date(t.date).toLocaleDateString('ru-RU') : '-'}</div>
+                            <div class="transfer-teams">
+                                <span>${t.fromTeam?.name || t.teamFrom || '-'}</span>
+                                <i class="fas fa-arrow-right transfer-arrow"></i>
+                                <span>${t.toTeam?.name || t.teamTo || '-'}</span>
+                            </div>
+                            ${t.fee ? `<span class="transfer-fee">${t.fee}</span>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '';
+            
+            // Events
+            const eventsHtml = events.length > 0 ? `
+                <div class="events-list">
+                    <h4><i class="fas fa-bolt"></i> Последние события</h4>
+                    ${events.slice(0, 10).map(e => {
+                        let iconClass = 'goal';
+                        let icon = 'fa-futbol';
+                        if (e.type === 'goal' || e.name?.toLowerCase().includes('goal')) {
+                            iconClass = 'goal';
+                            icon = 'fa-futbol';
+                        } else if (e.type === 'assist') {
+                            iconClass = 'assist';
+                            icon = 'fa-hands-helping';
+                        } else if (e.name?.toLowerCase().includes('yellow') || e.type === 'yellowCard') {
+                            iconClass = 'yellow';
+                            icon = 'fa-square';
+                        } else if (e.name?.toLowerCase().includes('red') || e.type === 'redCard') {
+                            iconClass = 'red';
+                            icon = 'fa-square';
+                        }
+                        
+                        return `
+                            <div class="event-item">
+                                <div class="event-icon ${iconClass}"><i class="fas ${icon}"></i></div>
+                                <div style="flex:1;">
+                                    <div style="font-weight:500;">${e.name || e.type || 'Событие'}</div>
+                                    <div style="font-size:0.85em;color:var(--text-muted);">
+                                        ${e.gameDate ? new Date(e.gameDate).toLocaleDateString('ru-RU') : ''}
+                                        ${e.minute ? ` | ${e.minute}'` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            ` : '';
+            
+            modalBody.innerHTML = `
+                <div class="player-detail-header">
+                    ${photo ? `<img src="${photo}" class="player-detail-photo" alt="${player.name}" onerror="this.style.display='none'">` : '<div class="player-detail-photo" style="display:flex;align-items:center;justify-content:center;background:#f5f5f5;"><i class="fas fa-user" style="font-size:2em;color:var(--text-muted);"></i></div>'}
+                    <div class="player-detail-info">
+                        <h2>${player.name}</h2>
+                        <p><i class="fas fa-tshirt"></i> ${team} ${shirtNumber !== '-' ? `| #${shirtNumber}` : ''}</p>
+                        <p style="margin-top:5px;"><span class="player-position">${position}</span></p>
+                    </div>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-card-label">ID</div>
+                        <div class="info-card-value">${player.id}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-label">Национальность</div>
+                        <div class="info-card-value">${nationality}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-label">Возраст</div>
+                        <div class="info-card-value">${age}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-label">Рост</div>
+                        <div class="info-card-value">${height}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-label">Вес</div>
+                        <div class="info-card-value">${weight}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-label">Номер</div>
+                        <div class="info-card-value">${shirtNumber}</div>
+                    </div>
+                </div>
+                
+                ${transfersHtml}
+                ${eventsHtml}
+                
+                <div class="api-info" style="margin-top: 20px;">
+                    <strong>API:</strong><br>
+                    <code>GET /Players/${player.id}</code><br>
+                    <code>GET /Players/${player.id}/events</code>
+                </div>
+            `;
+        }
+
+        function calculateAge(dateOfBirth) {
+            const dob = new Date(dateOfBirth);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function closeModal() {
+            document.getElementById('playerModal').classList.remove('active');
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>

@@ -1,30 +1,18 @@
 upstream api {
-  server api:3000;
+  server host.docker.internal:3001;
   keepalive 32;
 }
 
+# HTTP server (temporary, until SSL is configured)
 server {
   listen 80;
   listen [::]:80;
   server_name rolgi.com www.rolgi.com;
-  return 301 https://$host$request_uri;
-}
 
-server {
-  listen 443 ssl http2;
-  listen [::]:443 ssl http2;
-  server_name rolgi.com www.rolgi.com;
-
-  ssl_certificate /etc/letsencrypt/live/rolgi.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/rolgi.com/privkey.pem;
-  ssl_protocols TLSv1.2 TLSv1.3;
-  ssl_ciphers HIGH:!aNULL:!MD5;
-  ssl_prefer_server_ciphers on;
-
-  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-  add_header X-Frame-Options "SAMEORIGIN" always;
-  add_header X-Content-Type-Options "nosniff" always;
-  add_header X-XSS-Protection "1; mode=block" always;
+  # For Let's Encrypt challenges
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
 
   root /usr/share/nginx/html;
   index index.html;
@@ -34,22 +22,16 @@ server {
     try_files /index.html =404;
   }
 
-  # Admin Panel (важно: location должен обрабатывать SPA routing)
+  # Admin Panel
   location ^~ /admin {
     alias /usr/share/nginx/html/admin;
     try_files $uri $uri/ /admin/index.html;
     index index.html;
-    
-    # Дополнительное правило для корректной работы React Router
-    location ~ ^/admin/(.*)$ {
-      alias /usr/share/nginx/html/admin;
-      try_files /$1 /index.html;
-    }
   }
 
   # API proxying
   location /api/ {
-    proxy_pass http://api/;
+    proxy_pass http://api;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
@@ -78,6 +60,11 @@ server {
     proxy_pass http://api/metrics;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
+  }
+
+  # Query builders
+  location ~ \.(html)$ {
+    try_files $uri =404;
   }
 
   location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {

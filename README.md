@@ -352,6 +352,14 @@ open http://localhost:3000
 |-------|----------|----------|
 | GET | `/api/standings` | Турнирная таблица (с фильтрацией) |
 
+### Advanced Query (Продвинутая фильтрация)
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| POST | `/api/games/query` | Продвинутый поиск игр с SQL-подобным синтаксисом |
+
+> 📘 **Подробная документация**: [docs/ADVANCED_GAMES_QUERY.md](docs/ADVANCED_GAMES_QUERY.md)
+
 ### Data Loader (Управление загрузкой)
 
 | Метод | Эндпоинт | Описание |
@@ -364,6 +372,17 @@ open http://localhost:3000
 ```bash
 # Получить последние 10 игр
 curl "http://localhost:3000/api/games?limit=10&sort=date:desc"
+
+# Продвинутый поиск матчей с коэффициентами
+curl -X POST http://localhost:3000/api/games/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: ApiKey YOUR_API_KEY" \
+  -d '{
+    "Condition": "(Winner1 >= 1.3 AND Winner1 <= 1.7) OR (Winner2 >= 1.3 AND Winner2 <= 1.7)",
+    "Fields": ["Date", "HomeTeamName", "AwayTeamName", "Winner1", "WinnerX", "Winner2"],
+    "Order": "Date DESC",
+    "format": "json"
+  }'
 
 # Запустить загрузку игр
 curl -X POST http://localhost:3000/api/loader/load \

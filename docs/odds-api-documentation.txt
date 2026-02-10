@@ -1,0 +1,648 @@
+================================================================================
+ODDS API - BOOKMAKERS & LIVE ODDS DOCUMENTATION
+================================================================================
+
+Endpoints: 
+  - GET /api/odds/bookmakers
+  - GET /api/odds/live/:gameId
+  - GET /api/odds/live-updates
+  - GET /api/odds/live-changes/:gameId
+  - GET /api/odds/prematch-markets
+
+Description: Работа с букмекерами, live коэффициентами и историей изменений
+Version: 2.0.0
+Date: 2026-01-31
+
+================================================================================
+OVERVIEW
+================================================================================
+
+Эти endpoints предоставляют доступ к:
+1. Справочнику букмекеров и их идентификаторов
+2. Live коэффициентам в реальном времени (Bet365)
+3. Меткам времени последних обновлений коэффициентов
+
+Live коэффициенты обновляются каждые 5-60 секунд.
+
+Use Cases:
+- Отслеживание изменений коэффициентов в реальном времени
+- Арбитражные стратегии (value betting)
+- Анализ движения линии
+- Автоматизированные торговые системы
+- Мониторинг множества матчей одновременно
+
+================================================================================
+ENDPOINT 1: BOOKMAKERS
+================================================================================
+
+GET /api/odds/bookmakers
+------------------------
+
+Description: Получить справочник всех доступных букмекеров
+
+Base URL: https://api.sstats.net/Odds/bookmakers
+Local URL: http://158.69.195.140:3001/api/odds/bookmakers
+
+Parameters: None
+
+Request Example:
+----------------
+curl "http://158.69.195.140:3001/api/odds/bookmakers"
+
+Response Format (200 OK):
+-------------------------
+{
+  "success": true,
+  "status": "OK",
+  "count": 25,
+  "data": [
+    {
+      "id": 1,
+      "bookmakerName": "Bet365"
+    },
+    {
+      "id": 2,
+      "bookmakerName": "William Hill"
+    },
+    {
+      "id": 3,
+      "bookmakerName": "Betfair"
+    }
+  ]
+}
+
+Response Fields:
+----------------
+- success (boolean): Статус выполнения запроса
+- status (string): Статус ответа ("OK" или "ERROR")
+- count (integer): Количество букмекеров
+- data (array): Массив объектов букмекеров
+  - id (integer): Уникальный идентификатор букмекера
+  - bookmakerName (string): Название букмекера
+
+Use Cases:
+----------
+1. Получить список доступных букмекеров для фильтрации
+2. Маппинг ID букмекера на название для отображения
+3. Выбор предпочитаемых букмекеров в настройках
+
+================================================================================
+ENDPOINT 2: LIVE ODDS
+================================================================================
+
+GET /api/odds/live/:gameId
+--------------------------
+
+Description: Получить live коэффициенты для конкретного матча (Bet365)
+
+Base URL: https://api.sstats.net/Odds/live/{gameId}
+Local URL: http://158.69.195.140:3001/api/odds/live/:gameId
+
+Parameters:
+-----------
+- gameId (required, path parameter): ID матча
+
+Request Examples:
+-----------------
+curl "http://158.69.195.140:3001/api/odds/live/1461496"
+
+Response Format (200 OK):
+-------------------------
+{
+  "success": true,
+  "status": "OK",
+  "data": {
+    "elapsed": "45:00",
+    "stopped": false,
+    "finished": false,
+    "lastUpdate": "2026-01-31T12:30:45.123Z",
+    "gameStatus": 3,
+    "odds": [
+      {
+        "marketId": 1,
+        "marketName": "Match Result",
+        "odds": [
+          {
+            "name": "Home",
+            "value": 2.50,
+            "openingValue": 2.30
+          },
+          {
+            "name": "Draw",
+            "value": 3.20,
+            "openingValue": 3.10
+          },
+          {
+            "name": "Away",
+            "value": 2.80,
+            "openingValue": 3.00
+          }
+        ]
+      },
+      {
+        "marketId": 2,
+        "marketName": "Over/Under 2.5",
+        "odds": [
+          {
+            "name": "Over 2.5",
+            "value": 1.85,
+            "openingValue": 1.80
+          },
+          {
+            "name": "Under 2.5",
+            "value": 1.95,
+            "openingValue": 2.00
+          }
+        ]
+      }
+    ]
+  }
+}
+
+Response Fields:
+----------------
+- success (boolean): Статус выполнения запроса
+- status (string): Статус ответа
+- data (object): Данные о live коэффициентах
+  - elapsed (string): Прошедшее время в матче (MM:SS)
+  - stopped (boolean): Матч приостановлен
+  - finished (boolean): Матч завершен
+  - lastUpdate (string): Время последнего обновления (ISO 8601)
+  - gameStatus (integer): Статус матча (1-19)
+  - odds (array): Массив рынков с коэффициентами
+    - marketId (integer): ID рынка
+    - marketName (string): Название рынка
+    - odds (array): Массив коэффициентов
+      - name (string): Название исхода
+      - value (number): Текущий коэффициент
+      - openingValue (number|null): Начальный коэффициент
+
+Game Status Codes:
+------------------
+1  - Дата матча ещё не объявлена
+2  - Матч ещё не начался
+3  - Начало первого тайма
+4  - Перерыв между таймами
+5  - Начало второго тайма
+6  - Дополнительное время
+7  - Идёт серия пенальти
+8  - Матч завершён
+9  - Матч завершён после доп. времени
+10 - Матч завершён после серии пенальти
+11 - Перерыв в дополнительном времени
+12 - Матч приостановлен
+13 - Матч прерван
+14 - Матч перенесён
+15 - Матч отменён
+17 - Техническое поражение
+18 - Победа без игры
+19 - Матч в процессе
+
+Use Cases:
+----------
+1. Мониторинг изменений коэффициентов в реальном времени
+2. Live betting стратегии
+3. Арбитраж между букмекерами
+4. Анализ движения линии
+5. Value betting (поиск выгодных коэффициентов)
+
+================================================================================
+ENDPOINT 3: LIVE UPDATES
+================================================================================
+
+GET /api/odds/live-updates
+---------------------------
+
+Description: Получить метки времени последних обновлений live коэффициентов
+             для множества матчей (до 100 матчей за раз)
+
+Base URL: https://api.sstats.net/Odds/live-changes/updates-only
+Local URL: http://158.69.195.140:3001/api/odds/live-updates
+
+Parameters:
+-----------
+- gameIds (optional, query): Список ID матчей через запятую (макс 100)
+  Example: 1461496,1461497,1461498
+
+Request Examples:
+-----------------
+# Все активные матчи с обновлениями
+curl "http://158.69.195.140:3001/api/odds/live-updates"
+
+# Конкретные матчи
+curl "http://158.69.195.140:3001/api/odds/live-updates?gameIds=1461496,1461497"
+
+Response Format (200 OK):
+-------------------------
+{
+  "success": true,
+  "status": "OK",
+  "count": 15,
+  "data": [
+    {
+      "gameId": 1461496,
+      "lastUpdate": "2026-01-31T12:30:45.123Z"
+    },
+    {
+      "gameId": 1461497,
+      "lastUpdate": "2026-01-31T12:30:50.456Z"
+    },
+    {
+      "gameId": 1461498,
+      "lastUpdate": "2026-01-31T12:31:00.789Z"
+    }
+  ]
+}
+
+Response Fields:
+----------------
+- success (boolean): Статус выполнения запроса
+- status (string): Статус ответа
+- count (integer): Количество матчей с обновлениями
+- data (array): Массив объектов с метками обновлений
+  - gameId (integer): ID матча
+  - lastUpdate (string): Время последнего обновления (ISO 8601)
+
+Use Cases:
+----------
+1. Эффективный мониторинг множества матчей
+2. Определение, какие матчи требуют обновления данных
+3. Оптимизация API запросов (запрашивать только измененные)
+4. Построение системы уведомлений об изменениях
+5. Снижение нагрузки на API через умное кэширование
+
+================================================================================
+INTEGRATION PATTERNS
+================================================================================
+
+Pattern 1: Efficient Multi-Match Monitoring
+--------------------------------------------
+// Step 1: Get update timestamps for all matches
+const updatesResponse = await fetch(
+  '/api/odds/live-updates?gameIds=1461496,1461497,1461498'
+);
+const updates = await updatesResponse.json();
+
+// Step 2: Compare with cached timestamps
+const matchesToUpdate = updates.data.filter(update => {
+  const cached = cache.get(update.gameId);
+  return !cached || cached.lastUpdate < update.lastUpdate;
+});
+
+// Step 3: Fetch full odds only for changed matches
+const oddsPromises = matchesToUpdate.map(match =>
+  fetch(`/api/odds/live/${match.gameId}`)
+    .then(res => res.json())
+);
+
+const allOdds = await Promise.all(oddsPromises);
+
+// Step 4: Update cache
+allOdds.forEach(odds => {
+  cache.set(odds.data.gameId, odds);
+});
+
+Pattern 2: Real-Time Odds Tracker
+----------------------------------
+class LiveOddsTracker {
+  constructor(gameIds) {
+    this.gameIds = gameIds;
+    this.cache = new Map();
+    this.pollInterval = 10000; // 10 seconds
+  }
+
+  async start() {
+    this.intervalId = setInterval(() => this.checkUpdates(), this.pollInterval);
+  }
+
+  async checkUpdates() {
+    const updates = await fetch(
+      `/api/odds/live-updates?gameIds=${this.gameIds.join(',')}`
+    ).then(r => r.json());
+
+    for (const update of updates.data) {
+      const cached = this.cache.get(update.gameId);
+      
+      if (!cached || cached.lastUpdate !== update.lastUpdate) {
+        await this.fetchAndNotify(update.gameId);
+      }
+    }
+  }
+
+  async fetchAndNotify(gameId) {
+    const odds = await fetch(`/api/odds/live/${gameId}`)
+      .then(r => r.json());
+    
+    this.cache.set(gameId, {
+      lastUpdate: odds.data.lastUpdate,
+      odds: odds.data.odds
+    });
+
+    // Notify subscribers
+    this.emit('odds-updated', { gameId, odds: odds.data });
+  }
+
+  stop() {
+    clearInterval(this.intervalId);
+  }
+}
+
+// Usage
+const tracker = new LiveOddsTracker([1461496, 1461497, 1461498]);
+tracker.on('odds-updated', ({ gameId, odds }) => {
+  console.log(`Odds updated for game ${gameId}`, odds);
+});
+tracker.start();
+
+Pattern 3: Arbitrage Scanner
+-----------------------------
+async function scanArbitrage(gameIds) {
+  // Get all bookmakers
+  const bookmakers = await fetch('/api/odds/bookmakers')
+    .then(r => r.json());
+
+  const results = [];
+
+  for (const gameId of gameIds) {
+    // Get live odds
+    const odds = await fetch(`/api/odds/live/${gameId}`)
+      .then(r => r.json());
+
+    // Calculate arbitrage opportunities
+    const homeOdds = odds.data.odds[0].odds.find(o => o.name === 'Home');
+    const awayOdds = odds.data.odds[0].odds.find(o => o.name === 'Away');
+    const drawOdds = odds.data.odds[0].odds.find(o => o.name === 'Draw');
+
+    const totalProb = (1/homeOdds.value) + (1/awayOdds.value) + (1/drawOdds.value);
+
+    if (totalProb < 1) {
+      // Arbitrage opportunity found!
+      results.push({
+        gameId,
+        profit: ((1 - totalProb) * 100).toFixed(2) + '%',
+        odds: { home: homeOdds.value, draw: drawOdds.value, away: awayOdds.value }
+      });
+    }
+  }
+
+  return results;
+}
+
+Pattern 4: Odds Movement Tracker
+---------------------------------
+class OddsMovementTracker {
+  constructor(gameId) {
+    this.gameId = gameId;
+    this.history = [];
+  }
+
+  async track() {
+    const odds = await fetch(`/api/odds/live/${this.gameId}`)
+      .then(r => r.json());
+
+    const snapshot = {
+      timestamp: odds.data.lastUpdate,
+      elapsed: odds.data.elapsed,
+      markets: odds.data.odds.map(market => ({
+        marketName: market.marketName,
+        odds: market.odds.map(o => ({
+          name: o.name,
+          value: o.value,
+          change: this.calculateChange(o)
+        }))
+      }))
+    };
+
+    this.history.push(snapshot);
+    return snapshot;
+  }
+
+  calculateChange(currentOdds) {
+    if (this.history.length === 0) return 0;
+    
+    const lastSnapshot = this.history[this.history.length - 1];
+    const lastValue = this.findLastValue(lastSnapshot, currentOdds.name);
+    
+    return lastValue ? currentOdds.value - lastValue : 0;
+  }
+
+  getMovementAnalysis() {
+    return {
+      snapshots: this.history.length,
+      duration: this.history[this.history.length - 1].timestamp - this.history[0].timestamp,
+      movements: this.analyzeMovements()
+    };
+  }
+}
+
+================================================================================
+BEST PRACTICES
+================================================================================
+
+1. Efficient Polling
+--------------------
+- Use /api/odds/live-updates to check for changes first
+- Only fetch full odds when lastUpdate timestamp changes
+- Poll interval: 10-30 seconds (not faster than 5 seconds)
+- Respect rate limits (300 req/min)
+
+2. Caching Strategy
+-------------------
+- Cache full odds responses with timestamps
+- Compare timestamps before fetching new data
+- Invalidate cache on lastUpdate change
+- Keep history for trend analysis
+
+3. Error Handling
+-----------------
+- Handle 404 (odds not available yet)
+- Handle 429 (rate limit exceeded)
+- Implement exponential backoff on errors
+- Have fallback for missing data
+
+4. Performance Optimization
+----------------------------
+- Batch gameIds in live-updates (up to 100)
+- Use Promise.all for parallel requests
+- Implement request queuing for rate limit compliance
+- Use WebSocket if available for real-time updates
+
+5. Data Quality
+---------------
+- Validate odds values (> 1.0)
+- Check for null/undefined openingValue
+- Verify gameStatus consistency
+- Handle stopped/finished games appropriately
+
+================================================================================
+ERROR HANDLING
+================================================================================
+
+Handle Missing Game:
+--------------------
+const response = await fetch(`/api/odds/live/${gameId}`);
+if (response.status === 404) {
+  console.log('Odds not available for this game');
+  return null;
+}
+
+Handle Rate Limit:
+------------------
+const response = await fetch(`/api/odds/live/${gameId}`);
+if (response.status === 429) {
+  const retryAfter = response.headers.get('Retry-After') || 60;
+  await sleep(retryAfter * 1000);
+  return fetchLiveOdds(gameId); // Retry
+}
+
+Handle Stale Data:
+------------------
+const odds = await fetchLiveOdds(gameId);
+const updateAge = Date.now() - new Date(odds.data.lastUpdate);
+
+if (updateAge > 120000) { // 2 minutes
+  console.warn('Odds data is stale');
+  // Maybe skip this data point or flag for manual review
+}
+
+================================================================================
+PERFORMANCE CONSIDERATIONS
+================================================================================
+
+Response Times:
+---------------
+- /api/odds/bookmakers: 50-150ms (cached)
+- /api/odds/live/:gameId: 200-500ms
+- /api/odds/live-updates: 300-800ms (depends on number of games)
+
+Data Sizes:
+-----------
+- Bookmakers: ~1-2 KB
+- Live odds (single game): 2-5 KB
+- Live updates (100 games): 3-8 KB
+
+Rate Limiting:
+--------------
+- Global limit: 300 requests/min
+- Per-endpoint: No specific limits
+- Recommended: Max 1 update per game per 10 seconds
+
+Update Frequency:
+-----------------
+- Live odds update: Every 5-60 seconds
+- Recommended poll: Every 10-30 seconds
+- During critical moments: Every 5-10 seconds
+
+================================================================================
+TESTING
+================================================================================
+
+Test Cases:
+-----------
+1. GET /api/odds/bookmakers
+   Expected: 200 OK with bookmaker list
+
+2. GET /api/odds/live/:gameId (valid, live game)
+   Expected: 200 OK with current odds
+
+3. GET /api/odds/live/:gameId (finished game)
+   Expected: 200 OK with final odds (finished: true)
+
+4. GET /api/odds/live/:gameId (invalid gameId)
+   Expected: 404 Not Found
+
+5. GET /api/odds/live-updates (no params)
+   Expected: 200 OK with all active games
+
+6. GET /api/odds/live-updates?gameIds=1,2,3
+   Expected: 200 OK with updates for specified games
+
+7. GET /api/odds/live-updates?gameIds=<100+ games>
+   Expected: 400 Bad Request (too many games)
+
+================================================================================
+CHANGELOG
+================================================================================
+
+Version 1.0.0 (2026-01-31):
+--------------------------
+- Initial implementation
+- GET /api/odds/bookmakers endpoint
+- GET /api/odds/live/:gameId endpoint
+- GET /api/odds/live-updates endpoint
+- Documentation created
+
+================================================================================
+SUPPORT & RESOURCES
+================================================================================
+
+API Documentation:
+------------------
+- Swagger: http://158.69.195.140:3001/docs
+- Main Docs: GAMES_API_FINAL_SUMMARY_v3.5.0.md
+
+Contact:
+--------
+- GitHub: https://github.com/wbzonahelp-web/rolgi
+- Branch: genspark_ai_developer
+
+Examples:
+---------
+- Live Server: http://158.69.195.140:3001
+- Query Builder: http://158.69.195.140:3001/games-query-builder.html
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+
+================================================================================
+ENDPOINT 4: LIVE CHANGES HISTORY
+================================================================================
+
+GET /api/odds/live-changes/:gameId
+-----------------------------------
+
+Description: Получить историю изменений live коэффициентов во время матча (Bet365)
+
+Parameters:
+- gameId (required): ID матча
+
+Response includes Last-Modified header for optimization.
+
+Use Cases:
+- Анализ движения линии
+- Построение графиков изменений
+- Backtesting стратегий
+
+================================================================================
+ENDPOINT 5: PREMATCH MARKETS
+================================================================================
+
+GET /api/odds/prematch-markets
+-------------------------------
+
+Description: Справочник типов доматчевых ставок (MarketId)
+
+Returns: Mapping of Market ID → Market Name
+
+Common Markets:
+1 - Match Result (1X2)
+2 - Over/Under 2.5
+3 - Both Teams to Score
+10 - Correct Score
+
+================================================================================
+VERSION HISTORY
+================================================================================
+
+Version 2.0.0 (2026-01-31):
+---------------------------
+- Added GET /api/odds/live-changes/:gameId
+- Added GET /api/odds/prematch-markets
+- Last-Modified header support
+- Enhanced documentation
+
+Version 1.0.0 (2026-01-31):
+---------------------------
+- Initial release
+- 3 base endpoints

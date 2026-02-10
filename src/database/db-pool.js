@@ -55,7 +55,7 @@ class DatabasePool {
   constructor(config = {}) {
     this.config = {
       host: config.host || process.env.DB_HOST || 'localhost',
-      port: config.port || process.env.DB_PORT || 5432,
+      port: config.port || process.env.DB_PORT || 5433,
       database: config.database || process.env.DB_NAME || 'rolgi_v6',
       user: config.user || process.env.DB_USER || 'postgres',
       password: config.password || process.env.DB_PASSWORD,

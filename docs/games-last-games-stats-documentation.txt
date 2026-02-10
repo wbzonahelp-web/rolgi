@@ -1,0 +1,280 @@
+# Games API - Last Games Stats (Средняя статистика по последним матчам)
+
+## Endpoint: GET /Games/last-games-stats
+
+Получить среднюю статистику команд по последним матчам. Полезно для анализа текущей формы команд перед матчем.
+
+### Query Parameters
+
+- **gameId** (integer | string, required): Id матча
+- **limit** (integer, optional): Лимит количества последних матчей (от 5 до 30). По умолчанию: 25
+- **sameLeague** (boolean, optional): Учитывать только матчи в той же лиге. По умолчанию: false
+- **homeAway** (boolean, optional): Учитывать только домашние/выездные матчи. По умолчанию: false
+
+### Описание
+
+Endpoint возвращает среднюю статистику команд, участвующих в указанном матче, за последние N матчей. 
+Это позволяет оценить текущую форму команд и сделать более точные прогнозы.
+
+### Параметры фильтрации
+
+#### limit (5-30)
+Количество последних матчей для расчета средних показателей:
+- **5-10 матчей**: Краткосрочная форма (последние 2-3 недели)
+- **10-15 матчей**: Среднесрочная форма (последний месяц)
+- **15-25 матчей**: Долгосрочная форма (последние 2-3 месяца)
+- **25-30 матчей**: Общая форма (полсезона)
+
+#### sameLeague
+Если `true`, учитываются только матчи в той же лиге, что и целевой матч:
+- **Преимущество**: Более релевантная статистика (уровень соперников)
+- **Недостаток**: Меньше данных для расчета
+
+#### homeAway
+Если `true`, для домашней команды учитываются только домашние матчи, для гостевой - только выездные:
+- **Преимущество**: Учет фактора домашнего поля
+- **Недостаток**: Меньше данных для расчета
+
+### Response Structure
+
+```json
+{
+  "status": "OK",
+  "data": {
+    "gameId": 1461496,
+    "limit": 25,
+    "sameLeague": false,
+    "homeAway": false,
+    "homeTeam": {
+      "id": 12345,
+      "name": "Team A",
+      "matchesAnalyzed": 25,
+      "stats": {
+        "averageGoalsScored": 1.8,
+        "averageGoalsConceded": 1.2,
+        "averageShots": 14.5,
+        "averageShotsOnTarget": 5.2,
+        "averagePossession": 52.3,
+        "averageCorners": 5.8,
+        "averageFouls": 12.4,
+        "averageYellowCards": 2.1,
+        "averageRedCards": 0.08,
+        "winRate": 0.52,
+        "drawRate": 0.24,
+        "lossRate": 0.24,
+        "cleanSheetRate": 0.36,
+        "bttsRate": 0.60,
+        "over25Rate": 0.64,
+        "averageXG": 1.75,
+        "averageXGA": 1.15
+      }
+    },
+    "awayTeam": {
+      "id": 67890,
+      "name": "Team B",
+      "matchesAnalyzed": 25,
+      "stats": {
+        "averageGoalsScored": 1.4,
+        "averageGoalsConceded": 1.5,
+        "averageShots": 12.8,
+        "averageShotsOnTarget": 4.6,
+        "averagePossession": 48.2,
+        "averageCorners": 4.9,
+        "averageFouls": 13.1,
+        "averageYellowCards": 2.3,
+        "averageRedCards": 0.12,
+        "winRate": 0.40,
+        "drawRate": 0.28,
+        "lossRate": 0.32,
+        "cleanSheetRate": 0.28,
+        "bttsRate": 0.56,
+        "over25Rate": 0.52,
+        "averageXG": 1.35,
+        "averageXGA": 1.45
+      }
+    },
+    "comparison": {
+      "goalsScoredDiff": 0.4,
+      "goalsConcededDiff": -0.3,
+      "formDiff": 0.12,
+      "homeAdvantage": true
+    }
+  },
+  "traceId": "..."
+}
+```
+
+### Response Fields
+
+#### Team Stats:
+- **matchesAnalyzed** - Количество проанализированных матчей
+- **averageGoalsScored** - Среднее количество забитых голов
+- **averageGoalsConceded** - Среднее количество пропущенных голов
+- **averageShots** - Среднее количество ударов
+- **averageShotsOnTarget** - Среднее количество ударов в створ
+- **averagePossession** - Средний процент владения мячом
+- **averageCorners** - Среднее количество угловых
+- **averageFouls** - Среднее количество фолов
+- **averageYellowCards** - Среднее количество желтых карточек
+- **averageRedCards** - Среднее количество красных карточек
+
+#### Performance Metrics:
+- **winRate** - Процент побед (0.0 - 1.0)
+- **drawRate** - Процент ничьих (0.0 - 1.0)
+- **lossRate** - Процент поражений (0.0 - 1.0)
+- **cleanSheetRate** - Процент матчей без пропущенных голов
+- **bttsRate** - Процент матчей "обе забили" (Both Teams To Score)
+- **over25Rate** - Процент матчей с тоталом > 2.5 голов
+
+#### Expected Goals (xG):
+- **averageXG** - Средний xG (Expected Goals - ожидаемые голы)
+- **averageXGA** - Средний xGA (Expected Goals Against - ожидаемые пропущенные)
+
+#### Comparison:
+- **goalsScoredDiff** - Разница в забитых голах
+- **goalsConcededDiff** - Разница в пропущенных голах
+- **formDiff** - Разница в форме (win rate difference)
+- **homeAdvantage** - Преимущество домашней команды
+
+### Интерпретация данных
+
+#### Average Goals (Среднее количество голов):
+- **< 1.0**: Слабая атака / очень сильная защита
+- **1.0 - 1.5**: Средняя атака / хорошая защита
+- **1.5 - 2.0**: Хорошая атака / средняя защита
+- **> 2.0**: Очень сильная атака / слабая защита
+
+#### Win Rate (Процент побед):
+- **< 0.30**: Плохая форма
+- **0.30 - 0.45**: Средняя форма
+- **0.45 - 0.60**: Хорошая форма
+- **> 0.60**: Отличная форма
+
+#### Over 2.5 Rate:
+- **< 0.40**: Низкорезультативные матчи
+- **0.40 - 0.60**: Средняя результативность
+- **> 0.60**: Высокорезультативные матчи
+
+#### Clean Sheet Rate:
+- **< 0.25**: Слабая защита
+- **0.25 - 0.40**: Средняя защита
+- **0.40 - 0.55**: Хорошая защита
+- **> 0.55**: Отличная защита
+
+#### BTTS Rate (Both Teams To Score):
+- **< 0.40**: Редко обе забивают
+- **0.40 - 0.60**: Средняя вероятность
+- **> 0.60**: Часто обе забивают
+
+### Use Cases
+
+1. **Анализ формы команд**
+   - Оценка текущей результативности
+   - Сравнение атакующих и оборонительных показателей
+
+2. **Прогнозирование тоталов**
+   - Over/Under 2.5 голов
+   - Точный счет
+   - Количество угловых
+
+3. **Прогнозирование исходов**
+   - Вероятность победы на основе формы
+   - Учет домашнего преимущества
+   - Анализ стабильности результатов
+
+4. **Betting Strategy**
+   - BTTS (обе забьют)
+   - Clean Sheet (сухой матч)
+   - Handicap betting
+   - Total shots, corners
+
+5. **Value Betting**
+   - Поиск расхождений с букмекерскими коэффициентами
+   - Оценка завышенных/заниженных коэффициентов
+
+### Example Requests
+
+#### Базовый запрос (25 последних матчей)
+```bash
+curl "https://api.sstats.net/Games/last-games-stats?gameId=1461496"
+```
+
+#### С кастомным лимитом (последние 10 матчей)
+```bash
+curl "https://api.sstats.net/Games/last-games-stats?gameId=1461496&limit=10"
+```
+
+#### Только матчи в той же лиге
+```bash
+curl "https://api.sstats.net/Games/last-games-stats?gameId=1461496&sameLeague=true"
+```
+
+#### С учетом домашних/выездных матчей
+```bash
+curl "https://api.sstats.net/Games/last-games-stats?gameId=1461496&homeAway=true"
+```
+
+#### Комбинация фильтров
+```bash
+curl "https://api.sstats.net/Games/last-games-stats?gameId=1461496&limit=15&sameLeague=true&homeAway=true"
+```
+
+#### Через наш API
+```bash
+curl "http://158.69.195.140:3001/api/games/last-games-stats?gameId=1461496&limit=10"
+```
+
+### Best Practices
+
+1. **Выбор лимита**:
+   - Для краткосрочной формы: 5-10 матчей
+   - Для общей оценки: 15-25 матчей
+   - Для стабильных лиг: больше матчей
+   - Для команд с частыми матчами: меньше матчей (свежая форма)
+
+2. **sameLeague**:
+   - Используйте `true` для лиг с большим количеством матчей (Премьер-лига, Ла Лига)
+   - Используйте `false` для кубковых матчей или команд с малым количеством матчей
+
+3. **homeAway**:
+   - Используйте `true` для команд с большой разницей между домашними и выездными результатами
+   - Используйте `false` для более общей оценки формы
+
+4. **Комбинирование с другими данными**:
+   - Glicko 2 рейтинги (долгосрочная оценка)
+   - Live odds (рыночная оценка)
+   - Head-to-Head статистика
+
+### Responses
+
+#### 200 OK
+Успешный запрос со статистикой
+
+#### 400 Bad Request
+- Отсутствует gameId
+- Некорректный лимит (вне диапазона 5-30)
+- Некорректный формат параметров
+
+#### 404 Not Found
+Матч не найден или статистика недоступна
+
+### Notes
+
+1. Для новых команд может быть недостаточно данных
+2. Статистика обновляется после каждого матча
+3. Данные могут быть недоступны для товарищеских матчей
+4. xG (Expected Goals) доступен не для всех лиг
+5. Рекомендуется использовать лимит 10-15 для наиболее актуальной формы
+
+### Related Endpoints
+
+- `GET /Games/{id}` - Полная информация о матче
+- `GET /Games/glicko/{id}` - Glicko 2 рейтинги
+- `GET /Games/h2h/:team1/:team2` - Head-to-Head статистика
+- `GET /Odds/live/{id}` - Live коэффициенты
+
+### References
+
+- [Expected Goals (xG) explained](https://en.wikipedia.org/wiki/Expected_goals)
+- [Form analysis in football](https://www.statsperform.com/)
+- [Statistical analysis guide](https://www.football-data.co.uk/)

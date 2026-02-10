@@ -1,0 +1,464 @@
+================================================================================
+GAMES API - INJURIES ENDPOINT DOCUMENTATION
+================================================================================
+
+Endpoint: GET /api/games/injuries
+Description: Получить список травмированных игроков (не заявленных на матч)
+Version: 1.0.0
+Date: 2026-01-31
+
+================================================================================
+OVERVIEW
+================================================================================
+
+Этот endpoint возвращает информацию о травмированных игроках, которые не 
+заявлены на конкретный матч из-за травм.
+
+Use Cases:
+- Проверка доступности ключевых игроков перед матчем
+- Анализ влияния травм на состав команды
+- Предматчевая аналитика и прогнозирование
+- Оценка силы команд с учетом отсутствующих игроков
+
+================================================================================
+ENDPOINT DETAILS
+================================================================================
+
+Method: GET
+Path: /api/games/injuries
+Base URL: https://api.sstats.net/Games/injuries
+Full URL: http://158.69.195.140:3001/api/games/injuries
+
+================================================================================
+QUERY PARAMETERS
+================================================================================
+
+gameId (REQUIRED)
+  Type: integer | string
+  Pattern: ^-?(?:0|[1-9]\d*)$
+  Format: int32
+  Description: Идентификатор матча (SStats ID или Flashscore ID)
+  Example: 1461496
+
+================================================================================
+REQUEST EXAMPLES
+================================================================================
+
+Basic Request:
+--------------
+GET /api/games/injuries?gameId=1461496
+
+cURL Example:
+-------------
+curl "https://api.sstats.net/Games/injuries?gameId=1461496"
+
+curl "http://158.69.195.140:3001/api/games/injuries?gameId=1461496"
+
+JavaScript (Fetch):
+-------------------
+fetch('http://158.69.195.140:3001/api/games/injuries?gameId=1461496')
+  .then(response => response.json())
+  .then(data => console.log(data));
+
+Python:
+-------
+import http.client
+
+conn = http.client.HTTPSConnection("api.sstats.net")
+conn.request("GET", "/Games/injuries?gameId=1461496")
+res = conn.getresponse()
+data = res.read()
+print(data.decode("utf-8"))
+
+Node.js:
+--------
+const http = require('http');
+
+http.get('http://158.69.195.140:3001/api/games/injuries?gameId=1461496', 
+  (res) => {
+    let data = '';
+    res.on('data', (chunk) => { data += chunk; });
+    res.on('end', () => { console.log(JSON.parse(data)); });
+  }
+);
+
+================================================================================
+RESPONSE FORMAT
+================================================================================
+
+Success Response (200 OK):
+--------------------------
+{
+  "success": true,
+  "status": "OK",
+  "data": [
+    {
+      "gameId": 1461496,
+      "player": {
+        "id": 12345,
+        "name": "Player Name"
+      },
+      "teamId": 42,
+      "reason": "Knee injury"
+    },
+    {
+      "gameId": 1461496,
+      "player": {
+        "id": null,
+        "name": "Another Player"
+      },
+      "teamId": 49,
+      "reason": null
+    }
+  ]
+}
+
+Response Fields:
+----------------
+- success (boolean): Статус выполнения запроса
+- status (string): Статус ответа ("OK" или "ERROR")
+- data (array): Массив травмированных игроков
+
+Injury Object Fields:
+---------------------
+- gameId (integer): ID матча
+- player (object): Информация об игроке
+  - id (integer|null): ID игрока (может быть null)
+  - name (string): Имя игрока
+- teamId (integer): ID команды игрока
+- reason (string|null): Причина отсутствия (описание травмы)
+
+Empty Response (no injuries):
+-----------------------------
+{
+  "success": true,
+  "status": "OK",
+  "data": []
+}
+
+Error Response (400 Bad Request):
+---------------------------------
+{
+  "success": false,
+  "status": "ERROR",
+  "message": "gameId parameter is required"
+}
+
+Error Response (404 Not Found):
+-------------------------------
+{
+  "success": false,
+  "status": "ERROR",
+  "message": "Injuries data not found for game 1461496"
+}
+
+Error Response (500 Internal Server Error):
+-------------------------------------------
+{
+  "success": false,
+  "status": "ERROR",
+  "message": "Error message details"
+}
+
+================================================================================
+USE CASES & EXAMPLES
+================================================================================
+
+1. Check Key Players Availability
+----------------------------------
+Purpose: Проверить доступность ключевых игроков перед матчем
+Example:
+  GET /api/games/injuries?gameId=1461496
+  
+Analysis:
+  - Сравнить список травмированных с ключевыми игроками
+  - Оценить влияние отсутствия на силу команды
+  - Скорректировать прогноз исхода матча
+
+2. Team Strength Analysis
+--------------------------
+Purpose: Анализ силы команды с учетом травм
+Example:
+  GET /api/games/injuries?gameId=1461496
+  
+Analysis:
+  - Подсчитать количество травмированных по позициям
+  - Оценить ослабление линий (защита, полузащита, нападение)
+  - Учесть при расчете коэффициентов
+
+3. Pre-Match Research
+----------------------
+Purpose: Предматчевое исследование
+Example:
+  GET /api/games/injuries?gameId=1461496
+  
+Analysis:
+  - Собрать информацию о травмах обеих команд
+  - Сравнить влияние на каждую команду
+  - Включить в предматчевый отчет
+
+4. Betting Strategy Adjustment
+-------------------------------
+Purpose: Корректировка стратегии ставок
+Example:
+  GET /api/games/injuries?gameId=1461496
+  
+Analysis:
+  - Оценить влияние травм на вероятности исходов
+  - Скорректировать размеры ставок
+  - Избежать ставок на ослабленные команды
+
+================================================================================
+INTEGRATION PATTERNS
+================================================================================
+
+Pattern 1: Combined with Match Details
+---------------------------------------
+// Get match info + injuries
+const [matchData, injuries] = await Promise.all([
+  fetch('/api/games/1461496'),
+  fetch('/api/games/injuries?gameId=1461496')
+]);
+
+const match = await matchData.json();
+const injuredPlayers = await injuries.json();
+
+// Analyze impact
+const homeInjuries = injuredPlayers.data.filter(
+  inj => inj.teamId === match.data.game.homeTeam.id
+);
+const awayInjuries = injuredPlayers.data.filter(
+  inj => inj.teamId === match.data.game.awayTeam.id
+);
+
+console.log(`Home team injuries: ${homeInjuries.length}`);
+console.log(`Away team injuries: ${awayInjuries.length}`);
+
+Pattern 2: With Form Analysis
+------------------------------
+// Get injuries + recent form
+const gameId = 1461496;
+
+const [injuries, formData] = await Promise.all([
+  fetch(`/api/games/injuries?gameId=${gameId}`),
+  fetch(`/api/games/last-games-stats?gameId=${gameId}&limit=10`)
+]);
+
+const injuriesData = await injuries.json();
+const form = await formData.json();
+
+// Adjust form rating based on injuries
+const injuryImpact = calculateInjuryImpact(injuriesData.data);
+const adjustedRating = form.data.home.winRate * (1 - injuryImpact);
+
+Pattern 3: Batch Processing
+----------------------------
+// Check injuries for multiple matches
+const gameIds = [1461496, 1461497, 1461498];
+
+const injuriesPromises = gameIds.map(id =>
+  fetch(`/api/games/injuries?gameId=${id}`)
+    .then(res => res.json())
+    .then(data => ({ gameId: id, injuries: data.data }))
+);
+
+const allInjuries = await Promise.all(injuriesPromises);
+
+// Find matches with significant injuries
+const highImpactMatches = allInjuries.filter(
+  match => match.injuries.length >= 3
+);
+
+================================================================================
+DATA INTERPRETATION
+================================================================================
+
+Player ID (null vs numeric):
+----------------------------
+- id = null: Игрок не найден в базе данных
+- id = numeric: Игрок идентифицирован в системе
+
+Reason Field:
+-------------
+- null: Причина не указана или неизвестна
+- string: Описание травмы (например, "Knee injury", "Muscle problem")
+
+Impact Assessment:
+------------------
+Number of injuries:
+  0-1: Минимальное влияние
+  2-3: Среднее влияние
+  4+: Значительное влияние
+
+Position-based impact:
+  Goalkeeper injured: Высокий риск
+  Defender injured: Средний риск
+  Midfielder injured: Средний риск
+  Forward injured: Высокий риск (особенно основной нападающий)
+
+================================================================================
+BEST PRACTICES
+================================================================================
+
+1. Always Check Before Match Analysis
+--------------------------------------
+- Получайте данные о травмах перед каждым анализом
+- Обновляйте данные за несколько часов до матча
+- Учитывайте изменения в составе
+
+2. Combine with Other Data
+---------------------------
+- Используйте вместе с формой команды
+- Сравнивайте с историческими данными
+- Учитывайте в расчете Glicko-2
+
+3. Handle Missing Data
+-----------------------
+- Проверяйте на пустой массив (нет травм)
+- Обрабатывайте null значения в player.id
+- Предусматривайте отсутствие reason
+
+4. Cache Wisely
+---------------
+- Кэшируйте на короткое время (1-2 часа)
+- Обновляйте перед матчем
+- Не полагайтесь на устаревшие данные
+
+================================================================================
+ERROR HANDLING
+================================================================================
+
+Handle Missing gameId:
+----------------------
+if (!gameId) {
+  throw new Error('gameId parameter is required');
+}
+
+Handle Empty Response:
+----------------------
+const response = await fetch(`/api/games/injuries?gameId=${gameId}`);
+const data = await response.json();
+
+if (data.success && data.data.length === 0) {
+  console.log('No injuries reported for this match');
+}
+
+Handle API Errors:
+------------------
+try {
+  const response = await fetch(`/api/games/injuries?gameId=${gameId}`);
+  const data = await response.json();
+  
+  if (!data.success) {
+    console.error('API Error:', data.message);
+    return null;
+  }
+  
+  return data.data;
+} catch (error) {
+  console.error('Request failed:', error);
+  return null;
+}
+
+================================================================================
+PERFORMANCE CONSIDERATIONS
+================================================================================
+
+Response Time:
+--------------
+- Average: 150-300ms
+- With cache: 50-100ms
+- Without cache: 200-400ms
+
+Data Size:
+----------
+- Typical: 0.5-2 KB
+- Empty: 0.1 KB
+- Large (10+ injuries): 3-5 KB
+
+Rate Limiting:
+--------------
+- Limit: 300 requests/min
+- Burst: 10 requests/sec
+- Recommended: 1 request per match analysis
+
+================================================================================
+RELATED ENDPOINTS
+================================================================================
+
+1. GET /api/games/:gameId
+   - Match details with lineups
+   - Compare injuries with actual lineup
+
+2. GET /api/games/last-games-stats
+   - Team form analysis
+   - Adjust based on injuries
+
+3. GET /api/games/text-summary
+   - Comprehensive match analysis
+   - Include injury impact
+
+4. GET /api/games/glicko/:gameId
+   - Team ratings
+   - Consider injuries in predictions
+
+================================================================================
+TESTING
+================================================================================
+
+Test Cases:
+-----------
+1. Valid gameId with injuries
+   GET /api/games/injuries?gameId=1461496
+   Expected: 200 OK with injury array
+
+2. Valid gameId without injuries
+   GET /api/games/injuries?gameId=9999999
+   Expected: 200 OK with empty array
+
+3. Missing gameId
+   GET /api/games/injuries
+   Expected: 400 Bad Request
+
+4. Invalid gameId
+   GET /api/games/injuries?gameId=invalid
+   Expected: 400 Bad Request
+
+5. Non-existent match
+   GET /api/games/injuries?gameId=999999999
+   Expected: 404 Not Found
+
+================================================================================
+CHANGELOG
+================================================================================
+
+Version 1.0.0 (2026-01-31):
+--------------------------
+- Initial implementation
+- GET /api/games/injuries endpoint
+- Query by gameId
+- Return array of injured players
+- Documentation created
+
+================================================================================
+SUPPORT & RESOURCES
+================================================================================
+
+API Documentation:
+------------------
+- Swagger: http://158.69.195.140:3001/docs
+- Main Docs: GAMES_API_FINAL_SUMMARY_v3.4.0.md
+
+Contact:
+--------
+- GitHub: https://github.com/wbzonahelp-web/rolgi
+- Branch: genspark_ai_developer
+
+Examples:
+---------
+- Live Server: http://158.69.195.140:3001
+- Query Builder: http://158.69.195.140:3001/games-query-builder.html
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
