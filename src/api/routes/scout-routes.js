@@ -914,10 +914,13 @@ const teamNameMappings = {
   // Испания - Терсера и ниже
   'оспиталет': 'l hospitalet',
   'ла-эскала': 'l escala',
-  'лас-пальмас 2': 'las palmas atletico',
+  'лас-пальмас 2': 'las palmas ii',
   // Италия
   'ольтрепо': 'oltrepo',
   'леон монца': 'leon monza e brianza',
+  // Сингапур
+  'янг лайонс': 'young lions',
+  'лайон сити сейлорс': 'lion city sailors',
   // Камбоджа
   'лайф сиануквиль': 'life sihanoukville',
   'ангкор тайгер': 'angkor tiger',
@@ -2119,6 +2122,8 @@ const teamNameMappings = {
   'атлетико кали': 'atletico fc cali',
   'интернасиональ пальмира': 'internacional palmira',
   // Испания - доп
+  'химнастик таррагона': 'gimnastic',
+  'химнастик': 'gimnastic',
   'альмерия 2': 'almeria ii',
   'альмерия ii': 'almeria ii',
   'малага ii': 'malaga ii',
@@ -2402,7 +2407,7 @@ const teamNameMappings = {
   // Испания — исправленные маппинги для точного совпадения с БД
   'херес депортиво': 'xerez deportivo',
   'реал хаэн': 'real jaen',
-  'пуэртольяно': 'calvo sotelo',
+  'пуэртольяно': 'puertollano',
   'райо кантабрия': 'racing santander',
   'самано': 'samano',
   'сьелло': 'ciello',
@@ -3618,18 +3623,30 @@ async function findGameInDB(homeTeam, awayTeam, date, competition) {
       // Если событие U19 а матч не U19 — сильно штрафуем (и наоборот)
       const dbHomeName = (row.home_team || '').toUpperCase();
       const dbAwayName = (row.away_team || '').toUpperCase();
-      const dbHasYouth = /\bU\d{2}\b|\bJONG\b|\bJUNIORS?\b|\bRESERVES?\b|\bRES\.?\b|\bII\b/.test(dbHomeName + ' ' + dbAwayName);
-      const dbHasWomen = /\bW\b|WOMEN|LADIES/.test(dbHomeName + ' ' + dbAwayName);
+      const dbLeagueName = (row.league || '').toUpperCase();
+      const dbHasYouth = /\bU\d{2}\b|\bJONG\b|\bJUNIORS?\b/.test(dbHomeName + ' ' + dbAwayName) ||
+                         /\bU\d{2}\b|YOUTH|JUNIOR|PRIMAVERA|JUVENIL/.test(dbLeagueName);
+      const dbHasWomen = /\bW\b|WOMEN|LADIES/.test(dbHomeName + ' ' + dbAwayName) ||
+                         /WOMEN|FEMIN|FRAUEN|FEMENIN|KVINN|DAMER/.test(dbLeagueName);
+      const dbHasReserve = /\b(II|III|RESERVE|RES\.?)\s*$/.test(dbHomeName) || /\b(II|III|RESERVE|RES\.?)\s*$/.test(dbAwayName) ||
+                           /RESERVE|DISKI/.test(dbLeagueName);
+      const isReserveEvent = /\(р\)|резервн|reserve/i.test(homeTeam + ' ' + awayTeam + ' ' + (competition || ''));
       
+      // Жёсткий штраф за кросс-категорию: женщины <-> мужчины, юношеские <-> взрослые
       if (isYouthEvent && !dbHasYouth) {
-        score = score * 0.15; // событие молодёжное, матч взрослый
+        score = score * 0.05; // событие молодёжное, матч взрослый — почти блокируем
       } else if (!isYouthEvent && dbHasYouth) {
-        score = score * 0.15; // событие взрослое, матч молодёжный
+        score = score * 0.05; // событие взрослое, матч молодёжный
       }
       if (isWomenEvent && !dbHasWomen) {
-        score = score * 0.15;
+        score = score * 0.05; // женский матч vs мужской — блокируем
       } else if (!isWomenEvent && dbHasWomen) {
-        score = score * 0.15;
+        score = score * 0.05;
+      }
+      if (isReserveEvent && !dbHasReserve) {
+        score = score * 0.10; // резервный матч vs основной
+      } else if (!isReserveEvent && dbHasReserve && !isYouthEvent) {
+        score = score * 0.20; // основной vs резервный (менее строго)
       }
       
       return { 
@@ -3647,7 +3664,7 @@ async function findGameInDB(homeTeam, awayTeam, date, competition) {
     
     // Возвращаем лучшие совпадения с проверкой минимального сходства
     const goodMatches = matches.filter(m => 
-      m.matchScore > 20 && 
+      m.matchScore > 25 && 
       (m.matchDetails.bothTeamsNormal || m.matchDetails.bothTeamsSwapped) &&
       m.nameSimilarity >= 0.03 // минимальный порог: кириллица→латиница даёт sim ~0.05-0.1 для правильных матчей
     );
