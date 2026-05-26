@@ -106,7 +106,7 @@ async function runWithConcurrency(items, limit, worker) {
     const t0 = Date.now();
     try {
       // Retry с экспоненциальным backoff для deadlock / временных ошибок
-      const maxAttempts = 3;
+      const maxAttempts = 5;
       let lastErr = null;
       let session = null;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -118,9 +118,12 @@ async function runWithConcurrency(items, limit, worker) {
         } catch (e) {
           lastErr = e;
           const msg = e && e.message ? e.message : String(e);
-          const retriable = /deadlock|serialization|timeout|ECONNRESET|ETIMEDOUT/i.test(msg);
+          const retriable = /deadlock|serialization|timeout|ECONNRESET|ETIMEDOUT|429|too many|rate limit/i.test(msg);
           if (!retriable || attempt === maxAttempts) throw e;
-          const backoff = 300 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 200);
+          const is429 = /429|too many|rate limit/i.test(msg);
+          const backoff = is429
+            ? 2000 * attempt + Math.floor(Math.random() * 1000)
+            : 300 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 200);
           console.warn(`[retry ${attempt}/${maxAttempts}] ${date}  ${msg} — wait ${backoff}ms`);
           await new Promise(r => setTimeout(r, backoff));
         }
