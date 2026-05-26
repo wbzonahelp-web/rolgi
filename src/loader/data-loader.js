@@ -806,19 +806,73 @@ class DataLoader {
         }
       }
 
+      // Дедупликация по flashscore_id перед UPSERT
+      // SStats иногда возвращает разные sstats_id с одинаковым flashscore_id —
+      // ON CONFLICT (sstats_id) не сработает, и второй INSERT падает на unique(flashscore_id).
+      const dedupByFlashscore = (arr) => {
+        const seenFs = new Set();
+        const out = [];
+        for (const r of arr) {
+          if (!r.flashscore_id) { out.push(r); continue; }
+          if (seenFs.has(r.flashscore_id)) continue;
+          seenFs.add(r.flashscore_id);
+          out.push(r);
+        }
+        return out;
+      };
+
+      // Pre-sync sstats_id для строк, у которых flashscore_id совпадает,
+      // но sstats_id в БД отличается от входящего (SStats иногда меняет внутренний ID).
+      // Без этого batch UPSERT падает на unique(flashscore_id).
+      const presyncSstatsId = async (tableName, arr) => {
+        const withFs = arr.filter(r => r.flashscore_id && r.sstats_id);
+        if (withFs.length === 0) return 0;
+        const fsList = withFs.map(r => r.flashscore_id);
+        const ssList = withFs.map(r => r.sstats_id);
+        try {
+          // UPDATE через UNNEST: обновляем sstats_id там, где flashscore_id совпадает,
+          // а sstats_id отличается от входящего.
+          const r = await this.db.query(
+            `UPDATE ${tableName} t
+             SET sstats_id = v.new_sstats_id
+             FROM (SELECT UNNEST($1::text[]) AS flashscore_id,
+                          UNNEST($2::bigint[]) AS new_sstats_id) v
+             WHERE t.flashscore_id = v.flashscore_id
+               AND t.sstats_id IS DISTINCT FROM v.new_sstats_id`,
+            [fsList, ssList]
+          );
+          return r.rowCount || 0;
+        } catch (e) {
+          logger.warn({ err: e.message, table: tableName }, 'Enriched: presyncSstatsId failed');
+          return 0;
+        }
+      };
+
       // Upsert leagues и teams через пул (вне активной транзакции)
       if (leaguesMap.size > 0) {
         try {
-          await this.db.batchUpsert('leagues', Array.from(leaguesMap.values()));
-          logger.info({ count: leaguesMap.size }, 'Enriched: leagues upserted');
+          const leaguesArr = dedupByFlashscore(Array.from(leaguesMap.values()));
+          const synced = await presyncSstatsId('leagues', leaguesArr);
+          await this.db.batchUpsert('leagues', leaguesArr);
+          logger.info({
+            count: leaguesArr.length,
+            dedup: leaguesMap.size - leaguesArr.length,
+            presynced: synced
+          }, 'Enriched: leagues upserted');
         } catch (e) {
           logger.warn({ err: e.message }, 'Enriched: leagues upsert failed');
         }
       }
       if (teamsMap.size > 0) {
         try {
-          await this.db.batchUpsert('teams', Array.from(teamsMap.values()));
-          logger.info({ count: teamsMap.size }, 'Enriched: teams upserted');
+          const teamsArr = dedupByFlashscore(Array.from(teamsMap.values()));
+          const synced = await presyncSstatsId('teams', teamsArr);
+          await this.db.batchUpsert('teams', teamsArr);
+          logger.info({
+            count: teamsArr.length,
+            dedup: teamsMap.size - teamsArr.length,
+            presynced: synced
+          }, 'Enriched: teams upserted');
         } catch (e) {
           logger.warn({ err: e.message }, 'Enriched: teams upsert failed');
         }
@@ -1301,8 +1355,8 @@ class DataLoader {
     try {
       this.currentSession.status = 'RUNNING';
 
-      // Audit: записать начало run (fire-and-forget)
-      this._persistRunStart().catch(() => {});
+      // Audit: записать начало run (await — гарантия FK для child-шагов)
+      await this._persistRunStart();
 
       // STEP 1: PRE-FLIGHT CHECK
       await this._step1_preflightCheck();
@@ -1355,8 +1409,8 @@ class DataLoader {
         stats: this.currentSession.stats
       }, 'Load session completed successfully');
 
-      // Audit: завершение run (fire-and-forget)
-      this._persistRunEnd('COMPLETED', null).catch(() => {});
+      // Audit: завершение run (await — финальный апдейт статуса)
+      await this._persistRunEnd('COMPLETED', null);
 
       return this.currentSession;
 
@@ -1383,7 +1437,7 @@ class DataLoader {
       }, 'Load session failed');
 
       // Audit: провал run (fire-and-forget)
-      this._persistRunEnd('FAILED', error && error.message ? error.message : 'unknown error').catch(() => {});
+      await this._persistRunEnd('FAILED', error && error.message ? error.message : 'unknown error');
 
       throw error;
     }

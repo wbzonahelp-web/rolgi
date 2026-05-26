@@ -55,6 +55,7 @@ services:
       - ./memories:/app/memories
       - api-logs:/app/logs
       - ./src:/app/src
+      - ./scripts:/app/scripts:ro
     networks:
       - rolgi-network
     healthcheck:

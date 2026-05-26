@@ -96,7 +96,8 @@ class BackendApi {
     // Database
     this.db = getDatabase();
 
-    // Data Loader
+    // Data Loader (используется только для legacy-эндпоинтов;
+    // /api/loader/load теперь создаёт per-call инстанс)
     this.loader = new DataLoader();
 
     // SStats API Client
@@ -636,11 +637,12 @@ class BackendApi {
       const { entity_type, fetch_params = {}, table_name } = request.body;
 
       try {
-        // Start load in background
-        const sessionPromise = this.loader.load(entity_type, fetch_params, table_name);
+        // Per-call loader — изоляция this.currentSession от параллельных запросов
+        const loader = new DataLoader();
+        const sessionPromise = loader.load(entity_type, fetch_params, table_name);
 
-        // Store session promise
-        const sessionId = this.loader.currentSession.sessionId;
+        // sessionId читается из ЛОКАЛЬНОГО loader (не shared) — гонки нет
+        const sessionId = loader.currentSession.sessionId;
         this.loadSessions.set(sessionId, sessionPromise);
 
         // Return session ID immediately

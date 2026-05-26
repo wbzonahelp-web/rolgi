@@ -25,7 +25,7 @@ const { getTracer, getMetricsCollector } = require('../monitoring/monitoring');
 class ScheduledJobsManager {
   constructor() {
     this.jobs = new Map();
-    this.loader = new DataLoader();
+    // DataLoader создаётся per-call в каждом job'е (изоляция this.currentSession)
     this.db = getDatabase();
     this.tracer = getTracer();
     this.metrics = getMetricsCollector();
@@ -98,7 +98,7 @@ class ScheduledJobsManager {
       '*/5 * * * *', // Каждые 5 минут
       async () => {
         const today = new Date().toISOString().slice(0,10);
-        await this.loader.load("games", { date: today, limit: 500 }, "games");
+        await (new DataLoader()).load("games", { date: today, limit: 500 }, "games");
       }
     );
 
@@ -117,7 +117,7 @@ class ScheduledJobsManager {
         // Загружаем коэффициенты для каждой игры
         for (const game of liveGames) {
           try {
-            await this.loader.load('odds', {
+            await (new DataLoader()).load('odds', {
               gameId: game.id
             }, 'odds');
           } catch (error) {
@@ -138,7 +138,7 @@ class ScheduledJobsManager {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = tomorrow.toISOString().slice(0,10);
-        await this.loader.load("games", { date: tomorrowStr, limit: 500 }, "games");
+        await (new DataLoader()).load("games", { date: tomorrowStr, limit: 500 }, "games");
       }
     );
 
@@ -150,7 +150,7 @@ class ScheduledJobsManager {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().slice(0,10);
-        await this.loader.load("games", { date: yesterdayStr, limit: 500 }, "games");
+        await (new DataLoader()).load("games", { date: yesterdayStr, limit: 500 }, "games");
       }
     );
 
@@ -159,7 +159,7 @@ class ScheduledJobsManager {
       'sync_teams',
       '0 3 * * *', // Каждый день в 03:00
       async () => {
-        await this.loader.load('teams', {
+        await (new DataLoader()).load('teams', {
           limit: 1000
         }, 'teams');
       }
@@ -179,7 +179,7 @@ class ScheduledJobsManager {
 
         for (const team of teams) {
           try {
-            await this.loader.load('players', {
+            await (new DataLoader()).load('players', {
               teamId: team.id
             }, 'players');
           } catch (error) {
@@ -209,7 +209,7 @@ class ScheduledJobsManager {
 
         for (const league of leagues.rows) {
           try {
-            await this.loader.load('standings', {
+            await (new DataLoader()).load('standings', {
               leagueId: league.league_id,
               season: league.season
             }, 'standings');
