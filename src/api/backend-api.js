@@ -44,6 +44,8 @@ const SStatsClient = require('./sstats-client');
 const { jwtAuthPlugin } = require('../auth/fastify-auth');
 const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
+const cachedProxyRoutes = require('./routes/cached-proxy');
+const scoutRoutes = require('./routes/scout-routes');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
 const { setupPrometheusMiddleware } = require('../monitoring/prometheus/middleware');
@@ -129,7 +131,7 @@ class BackendApi {
 
     // JWT Authentication
     await this.app.register(jwtAuthPlugin, {
-      dbPool: this.db
+      dbPool: this.db.pool
     });
 
     // Redis-based Rate Limiting
@@ -272,6 +274,12 @@ class BackendApi {
 
     this.app.register(authRoutes, { prefix: '/api/auth' });
     this.app.register(alertRoutes, { prefix: '/api/alerts' });
+
+    // Cached proxy routes for frontend (SStats with cache)
+    this.app.register(cachedProxyRoutes, { prefix: '/api/cached' });
+
+    // Scout routes (uses full /api/scout/* paths internally)
+    this.app.register(scoutRoutes);
 
     // ============================================================
     // API VERSIONING
