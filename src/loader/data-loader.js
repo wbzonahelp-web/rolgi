@@ -325,10 +325,23 @@ class DataLoader {
           throw new Error(`Unknown entity type: ${entityType}`);
       }
 
+      // Normalize SStats response: API returns { status, count, games|teams|...: [...] }
+      if (data && !Array.isArray(data) && typeof data === "object") {
+        data = data.games || data.teams || data.players || data.standings
+            || data.leagues || data.seasons || data.odds || data.data
+            || data.items || data.result || data;
+      }
+      if (!Array.isArray(data)) {
+        data = data == null ? [] : [data];
+      }
+
       this._completeStep(2, {
         recordsCount: Array.isArray(data) ? data.length : 1,
         dataSize: JSON.stringify(data).length
       });
+
+      // Сохраняем сырой ответ API для enrich-шага (нужны вложенные homeTeam/awayTeam/season.league)
+      this.currentSession.rawApiData = Array.isArray(data) ? data : [data];
 
       return data;
     } catch (error) {
@@ -353,12 +366,21 @@ class DataLoader {
     this._startStep(3);
 
     try {
+      if (!Array.isArray(data)) {
+        data = data == null ? [] : [data];
+      }
+
       if (!this.config.enableValidation) {
         this._skipStep(3, 'Validation disabled');
         return { valid: true, skipped: true };
       }
 
-      const validation = validateResponseStructure(data);
+      let validation = validateResponseStructure(data);
+      if (!validation || typeof validation !== "object") {
+        validation = { valid: true, errors: [], warnings: [] };
+      }
+      if (!Array.isArray(validation.errors)) validation.errors = [];
+      if (!Array.isArray(validation.warnings)) validation.warnings = [];
 
       if (!validation.valid) {
         logger.warn({
@@ -430,30 +452,74 @@ class DataLoader {
       games = [games];
     }
 
-    return games.map(game => ({
-      // Mapping полей из API в схему БД
-      id: game.id,
-      external_id: game.id?.toString(),
-      league_id: game.league_id || game.leagueId,
-      season: game.season,
-      home_team_id: game.home_team_id || game.homeTeamId,
-      away_team_id: game.away_team_id || game.awayTeamId,
-      game_date: game.game_date || game.date,
-      status: game.status,
-      score_home: game.score_home || game.scoreHome || null,
-      score_away: game.score_away || game.scoreAway || null,
-      half_score_home: game.half_score_home || game.halfScoreHome || null,
-      half_score_away: game.half_score_away || game.halfScoreAway || null,
-      external_data: game.external_data || game,
-      last_sync_at: new Date()
-    }));
+    const num = (v) => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = parseInt(v, 10);
+      return Number.isFinite(n) ? n : null;
+    };
+    const seasonFromDate = (d) => {
+      try { return new Date(d).getUTCFullYear(); } catch (e) { return new Date().getUTCFullYear(); }
+    };
+
+    // Маппинг численного статуса SStats в текст БД (status varchar(20))
+    // 1 = Not Started, 2 = Not Started, 3 = 1st Half, 4 = HT, 5 = 2nd Half,
+    // 7 = ET, 8 = Finished, 9 = Postponed, 10 = Cancelled, 11 = Abandoned
+    const statusMap = {
+      1: 'scheduled', 2: 'scheduled', 3: 'live', 4: 'live', 5: 'live',
+      6: 'live', 7: 'live', 8: 'finished', 9: 'postponed',
+      10: 'cancelled', 11: 'abandoned'
+    };
+    const mapStatus = (raw, name) => {
+      if (raw == null && !name) return 'unknown';
+      const n = parseInt(raw, 10);
+      if (Number.isFinite(n) && statusMap[n]) return statusMap[n];
+      if (name) {
+        const low = name.toString().toLowerCase();
+        if (low.includes('live') || low.includes('half')) return 'live';
+        if (low.includes('finish')) return 'finished';
+        if (low.includes('post'))   return 'postponed';
+        if (low.includes('cancel')) return 'cancelled';
+        if (low.includes('aband'))  return 'abandoned';
+        return low.slice(0, 20);
+      }
+      return (raw || 'unknown').toString().slice(0, 20);
+    };
+
+    return games
+      .filter(g => g && (g.id != null || g.sstats_id != null) && (g.date || g.game_date))
+      .map(g => {
+        const dateStr = g.date || g.game_date;
+        const homeId  = num(g.home_team_id != null ? g.home_team_id : (g.homeTeamId != null ? g.homeTeamId : (g.homeTeam && g.homeTeam.id)));
+        const awayId  = num(g.away_team_id != null ? g.away_team_id : (g.awayTeamId != null ? g.awayTeamId : (g.awayTeam && g.awayTeam.id)));
+        const leagueId = num(g.league_id != null ? g.league_id : (g.leagueId != null ? g.leagueId : (g.league && g.league.id) || (g.season && g.season.league && g.season.league.id)));
+        const season  = num((g.season && g.season.year) || g.season) || seasonFromDate(dateStr);
+        const statusFinal = mapStatus(g.status, g.statusName);
+
+        return {
+          sstats_id: parseInt(g.sstats_id != null ? g.sstats_id : g.id, 10),
+          flashscore_id: g.flashscore_id || g.flashId || null,
+          league_id: leagueId,
+          season: season,
+          round: num(g.round || g.roundNumber),
+          date: dateStr,
+          home_team_id: homeId,
+          away_team_id: awayId,
+          home_score: num(g.homeFTResult != null ? g.homeFTResult : (g.homeResult != null ? g.homeResult : g.homeScore)),
+          away_score: num(g.awayFTResult != null ? g.awayFTResult : (g.awayResult != null ? g.awayResult : g.awayScore)),
+          home_score_ht: num(g.homeHTResult != null ? g.homeHTResult : g.halfScoreHome),
+          away_score_ht: num(g.awayHTResult != null ? g.awayHTResult : g.halfScoreAway),
+          status: statusFinal,
+          referee: g.referee || null,
+          stadium: g.stadium || g.venue || null,
+          attendance: num(g.attendance),
+          is_live: ['live'].includes(statusFinal),
+          is_finished: statusFinal === 'finished',
+          is_deleted: false
+        };
+      });
   }
 
-  /**
-   * Трансформация game details
-   * @private
-   */
-  _transformGameDetails(gameDetails) {
+    _transformGameDetails(gameDetails) {
     return {
       id: gameDetails.id,
       stats_json: gameDetails.stats || {},
@@ -472,18 +538,21 @@ class DataLoader {
       teams = [teams];
     }
 
-    return teams.map(team => ({
-      id: team.id,
-      external_id: team.id?.toString(),
-      name: team.name,
-      short_name: team.short_name || team.shortName || null,
-      logo_url: team.logo_url || team.logoUrl || null,
-      country_id: team.country_id || team.countryId || null,
-      venue: team.venue || null,
-      founded: team.founded || null,
-      external_data: team,
-      last_sync_at: new Date()
-    }));
+    return teams
+      .filter(team => team && (team.id != null || team.sstats_id != null))
+      .map(team => ({
+        sstats_id: parseInt(team.sstats_id != null ? team.sstats_id : team.id, 10),
+        flashscore_id: team.flashscore_id || team.flashscoreId || team.flashId || null,
+        name: (team.name || '').toString().slice(0, 200) || 'Unknown',
+        short_name: team.short_name || team.shortName || null,
+        country_id: null,
+        country_name: team.country_name || team.countryName || team.country || null,
+        logo: team.logo || team.logo_url || team.logoUrl || null,
+        stadium: team.stadium || team.venue || null,
+        founded: Number.isInteger(team.founded) ? team.founded : null,
+        website: team.website || null,
+        is_active: true
+      }));
   }
 
   /**
@@ -565,41 +634,160 @@ class DataLoader {
    * @private
    */
   async _enrichWithReferences(data, entityType) {
-    // Для games: проверяем наличие league, teams
-    if (entityType === 'games') {
-      const games = Array.isArray(data) ? data : [data];
+    if (entityType !== 'games') return data;
+    try {
+      const raw = this.currentSession && this.currentSession.rawApiData;
+      if (!Array.isArray(raw) || raw.length === 0) return data;
+      // Собираем уникальные leagues / teams / seasons из сырых объектов API
+      const leaguesMap = new Map();
+      const teamsMap = new Map();
+      const seasonsKeyMap = new Map();
 
-      for (const game of games) {
-        // Проверяем league
-        if (game.league_id && !this.refCache.has(`league_${game.league_id}`)) {
-          const league = await this.db.select('leagues', { id: game.league_id });
-          if (league.length > 0) {
-            this.refCache.set(`league_${game.league_id}`, league[0]);
+      for (const g of raw) {
+        const lg = g && g.season && g.season.league;
+        if (lg && lg.id != null && !leaguesMap.has(lg.id)) {
+          leaguesMap.set(lg.id, {
+            sstats_id: parseInt(lg.id, 10),
+            flashscore_id: lg.flashScoreId || lg.flashScoreID || null,
+            name: (lg.name || 'Unknown').toString().slice(0, 200),
+            country_id: null,
+            country_name: (lg.country && lg.country.name) || null,
+            logo: null,
+            is_active: true,
+            priority: 0,
+            type: null
+          });
+        }
+        for (const side of ['homeTeam', 'awayTeam']) {
+          const t = g && g[side];
+          if (t && t.id != null && !teamsMap.has(t.id)) {
+            teamsMap.set(t.id, {
+              sstats_id: parseInt(t.id, 10),
+              flashscore_id: t.flashId || null,
+              name: (t.name || 'Unknown').toString().slice(0, 200),
+              short_name: null,
+              country_id: null,
+              country_name: (t.country && t.country.name) || null,
+              logo: null,
+              stadium: null,
+              founded: null,
+              website: null,
+              is_active: true
+            });
           }
         }
-
-        // Проверяем home team
-        if (game.home_team_id && !this.refCache.has(`team_${game.home_team_id}`)) {
-          const team = await this.db.select('teams', { id: game.home_team_id });
-          if (team.length > 0) {
-            this.refCache.set(`team_${game.home_team_id}`, team[0]);
-          }
-        }
-
-        // Проверяем away team
-        if (game.away_team_id && !this.refCache.has(`team_${game.away_team_id}`)) {
-          const team = await this.db.select('teams', { id: game.away_team_id });
-          if (team.length > 0) {
-            this.refCache.set(`team_${game.away_team_id}`, team[0]);
+        if (g && g.season && g.season.year != null && lg && lg.id != null) {
+          const key = `${lg.id}_${g.season.year}`;
+          if (!seasonsKeyMap.has(key)) {
+            seasonsKeyMap.set(key, {
+              _league_sstats_id: parseInt(lg.id, 10),
+              season: parseInt(g.season.year, 10),
+              start_date: null,
+              end_date: null,
+              is_current: parseInt(g.season.year, 10) === new Date().getUTCFullYear()
+            });
           }
         }
       }
-    }
 
+      // Upsert leagues и teams через пул (вне активной транзакции)
+      if (leaguesMap.size > 0) {
+        try {
+          await this.db.batchUpsert('leagues', Array.from(leaguesMap.values()));
+          logger.info({ count: leaguesMap.size }, 'Enriched: leagues upserted');
+        } catch (e) {
+          logger.warn({ err: e.message }, 'Enriched: leagues upsert failed');
+        }
+      }
+      if (teamsMap.size > 0) {
+        try {
+          await this.db.batchUpsert('teams', Array.from(teamsMap.values()));
+          logger.info({ count: teamsMap.size }, 'Enriched: teams upserted');
+        } catch (e) {
+          logger.warn({ err: e.message }, 'Enriched: teams upsert failed');
+        }
+      }
+      // Маппинг sstats_id -> internal id для leagues
+      const leagueIds = Array.from(leaguesMap.keys()).map(v => parseInt(v, 10)).filter(Number.isFinite);
+      const leagueIdMap = new Map();
+      if (leagueIds.length > 0) {
+        try {
+          const placeholders = leagueIds.map((_, i) => `$${i + 1}`).join(',');
+          const r = await this.db.query(
+            `SELECT id, sstats_id FROM leagues WHERE sstats_id IN (${placeholders})`,
+            leagueIds
+          );
+          for (const row of r.rows) leagueIdMap.set(row.sstats_id, row.id);
+        } catch (e) {
+          logger.warn({ err: e.message }, 'leagueIdMap query failed');
+        }
+      }
+
+      // Маппинг sstats_id -> internal id для teams
+      const teamSstatsIds = Array.from(teamsMap.keys()).map(v => parseInt(v, 10)).filter(Number.isFinite);
+      const teamIdMap = new Map();
+      if (teamSstatsIds.length > 0) {
+        try {
+          const placeholders = teamSstatsIds.map((_, i) => `$${i + 1}`).join(',');
+          const r = await this.db.query(
+            `SELECT id, sstats_id FROM teams WHERE sstats_id IN (${placeholders})`,
+            teamSstatsIds
+          );
+          for (const row of r.rows) teamIdMap.set(row.sstats_id, row.id);
+        } catch (e) {
+          logger.warn({ err: e.message }, 'teamIdMap query failed');
+        }
+      }
+            // Upsert seasons (используем internal league.id)
+      if (seasonsKeyMap.size > 0 && leagueIdMap.size > 0) {
+        const seasonRows = [];
+        for (const row of seasonsKeyMap.values()) {
+          const internalLid = leagueIdMap.get(row._league_sstats_id);
+          if (internalLid != null) {
+            seasonRows.push({
+              league_id: internalLid,
+              season: row.season,
+              start_date: row.start_date,
+              end_date: row.end_date,
+              is_current: row.is_current
+            });
+          }
+        }
+        if (seasonRows.length > 0) {
+          try {
+            await this.db.batchUpsert('seasons', seasonRows);
+            logger.info({ count: seasonRows.length }, 'Enriched: seasons upserted');
+          } catch (e) {
+            logger.warn({ err: e.message }, 'Enriched: seasons upsert failed');
+          }
+        }
+      }
+
+      // Переписываем FK в трансформированных записях games:
+      // в data.league_id / home_team_id / away_team_id лежит SStats-id, меняем на internal id.
+      if (Array.isArray(data)) {
+        for (const rec of data) {
+          if (rec.league_id != null) {
+            const internal = leagueIdMap.get(rec.league_id);
+            rec.league_id = internal != null ? internal : null;
+          }
+          if (rec.home_team_id != null) {
+            const internal = teamIdMap.get(rec.home_team_id);
+            rec.home_team_id = internal != null ? internal : null;
+          }
+          if (rec.away_team_id != null) {
+            const internal = teamIdMap.get(rec.away_team_id);
+            rec.away_team_id = internal != null ? internal : null;
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn({ err: err.message }, 'Enrich step failed (non-fatal)');
+    }
     return data;
   }
 
-  // ============================================================
+    // ============================================================
   // STEP 6: DEDUPLICATE
   // ============================================================
 
@@ -611,7 +799,7 @@ class DataLoader {
       
       // Дедупликация по ID (или external_id)
       const deduped = Array.isArray(data)
-        ? Array.from(new Map(data.map(item => [item.id || item.external_id, item])).values())
+        ? Array.from(new Map(data.map(item => [item.sstats_id != null ? item.sstats_id : (item.id != null ? item.id : item.external_id), item])).values())
         : data;
 
       const dedupedCount = Array.isArray(deduped) ? deduped.length : 1;
@@ -638,22 +826,45 @@ class DataLoader {
     this._startStep(7);
 
     try {
-      // Проверяем, можем ли загружать данную таблицу
-      const canLoad = await canLoadTable(tableName);
+      // Получаем зависимости таблицы
+      const deps = getDependencies(tableName) || [];
 
-      if (!canLoad.canLoad) {
-        throw new Error(
-          `Cannot load table ${tableName}. Missing dependencies: ${canLoad.missingDependencies.join(', ')}`
+      // Определяем, какие зависимые таблицы уже непусты в БД
+      const loadedTables = new Set();
+      // Справочники всегда считаются "загруженными" если их таблицы существуют
+      // (countries уже наполнены сидом)
+      for (const dep of deps) {
+        try {
+          const rows = await this.db.query(
+            `SELECT 1 FROM ${dep} LIMIT 1`
+          );
+          if (rows && (rows.rows ? rows.rows.length : rows.length) > 0) {
+            loadedTables.add(dep);
+          }
+        } catch (e) {
+          // таблица может ещё не существовать — считаем незагруженной
+        }
+      }
+
+      const missing = deps.filter(d => !loadedTables.has(d));
+      const canLoad = missing.length === 0;
+
+      if (!canLoad) {
+        logger.warn(
+          { tableName, missing },
+          'Dependency tables are empty — proceeding with WARNING (FK upserts may fail in step 10)'
         );
+        // Не блокируем pipeline — пусть step 10 сам решит, может ли он что-то сохранить.
+        // Реально блокирующий случай только для odds/game_*: они требуют games.
       }
 
       this._completeStep(7, {
         tableName,
-        canLoad: true,
-        dependencies: canLoad.missingDependencies
+        canLoad,
+        missingDependencies: missing
       });
 
-      return { valid: true };
+      return { valid: true, missingDependencies: missing };
     } catch (error) {
       this._failStep(7, error);
       throw error;
@@ -689,48 +900,86 @@ class DataLoader {
     this._startStep(9);
 
     try {
-      const dependencies = getDependencies(tableName);
-      const resolved = { ...data };
+      const dependencies = getDependencies(tableName) || [];
+      // КРИТИЧНО: НЕ оборачивать массив через { ...data } — это убьёт массив.
+      const resolved = Array.isArray(data) ? data.slice() : data;
+      const records = Array.isArray(resolved) ? resolved : [resolved];
 
-      // Резолвим зависимости (например, проверяем наличие league_id, team_id)
-      for (const dep of dependencies) {
-        const depField = `${dep.table}_id`;
-        
-        if (Array.isArray(data)) {
-          // Batch processing
-          for (const record of data) {
-            if (record[depField]) {
-              const exists = await transaction.query(
-                `SELECT id FROM ${dep.table} WHERE id = $1`,
-                [record[depField]]
-              );
+      // Поля FK по таблице зависимости
+      const fieldsFor = (depTable) => {
+        if (tableName === 'games' && depTable === 'teams') return ['home_team_id', 'away_team_id'];
+        if (depTable === 'countries') return ['country_id'];
+        if (depTable === 'leagues')   return ['league_id'];
+        if (depTable === 'seasons')   return ['season_id'];
+        if (depTable === 'teams')     return ['team_id'];
+        if (depTable === 'players')   return ['player_id'];
+        return [];
+      };
 
-              if (exists.rowCount === 0) {
-                logger.warn({
-                  table: tableName,
-                  dependency: dep.table,
-                  recordId: record.id,
-                  missingId: record[depField]
-                }, 'Missing dependency record');
+      for (const depTable of dependencies) {
+        const fields = fieldsFor(depTable);
+        if (fields.length === 0) continue;
+
+        // Соберём все значения FK для batch-проверки
+        const refIds = new Set();
+        for (const r of records) {
+          for (const f of fields) {
+            const v = r && r[f];
+            if (v != null) refIds.add(v);
+          }
+        }
+        if (refIds.size === 0) continue;
+
+        // Узнаём, какие из этих id реально есть в зависимой таблице.
+        // Если depTable пустая — пропускаем запрос (избегаем aborted-transaction).
+        let existing = new Set();
+        try {
+          // Быстрый count: если таблица пустая, нечего проверять
+          const cnt = await transaction.query(`SELECT COUNT(*)::int AS c FROM ${depTable}`);
+          const total = cnt.rows[0] && cnt.rows[0].c;
+          if (total > 0) {
+            // Только числовые id (FK типа integer)
+            const ids = Array.from(refIds)
+              .map(v => (typeof v === 'number' ? v : parseInt(v, 10)))
+              .filter(v => Number.isFinite(v));
+            if (ids.length > 0) {
+              const placeholders1 = ids.map((_, k) => `$${k + 1}`).join(',');
+              const placeholders2 = ids.map((_, k) => `$${k + 1 + ids.length}`).join(',');
+              // SAVEPOINT защищает внешнюю транзакцию от ошибок этого запроса
+              await transaction.query('SAVEPOINT fk_lookup');
+              try {
+                const r1 = await transaction.query(
+                  `SELECT id, sstats_id FROM ${depTable} WHERE id IN (${placeholders1}) OR sstats_id IN (${placeholders2})`,
+                  [...ids, ...ids]
+                );
+                for (const row of r1.rows) {
+                  if (row.id != null) existing.add(row.id);
+                  if (row.sstats_id != null) existing.add(row.sstats_id);
+                }
+                await transaction.query('RELEASE SAVEPOINT fk_lookup');
+              } catch (innerErr) {
+                await transaction.query('ROLLBACK TO SAVEPOINT fk_lookup');
+                logger.warn({ depTable, err: innerErr.message }, 'FK lookup query failed — treating as empty');
               }
             }
           }
-        } else {
-          // Single record
-          if (data[depField]) {
-            const exists = await transaction.query(
-              `SELECT id FROM ${dep.table} WHERE id = $1`,
-              [data[depField]]
-            );
+        } catch (e) {
+          logger.warn({ depTable, err: e.message }, 'FK count failed — skipping lookup');
+        }
 
-            if (exists.rowCount === 0) {
-              logger.warn({
-                table: tableName,
-                dependency: dep.table,
-                missingId: data[depField]
-              }, 'Missing dependency record');
+        // Обнуляем FK, если значение отсутствует в зависимой таблице
+        let nulled = 0;
+        for (const r of records) {
+          for (const f of fields) {
+            const v = r && r[f];
+            if (v != null && !existing.has(v)) {
+              r[f] = null;
+              nulled++;
             }
           }
+        }
+        if (nulled > 0) {
+          logger.warn({ tableName, depTable, fields, nulled }, 'FK values set to NULL (referenced rows missing)');
         }
       }
 
@@ -738,14 +987,14 @@ class DataLoader {
         dependenciesResolved: dependencies.length
       });
 
-      return resolved;
+      return Array.isArray(resolved) ? records : records[0];
     } catch (error) {
       this._failStep(9, error);
       throw error;
     }
   }
 
-  // ============================================================
+    // ============================================================
   // STEP 10: UPSERT DATA
   // ============================================================
 
@@ -757,17 +1006,47 @@ class DataLoader {
       let insertedCount = 0;
       let updatedCount = 0;
 
+      // Pre-snapshot: какие sstats_id уже существуют ДО upsert.
+      // Нужно чтобы отличить INSERT от UPDATE без xmax (партиционированные таблицы).
+      this._preUpsertExistingIds = new Set();
+      if (records.length > 0) {
+        try {
+          const sstatsIds = records.map(r => r && r.sstats_id).filter(v => v != null);
+          if (sstatsIds.length > 0) {
+            const ph = sstatsIds.map((_, k) => `$${k + 1}`).join(',');
+            const existedBefore = await transaction.query(
+              `SELECT sstats_id FROM ${tableName} WHERE sstats_id IN (${ph})`,
+              sstatsIds
+            );
+            for (const row of existedBefore.rows) {
+              this._preUpsertExistingIds.add(row.sstats_id);
+            }
+          }
+        } catch (preErr) {
+          logger.warn({ err: preErr.message }, 'Pre-snapshot query failed');
+        }
+      }
+
       // Batch upsert
       if (records.length > 0) {
         const result = await transaction.batchUpsert(tableName, records);
         
-        // Подсчёт inserted vs updated (по наличию created_at)
-        for (const row of result) {
-          if (row.created_at && row.updated_at && row.created_at === row.updated_at) {
-            insertedCount++;
+        // Подсчёт inserted vs updated через pre-snapshot existing sstats_id
+        // (работает для партиционированных таблиц, где xmax в RETURNING запрещён).
+        try {
+          const sstatsIds = records
+            .map(r => r && r.sstats_id)
+            .filter(v => v != null);
+          if (sstatsIds.length > 0 && this._preUpsertExistingIds) {
+            updatedCount = sstatsIds
+              .filter(id => this._preUpsertExistingIds.has(id))
+              .length;
+            insertedCount = sstatsIds.length - updatedCount;
           } else {
-            updatedCount++;
+            insertedCount = records.length;
           }
+        } catch (cntErr) {
+          logger.warn({ err: cntErr.message }, 'Insert/Update counting failed');
         }
 
         this.currentSession.stats.insertedRecords += insertedCount;
@@ -853,7 +1132,8 @@ class DataLoader {
 
       // Проверяем, что записи действительно сохранились
       for (const record of records) {
-        const exists = await this.db.select(tableName, { id: record.id });
+        const key = record.sstats_id != null ? { sstats_id: record.sstats_id } : { id: record.id };
+        const exists = await this.db.select(tableName, key);
         if (exists.length > 0) {
           verifiedCount++;
         }

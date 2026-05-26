@@ -252,7 +252,7 @@ class DatabasePool {
    * @returns {Promise<Object>}
    */
   async upsert(tableName, data, options = {}) {
-    const { sql, params } = generateUpsertSQL(tableName, data);
+    const { sql, values } = generateUpsertSQL(tableName, data);
     return this.query(sql, params, { ...options, returnFirst: true });
   }
 
@@ -264,12 +264,21 @@ class DatabasePool {
    * @returns {Promise<Array>}
    */
   async batchUpsert(tableName, records, options = {}) {
+    // Safety-net: если по ошибке пришёл объект с numeric keys ({0:{...},1:{...}})
+    // — конвертируем обратно в массив. Защита от регрессии в pipeline-шагах.
+    if (records && !Array.isArray(records) && typeof records === 'object') {
+      const arr = Object.keys(records)
+        .filter(k => /^\d+$/.test(k))
+        .sort((a,b) => +a - +b)
+        .map(k => records[k]);
+      if (arr.length > 0) records = arr;
+    }
     if (!records || records.length === 0) {
       return [];
     }
 
-    const { sql, params } = generateBatchUpsertSQL(tableName, records);
-    const result = await this.query(sql, params, options);
+    const { sql, values } = generateBatchUpsertSQL(tableName, records);
+    const result = await this.query(sql, values, options);
     return result.rows;
   }
 
@@ -520,8 +529,8 @@ class DatabaseTransaction {
    * @returns {Promise<Object>}
    */
   async upsert(tableName, data) {
-    const { sql, params } = generateUpsertSQL(tableName, data);
-    const result = await this.query(sql, params);
+    const { sql, values } = generateUpsertSQL(tableName, data);
+    const result = await this.query(sql, values);
     return result.rows[0];
   }
 
@@ -532,12 +541,21 @@ class DatabaseTransaction {
    * @returns {Promise<Array>}
    */
   async batchUpsert(tableName, records) {
+    // Safety-net: если по ошибке пришёл объект с numeric keys ({0:{...},1:{...}})
+    // — конвертируем обратно в массив. Защита от регрессии в pipeline-шагах.
+    if (records && !Array.isArray(records) && typeof records === 'object') {
+      const arr = Object.keys(records)
+        .filter(k => /^\d+$/.test(k))
+        .sort((a,b) => +a - +b)
+        .map(k => records[k]);
+      if (arr.length > 0) records = arr;
+    }
     if (!records || records.length === 0) {
       return [];
     }
 
-    const { sql, params } = generateBatchUpsertSQL(tableName, records);
-    const result = await this.query(sql, params);
+    const { sql, values } = generateBatchUpsertSQL(tableName, records);
+    const result = await this.query(sql, values);
     return result.rows;
   }
 

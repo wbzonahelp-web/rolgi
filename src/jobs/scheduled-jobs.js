@@ -97,10 +97,8 @@ class ScheduledJobsManager {
       'load_live_games',
       '*/5 * * * *', // Каждые 5 минут
       async () => {
-        await this.loader.load('games', {
-          status: 'live',
-          limit: 100
-        }, 'games');
+        const today = new Date().toISOString().slice(0,10);
+        await this.loader.load("games", { date: today, limit: 500 }, "games");
       }
     );
 
@@ -139,12 +137,8 @@ class ScheduledJobsManager {
       async () => {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-
-        await this.loader.load('games', {
-          status: 'upcoming',
-          dateTo: tomorrow.toISOString(),
-          limit: 200
-        }, 'games');
+        const tomorrowStr = tomorrow.toISOString().slice(0,10);
+        await this.loader.load("games", { date: tomorrowStr, limit: 500 }, "games");
       }
     );
 
@@ -155,12 +149,8 @@ class ScheduledJobsManager {
       async () => {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-
-        await this.loader.load('games', {
-          status: 'finished',
-          dateFrom: yesterday.toISOString(),
-          limit: 500
-        }, 'games');
+        const yesterdayStr = yesterday.toISOString().slice(0,10);
+        await this.loader.load("games", { date: yesterdayStr, limit: 500 }, "games");
       }
     );
 

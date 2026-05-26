@@ -325,6 +325,16 @@ function getTablesByLevel(level) {
 }
 
 // Экспорт
+/**
+ * Получить список таблиц-зависимостей для заданной таблицы.
+ * @param {string} tableName
+ * @returns {string[]} массив имён зависимых таблиц (или [])
+ */
+function getDependencies(tableName) {
+  const cfg = TABLE_DEPENDENCIES[tableName];
+  return cfg ? (cfg.dependencies || []).slice() : [];
+}
+
 module.exports = {
   TABLE_DEPENDENCIES,
   getLoadOrder,
@@ -332,7 +342,8 @@ module.exports = {
   canLoadTable,
   getDependents,
   getTableInfo,
-  getTablesByLevel
+  getTablesByLevel,
+  getDependencies
 };
 
 // Самотестирование при запуске
