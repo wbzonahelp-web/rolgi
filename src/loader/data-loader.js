@@ -411,30 +411,88 @@ class DataLoader {
   // STEP 2: FETCH API DATA
   // ============================================================
 
-  async _step2_fetchApiData(entityType, fetchParams) {
+  /**
+   * Постраничная загрузка games через offset-based pagination.
+   * SStats возвращает максимум 1000 записей на запрос (limit=1000).
+   * Останавливаемся когда data.length < limit (последняя страница).
+   * @private
+   */
+  async _fetchGamesListPaginated(fetchParams) {
+    const PAGE_LIMIT = 1000;
+    const MAX_PAGES = 50; // anti-loop guard (50000 игр в день — невероятно)
+    const all = [];
+    let offset = 0;
+    let page = 0;
+    const baseParams = { ...fetchParams, limit: PAGE_LIMIT };
+
+    while (page < MAX_PAGES) {
+      const resp = await this.apiClient.getGamesList({ ...baseParams, offset });
+      // SStats возвращает { status, count, data, offset, traceId }
+      const items = Array.isArray(resp)
+        ? resp
+        : (resp && Array.isArray(resp.data) ? resp.data : []);
+
+      if (this.currentSession) this.currentSession.stats.apiCalls++;
+
+      logger.info({
+        page: page + 1,
+        offset,
+        received: items.length,
+        accumulated: all.length + items.length
+      }, 'Games page fetched');
+
+      if (items.length === 0) break;
+      all.push(...items);
+
+      // Последняя страница: получили меньше лимита
+      if (items.length < PAGE_LIMIT) break;
+
+      offset += PAGE_LIMIT;
+      page++;
+    }
+
+    if (page >= MAX_PAGES) {
+      logger.warn({ pages: page, total: all.length },
+        'Pagination hit MAX_PAGES limit — data may be incomplete');
+    }
+
+    logger.info({
+      totalPages: page + 1,
+      totalGames: all.length,
+      fetchParams
+    }, 'Games pagination complete');
+
+    return all;
+  }
+
+    async _step2_fetchApiData(entityType, fetchParams) {
     this._startStep(2);
 
     try {
       let data;
-      this.currentSession.stats.apiCalls++;
-
+      // apiCalls инкрементируется внутри ветки entity (для games — на каждую страницу)
       switch (entityType) {
         case 'games':
-          data = await this.apiClient.getGamesList(fetchParams);
+          data = await this._fetchGamesListPaginated(fetchParams);
           break;
         case 'game_details':
+          this.currentSession.stats.apiCalls++;
           data = await this.apiClient.getGameDetails(fetchParams.gameId);
           break;
         case 'teams':
+          this.currentSession.stats.apiCalls++;
           data = await this.apiClient.getTeams(fetchParams);
           break;
         case 'players':
+          this.currentSession.stats.apiCalls++;
           data = await this.apiClient.getTeamPlayers(fetchParams.teamId);
           break;
         case 'odds':
+          this.currentSession.stats.apiCalls++;
           data = await this.apiClient.getGameOddsLive(fetchParams.gameId);
           break;
         case 'standings':
+          this.currentSession.stats.apiCalls++;
           data = await this.apiClient.getStandings(fetchParams);
           break;
         default:
