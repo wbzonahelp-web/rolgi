@@ -8,6 +8,7 @@
  */
 
 const { JWTAuth } = require('./jwt-auth');
+const fp = require('fastify-plugin');
 
 /**
  * Декоратор для добавления jwtAuth в Fastify instance
@@ -209,7 +210,7 @@ function hasPermission(request, permission) {
 }
 
 module.exports = {
-  jwtAuthPlugin,
+  jwtAuthPlugin: fp(jwtAuthPlugin),
   authenticate,
   requirePermission,
   requireRole,

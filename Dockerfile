@@ -2,7 +2,7 @@
 # Multi-stage Docker build for production deployment
 
 # Stage 1: Base
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -19,13 +19,13 @@ COPY package*.json ./
 FROM base AS dependencies
 
 # Install all dependencies (including dev)
-RUN npm ci
+RUN npm install
 
 # Stage 3: Production dependencies
 FROM base AS prod-dependencies
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Stage 4: Build
 FROM dependencies AS build

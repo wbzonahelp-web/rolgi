@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # PostgreSQL Database
@@ -55,6 +54,7 @@ services:
     volumes:
       - ./memories:/app/memories
       - api-logs:/app/logs
+      - ./src:/app/src
     networks:
       - rolgi-network
     healthcheck:

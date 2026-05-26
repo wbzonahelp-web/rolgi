@@ -50,3 +50,25 @@ yarn.lock
 pnpm-lock.yaml
 nginx/ssl/*.pem
 nginx/ssl/*.key
+
+# Backups created during incident debugging
+*.bak
+*.bak.*
+*.backup
+*.original
+*.WORKING_*
+src/**/*.bak
+src/**/*.backup
+src/**/*.WORKING_*
+
+# Local overrides
+docker-compose.override.yml
+docker-compose.override.yml.*
+
+# Production env files
+admin-panel/.env.production
+*.bak[0-9]
+*.bak[0-9][0-9]
+
+# Build artifacts from admin-panel (run 'cd admin-panel && npm run build' to regenerate)
+www/admin/
