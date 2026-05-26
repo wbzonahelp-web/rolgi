@@ -183,6 +183,113 @@ class DataLoader {
   }
 
   /**
+   * Записать начало load run в loader_runs (audit).
+   * Fire-and-forget: ошибки не валят пайплайн.
+   * @private
+   */
+  async _persistRunStart() {
+    try {
+      const sess = this.currentSession;
+      if (!sess) return;
+      await this.db.query(
+        `INSERT INTO loader_runs (run_id, mode, status, params, started_at, total_steps)
+         VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+         ON CONFLICT (run_id) DO NOTHING`,
+        [
+          sess.sessionId,
+          sess.entityType || 'unknown',
+          'RUNNING',
+          JSON.stringify(sess.metadata || {}),
+          sess.startTime,
+          (sess.steps || []).length
+        ]
+      );
+    } catch (e) {
+      logger.warn({ err: e.message }, 'audit: _persistRunStart failed');
+    }
+  }
+
+  /**
+   * Записать завершение load run.
+   * @private
+   * @param {string} status - 'COMPLETED' | 'FAILED'
+   * @param {string|null} errorMessage
+   */
+  async _persistRunEnd(status, errorMessage = null) {
+    try {
+      const sess = this.currentSession;
+      if (!sess) return;
+      const completed = (sess.steps || []).filter(s => s.status === 'completed').length;
+      const failed = (sess.steps || []).filter(s => s.status === 'failed').length;
+      const endTime = sess.endTime || new Date();
+      const duration = sess.startTime ? (endTime - sess.startTime) : null;
+      await this.db.query(
+        `UPDATE loader_runs
+         SET status = $2,
+             completed_at = $3,
+             duration_ms = $4,
+             completed_steps = $5,
+             failed_steps = $6,
+             error_message = $7
+         WHERE run_id = $1`,
+        [sess.sessionId, status, endTime, duration, completed, failed, errorMessage]
+      );
+    } catch (e) {
+      logger.warn({ err: e.message }, 'audit: _persistRunEnd failed');
+    }
+  }
+
+  /**
+   * Записать результат шага в loader_step_results (UPSERT по run_id,step_name).
+   * @private
+   * @param {number} stepNumber
+   */
+  async _persistStepResult(stepNumber) {
+    try {
+      const sess = this.currentSession;
+      if (!sess) return;
+      const step = sess.steps[stepNumber - 1];
+      if (!step) return;
+
+      const r = (step.result && typeof step.result === 'object') ? step.result : {};
+      const recordsProcessed = r.totalRecords ?? r.recordsProcessed ?? null;
+      const recordsInserted  = r.insertedRecords ?? null;
+      const recordsUpdated   = r.updatedRecords ?? null;
+      const recordsFailed    = r.failedRecords ?? null;
+
+      const isCompleted = step.status === 'completed';
+      const isFailed = step.status === 'failed';
+
+      await this.db.query(
+        `INSERT INTO loader_step_results
+           (run_id, step_name, step_order, status,
+            records_processed, records_inserted, records_updated, records_failed,
+            started_at, completed_at, failed_at, duration_ms,
+            error_message, error_stack)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [
+          sess.sessionId,
+          step.name,
+          stepNumber,
+          step.status,
+          recordsProcessed,
+          recordsInserted,
+          recordsUpdated,
+          recordsFailed,
+          step.startTime || null,
+          isCompleted ? (step.endTime || null) : null,
+          isFailed ? (step.endTime || null) : null,
+          step.duration || null,
+          step.error ? step.error.message : null,
+          step.error && step.error.stack ? step.error.stack.slice(0, 5000) : null
+        ]
+      );
+    } catch (e) {
+      logger.warn({ err: e.message, step: stepNumber }, 'audit: _persistStepResult failed');
+    }
+  }
+
+  /**
    * Начать выполнение шага
    * @private
    * @param {number} stepNumber
@@ -218,6 +325,9 @@ class DataLoader {
       name: step.name,
       duration: step.duration
     }, 'Step completed');
+
+    // Audit (fire-and-forget)
+    this._persistStepResult(stepNumber).catch(() => {});
   }
 
   /**
@@ -239,6 +349,9 @@ class DataLoader {
       name: step.name,
       error: error.message
     }, 'Step failed');
+
+    // Audit (fire-and-forget)
+    this._persistStepResult(stepNumber).catch(() => {});
   }
 
   /**
@@ -258,6 +371,9 @@ class DataLoader {
       name: step.name,
       reason
     }, 'Step skipped');
+
+    // Audit (fire-and-forget)
+    this._persistStepResult(stepNumber).catch(() => {});
   }
 
   // ============================================================
@@ -1185,6 +1301,9 @@ class DataLoader {
     try {
       this.currentSession.status = 'RUNNING';
 
+      // Audit: записать начало run (fire-and-forget)
+      this._persistRunStart().catch(() => {});
+
       // STEP 1: PRE-FLIGHT CHECK
       await this._step1_preflightCheck();
 
@@ -1236,6 +1355,9 @@ class DataLoader {
         stats: this.currentSession.stats
       }, 'Load session completed successfully');
 
+      // Audit: завершение run (fire-and-forget)
+      this._persistRunEnd('COMPLETED', null).catch(() => {});
+
       return this.currentSession;
 
     } catch (error) {
@@ -1259,6 +1381,9 @@ class DataLoader {
         entityType,
         error: error.message
       }, 'Load session failed');
+
+      // Audit: провал run (fire-and-forget)
+      this._persistRunEnd('FAILED', error && error.message ? error.message : 'unknown error').catch(() => {});
 
       throw error;
     }
