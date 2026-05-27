@@ -736,24 +736,56 @@ class DataLoader {
     };
 
     const s = d.statistics || {};
+    const parseOther = (obj) => {
+      if (!obj || typeof obj !== 'object') return { xgOnTarget: null, xA: null };
+      return {
+        xgOnTarget: float(obj['xG on target (xGOT)']),
+        xA: float(obj['Expected assists (xA)'])
+      };
+    };
+    const otherH = parseOther(s.otherStatsHome);
+    const otherA = parseOther(s.otherStatsAway);
+    const jsonOrNull = (v) => (v && typeof v === 'object') ? JSON.stringify(v) : null;
+
     const statistics = {
       _game_sstats: gameSstatsId,
-      possession_home: num(s.ballPossessionHome),
-      possession_away: num(s.ballPossessionAway),
-      shots_home: num(s.totalShotsHome),
-      shots_away: num(s.totalShotsAway),
-      shots_on_target_home: num(s.shotsOnGoalHome),
-      shots_on_target_away: num(s.shotsOnGoalAway),
-      corners_home: num(s.cornerKicksHome),
-      corners_away: num(s.cornerKicksAway),
-      fouls_home: num(s.foulsHome),
-      fouls_away: num(s.foulsAway),
-      yellow_cards_home: num(s.yellowCardsHome),
-      yellow_cards_away: num(s.yellowCardsAway),
-      red_cards_home: num(s.redCardsHome),
-      red_cards_away: num(s.redCardsAway),
-      offsides_home: num(s.offsidesHome),
-      offsides_away: num(s.offsidesAway)
+      possession_home: num(s.ballPossessionHome), possession_away: num(s.ballPossessionAway),
+      shots_home: num(s.totalShotsHome), shots_away: num(s.totalShotsAway),
+      shots_on_target_home: num(s.shotsOnGoalHome), shots_on_target_away: num(s.shotsOnGoalAway),
+      shots_off_target_home: num(s.shotsOffGoalHome), shots_off_target_away: num(s.shotsOffGoalAway),
+      shots_blocked_home: num(s.blockedShotsHome), shots_blocked_away: num(s.blockedShotsAway),
+      shots_inside_box_home: num(s.shotsInsideBoxHome), shots_inside_box_away: num(s.shotsInsideBoxAway),
+      shots_outside_box_home: num(s.shotsOutsideBoxHome), shots_outside_box_away: num(s.shotsOutsideBoxAway),
+      hit_woodwork_home: num(s.hitTheWoodworkHome), hit_woodwork_away: num(s.hitTheWoodworkAway),
+      corners_home: num(s.cornerKicksHome), corners_away: num(s.cornerKicksAway),
+      fouls_home: num(s.foulsHome), fouls_away: num(s.foulsAway),
+      yellow_cards_home: num(s.yellowCardsHome), yellow_cards_away: num(s.yellowCardsAway),
+      red_cards_home: num(s.redCardsHome), red_cards_away: num(s.redCardsAway),
+      offsides_home: num(s.offsidesHome), offsides_away: num(s.offsidesAway),
+      free_kicks_home: num(s.freeKicksHome), free_kicks_away: num(s.freeKicksAway),
+      throwins_home: num(s.throwinsHome), throwins_away: num(s.throwinsAway),
+      expected_goals_home: float(s.expectedGoalsHome), expected_goals_away: float(s.expectedGoalsAway),
+      expected_assists_home: otherH.xA, expected_assists_away: otherA.xA,
+      xg_on_target_home: otherH.xgOnTarget, xg_on_target_away: otherA.xgOnTarget,
+      goals_prevented_home: float(s.goalsPreventedHome), goals_prevented_away: float(s.goalsPreventedAway),
+      big_chances_home: num(s.bigChancesHome), big_chances_away: num(s.bigChancesAway),
+      calculated_xg_home: float(s.calculatedXgHome), calculated_xg_away: float(s.calculatedXgAway),
+      total_passes_home: num(s.totalPassesHome), total_passes_away: num(s.totalPassesAway),
+      passes_accurate_home: num(s.passesAccurateHome), passes_accurate_away: num(s.passesAccurateAway),
+      accurate_through_passes_home: num(s.accurateThroughPassesHome), accurate_through_passes_away: num(s.accurateThroughPassesAway),
+      long_passes_home: num(s.longPassesHome), long_passes_away: num(s.longPassesAway),
+      passes_in_final_third_home: num(s.passesInFinalThirdHome), passes_in_final_third_away: num(s.passesInFinalThirdAway),
+      crosses_home: num(s.crossesHome), crosses_away: num(s.crossesAway),
+      touches_in_opp_box_home: num(s.touchesInOppositionBoxHome), touches_in_opp_box_away: num(s.touchesInOppositionBoxAway),
+      total_tackles_home: num(s.totalTacklesHome), total_tackles_away: num(s.totalTacklesAway),
+      success_tackles_home: num(s.successTacklesHome), success_tackles_away: num(s.successTacklesAway),
+      duels_won_home: num(s.duelsWonHome), duels_won_away: num(s.duelsWonAway),
+      clearances_home: num(s.clearancesHome), clearances_away: num(s.clearancesAway),
+      interceptions_home: num(s.interceptionsHome), interceptions_away: num(s.interceptionsAway),
+      goalkeeper_saves_home: num(s.goalkeeperSavesHome), goalkeeper_saves_away: num(s.goalkeeperSavesAway),
+      errors_leading_to_shot_home: num(s.errorsLeadingToShotHome), errors_leading_to_shot_away: num(s.errorsLeadingToShotAway),
+      errors_leading_to_goal_home: num(s.errorsLeadingToGoalHome), errors_leading_to_goal_away: num(s.errorsLeadingToGoalAway),
+      other_stats_home: jsonOrNull(s.otherStatsHome), other_stats_away: jsonOrNull(s.otherStatsAway)
     };
     const hasStats = Object.entries(statistics)
       .filter(([k]) => k !== '_game_sstats')
@@ -810,12 +842,29 @@ class DataLoader {
         red_cards: num(ps.cardsRed) || 0,
         shots: num(ps.shotsTotal) || 0,
         shots_on_target: num(ps.shotsOn) || 0,
+        shots_blocked: num(ps.tacklesBlocks),
         passes: num(ps.passesTotal) || 0,
         passes_completed: num(ps.passesAccuracy) || 0,
+        key_passes: num(ps.passesKey),
         tackles: num(ps.tacklesTotal) || 0,
         interceptions: num(ps.tacklesInterceptions) || 0,
+        duels_total: num(ps.duelsTotal),
+        duels_won: num(ps.duelsWon),
+        dribbles_attempts: num(ps.dribblesAttempts),
+        dribbles_success: num(ps.dribblesSuccess),
+        dribbles_past: num(ps.dribblesPast),
         fouls_committed: num(ps.foulsCommitted) || 0,
         fouls_suffered: num(ps.foulsDrawn) || 0,
+        offsides: num(ps.offsides),
+        goals_conceded: num(ps.goalsConceded),
+        goals_saves: num(ps.goalsSaves),
+        penalty_won: num(ps.penaltyWon),
+        penalty_committed: num(ps.penaltyCommited),
+        penalty_scored: num(ps.penaltyScored),
+        penalty_missed: num(ps.penaltyMissed),
+        penalty_saved: num(ps.penaltySaved),
+        is_captain: !!ps.capitan,
+        is_substitute: !!ps.substitute,
         rating: float(ps.rating)
       }));
 
@@ -1515,17 +1564,12 @@ class DataLoader {
         for (const row of r.rows) playerMap.set(row.sstats_id, row.id);
       }
 
-      const mappedStats = statistics ? {
-        game_id: gameId, date: gameDate,
-        possession_home: statistics.possession_home, possession_away: statistics.possession_away,
-        shots_home: statistics.shots_home, shots_away: statistics.shots_away,
-        shots_on_target_home: statistics.shots_on_target_home, shots_on_target_away: statistics.shots_on_target_away,
-        corners_home: statistics.corners_home, corners_away: statistics.corners_away,
-        fouls_home: statistics.fouls_home, fouls_away: statistics.fouls_away,
-        yellow_cards_home: statistics.yellow_cards_home, yellow_cards_away: statistics.yellow_cards_away,
-        red_cards_home: statistics.red_cards_home, red_cards_away: statistics.red_cards_away,
-        offsides_home: statistics.offsides_home, offsides_away: statistics.offsides_away
-      } : null;
+      // Spread всех полей statistics (auto-sync с трансформером)
+      let mappedStats = null;
+      if (statistics) {
+        const { _game_sstats, ...statsFields } = statistics;
+        mappedStats = { game_id: gameId, date: gameDate, ...statsFields };
+      }
 
       const mappedEvents = events.map(e => ({
         sstats_id: e.sstats_id,
@@ -1551,19 +1595,16 @@ class DataLoader {
         substituted_out_minute: l.substituted_out_minute
       })).filter(l => l.team_id && l.player_id);
 
-      const mappedPlayerStats = playerStats.map(ps => ({
-        game_id: gameId, date: gameDate,
-        team_id: teamMap.get(ps._team_sstats) || null,
-        player_id: playerMap.get(ps._player_sstats) || null,
-        minutes_played: ps.minutes_played,
-        goals: ps.goals, assists: ps.assists,
-        yellow_cards: ps.yellow_cards, red_cards: ps.red_cards,
-        shots: ps.shots, shots_on_target: ps.shots_on_target,
-        passes: ps.passes, passes_completed: ps.passes_completed,
-        tackles: ps.tackles, interceptions: ps.interceptions,
-        fouls_committed: ps.fouls_committed, fouls_suffered: ps.fouls_suffered,
-        rating: ps.rating
-      })).filter(p => p.player_id);
+      // Spread всех полей playerStats (auto-sync с трансформером)
+      const mappedPlayerStats = playerStats.map(ps => {
+        const { _game_sstats, _player_sstats, _team_sstats, ...psFields } = ps;
+        return {
+          game_id: gameId, date: gameDate,
+          team_id: teamMap.get(_team_sstats) || null,
+          player_id: playerMap.get(_player_sstats) || null,
+          ...psFields
+        };
+      }).filter(p => p.player_id);
 
       const counts = { statistics: 0, events: 0, lineups: 0, playerStats: 0, gameUpdated: 0 };
 
