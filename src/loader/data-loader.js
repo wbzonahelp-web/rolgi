@@ -693,13 +693,156 @@ class DataLoader {
       });
   }
 
-    _transformGameDetails(gameDetails) {
+  _transformGameDetails(gameDetails) {
+    // gameDetails приходит как массив [data] после step 3/5 unwrap
+    const raw = Array.isArray(gameDetails) ? (gameDetails[0] || {}) : (gameDetails || {});
+    const d = raw.data ? raw.data : raw;
+    const game = d.game || {};
+    const gameSstatsId = game.id || d.id || raw.id;
+    const gameDate = game.date || game.dateUtc || null;
+
+    const num = (v) => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = parseInt(v, 10);
+      return Number.isFinite(n) ? n : null;
+    };
+    const float = (v) => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : null;
+    };
+    const str = (v, max) => {
+      if (v === null || v === undefined) return null;
+      const s = String(v).trim();
+      if (!s) return null;
+      return max ? s.slice(0, max) : s;
+    };
+
+    const eventTypeMap = { 1: 'goal', 2: 'card', 3: 'substitution', 4: 'var', 5: 'penalty', 6: 'own_goal' };
+    const mapEventType = (t) => eventTypeMap[parseInt(t, 10)] || 'other';
+
+    let stadium = null;
+    if (d.venue) {
+      stadium = d.venue.name || null;
+      if (stadium && d.venue.city) stadium = stadium + ', ' + d.venue.city;
+    }
+
+    const gameUpdate = {
+      sstats_id: gameSstatsId,
+      referee: str(d.refereeName, 100),
+      stadium: str(stadium, 200),
+      attendance: num(d.attendance || game.attendance),
+      round: num(game.round || game.roundNumber)
+    };
+
+    const s = d.statistics || {};
+    const statistics = {
+      _game_sstats: gameSstatsId,
+      possession_home: num(s.ballPossessionHome),
+      possession_away: num(s.ballPossessionAway),
+      shots_home: num(s.totalShotsHome),
+      shots_away: num(s.totalShotsAway),
+      shots_on_target_home: num(s.shotsOnGoalHome),
+      shots_on_target_away: num(s.shotsOnGoalAway),
+      corners_home: num(s.cornerKicksHome),
+      corners_away: num(s.cornerKicksAway),
+      fouls_home: num(s.foulsHome),
+      fouls_away: num(s.foulsAway),
+      yellow_cards_home: num(s.yellowCardsHome),
+      yellow_cards_away: num(s.yellowCardsAway),
+      red_cards_home: num(s.redCardsHome),
+      red_cards_away: num(s.redCardsAway),
+      offsides_home: num(s.offsidesHome),
+      offsides_away: num(s.offsidesAway)
+    };
+    const hasStats = Object.entries(statistics)
+      .filter(([k]) => k !== '_game_sstats')
+      .some(([_, v]) => v !== null);
+
+    const events = (Array.isArray(d.events) ? d.events : [])
+      .filter(e => e && e.id != null)
+      .map(e => ({
+        sstats_id: num(e.id),
+        _game_sstats: gameSstatsId,
+        _team_sstats: num(e.teamId),
+        _player_sstats: num(e.player && e.player.id),
+        _assist_sstats: num(e.assistPlayer && e.assistPlayer.id),
+        player_name: str(e.player && e.player.name, 200),
+        assist_player_name: str(e.assistPlayer && e.assistPlayer.name, 200),
+        minute: num(e.elapsed) || 0,
+        minute_extra: num(e.extra),
+        type: mapEventType(e.type),
+        subtype: str(e.name, 50),
+        description: null
+      }));
+
+    const lineupPlayers = Array.isArray(d.lineupPlayers) ? d.lineupPlayers : [];
+    const lineups = lineupPlayers
+      .filter(p => p && p.playerId != null && p.teamId != null)
+      .map(p => ({
+        _game_sstats: gameSstatsId,
+        _team_sstats: num(p.teamId),
+        _player_sstats: num(p.playerId),
+        player_name: str(p.playerName, 200),
+        position: str(p.position, 20),
+        shirt_number: num(p.number),
+        is_starter: !!p.startXI,
+        is_captain: !!p.capitan,
+        substituted_in_minute: null,
+        substituted_out_minute: null
+      }));
+
+    const playerStatsArr = Array.isArray(d.playerStats) ? d.playerStats : [];
+    const playerToTeam = new Map();
+    for (const lp of lineupPlayers) {
+      if (lp.playerId != null) playerToTeam.set(lp.playerId, lp.teamId);
+    }
+    const playerStats = playerStatsArr
+      .filter(ps => ps && ps.playerId != null)
+      .map(ps => ({
+        _game_sstats: gameSstatsId,
+        _player_sstats: num(ps.playerId),
+        _team_sstats: num(playerToTeam.get(ps.playerId)),
+        minutes_played: num(ps.minutes),
+        goals: num(ps.goalsTotal) || 0,
+        assists: num(ps.goalsAssists) || 0,
+        yellow_cards: num(ps.cardsYellow) || 0,
+        red_cards: num(ps.cardsRed) || 0,
+        shots: num(ps.shotsTotal) || 0,
+        shots_on_target: num(ps.shotsOn) || 0,
+        passes: num(ps.passesTotal) || 0,
+        passes_completed: num(ps.passesAccuracy) || 0,
+        tackles: num(ps.tacklesTotal) || 0,
+        interceptions: num(ps.tacklesInterceptions) || 0,
+        fouls_committed: num(ps.foulsCommitted) || 0,
+        fouls_suffered: num(ps.foulsDrawn) || 0,
+        rating: float(ps.rating)
+      }));
+
+    const playersToPresync = new Map();
+    for (const lp of lineupPlayers) {
+      if (lp.playerId != null && lp.playerName) {
+        playersToPresync.set(lp.playerId, { sstats_id: num(lp.playerId), name: str(lp.playerName, 200) });
+      }
+    }
+    for (const e of (d.events || [])) {
+      if (e.player && e.player.id != null && e.player.name) {
+        playersToPresync.set(e.player.id, { sstats_id: num(e.player.id), name: str(e.player.name, 200) });
+      }
+      if (e.assistPlayer && e.assistPlayer.id != null && e.assistPlayer.name) {
+        playersToPresync.set(e.assistPlayer.id, { sstats_id: num(e.assistPlayer.id), name: str(e.assistPlayer.name, 200) });
+      }
+    }
+
     return {
-      id: gameDetails.id,
-      stats_json: gameDetails.stats || {},
-      events_json: gameDetails.events || [],
-      lineups_json: gameDetails.lineups || {},
-      last_sync_at: new Date()
+      _isGameDetails: true,
+      gameUpdate,
+      statistics: hasStats ? statistics : null,
+      events,
+      lineups,
+      playerStats,
+      _playersToPresync: Array.from(playersToPresync.values()),
+      _gameDate: gameDate
     };
   }
 
@@ -1230,6 +1373,11 @@ class DataLoader {
     this._startStep(10);
 
     try {
+      if (data && data._isGameDetails) {
+        this._completeStep(10, { totalRecords: 0, insertedRecords: 0, updatedRecords: 0, skipped: 'handled in step 11' });
+        return { totalRecords: 0, insertedRecords: 0, updatedRecords: 0 };
+      }
+
       const records = Array.isArray(data) ? data : [data];
       let insertedCount = 0;
       let updatedCount = 0;
@@ -1307,11 +1455,163 @@ class DataLoader {
     this._startStep(11);
 
     try {
-      // Обновление связанных таблиц (например, game_stats, game_events)
-      // Для простоты сейчас пропускаем
-      this._skipStep(11, 'No relations to update for this entity type');
+      if (!data || !data._isGameDetails) {
+        this._skipStep(11, 'No relations to update for this entity type');
+        return { updated: 0 };
+      }
 
-      return { updated: 0 };
+      const { gameUpdate, statistics, events, lineups, playerStats, _playersToPresync } = data;
+      const gameSstatsId = gameUpdate.sstats_id;
+
+      const gRes = await transaction.query(
+        'SELECT id, date FROM games WHERE sstats_id = $1 LIMIT 1',
+        [gameSstatsId]
+      );
+      if (gRes.rows.length === 0) {
+        throw new Error('game with sstats_id=' + gameSstatsId + ' not found in games');
+      }
+      const gameId = gRes.rows[0].id;
+      const gameDate = gRes.rows[0].date;
+
+      let presyncedPlayers = 0;
+      if (_playersToPresync && _playersToPresync.length > 0) {
+        try {
+          await transaction.batchUpsert('players', _playersToPresync);
+          presyncedPlayers = _playersToPresync.length;
+        } catch (e) {
+          logger.warn({ err: e.message, count: _playersToPresync.length }, 'players presync failed');
+        }
+      }
+
+      const collectSstats = (arr, key) => [...new Set((arr || []).map(x => x[key]).filter(v => v != null))];
+      const uniqueTeams = [...new Set([
+        ...collectSstats(events, '_team_sstats'),
+        ...collectSstats(lineups, '_team_sstats'),
+        ...collectSstats(playerStats, '_team_sstats')
+      ])];
+      const uniquePlayers = [...new Set([
+        ...collectSstats(events, '_player_sstats'),
+        ...collectSstats(events, '_assist_sstats'),
+        ...collectSstats(lineups, '_player_sstats'),
+        ...collectSstats(playerStats, '_player_sstats')
+      ])];
+
+      const teamMap = new Map();
+      if (uniqueTeams.length > 0) {
+        const ph = uniqueTeams.map((_, i) => '$' + (i+1)).join(',');
+        const r = await transaction.query(
+          'SELECT id, sstats_id FROM teams WHERE sstats_id IN (' + ph + ')',
+          uniqueTeams
+        );
+        for (const row of r.rows) teamMap.set(row.sstats_id, row.id);
+      }
+      const playerMap = new Map();
+      if (uniquePlayers.length > 0) {
+        const ph = uniquePlayers.map((_, i) => '$' + (i+1)).join(',');
+        const r = await transaction.query(
+          'SELECT id, sstats_id FROM players WHERE sstats_id IN (' + ph + ')',
+          uniquePlayers
+        );
+        for (const row of r.rows) playerMap.set(row.sstats_id, row.id);
+      }
+
+      const mappedStats = statistics ? {
+        game_id: gameId, date: gameDate,
+        possession_home: statistics.possession_home, possession_away: statistics.possession_away,
+        shots_home: statistics.shots_home, shots_away: statistics.shots_away,
+        shots_on_target_home: statistics.shots_on_target_home, shots_on_target_away: statistics.shots_on_target_away,
+        corners_home: statistics.corners_home, corners_away: statistics.corners_away,
+        fouls_home: statistics.fouls_home, fouls_away: statistics.fouls_away,
+        yellow_cards_home: statistics.yellow_cards_home, yellow_cards_away: statistics.yellow_cards_away,
+        red_cards_home: statistics.red_cards_home, red_cards_away: statistics.red_cards_away,
+        offsides_home: statistics.offsides_home, offsides_away: statistics.offsides_away
+      } : null;
+
+      const mappedEvents = events.map(e => ({
+        sstats_id: e.sstats_id,
+        game_id: gameId, date: gameDate,
+        team_id: teamMap.get(e._team_sstats) || null,
+        player_id: playerMap.get(e._player_sstats) || null,
+        player_name: e.player_name,
+        minute: e.minute, minute_extra: e.minute_extra,
+        type: e.type, subtype: e.subtype,
+        assist_player_id: playerMap.get(e._assist_sstats) || null,
+        assist_player_name: e.assist_player_name,
+        description: e.description
+      })).filter(e => e.sstats_id != null);
+
+      const mappedLineups = lineups.map(l => ({
+        game_id: gameId, date: gameDate,
+        team_id: teamMap.get(l._team_sstats) || null,
+        player_id: playerMap.get(l._player_sstats) || null,
+        player_name: l.player_name,
+        position: l.position, shirt_number: l.shirt_number,
+        is_starter: l.is_starter, is_captain: l.is_captain,
+        substituted_in_minute: l.substituted_in_minute,
+        substituted_out_minute: l.substituted_out_minute
+      })).filter(l => l.team_id && l.player_id);
+
+      const mappedPlayerStats = playerStats.map(ps => ({
+        game_id: gameId, date: gameDate,
+        team_id: teamMap.get(ps._team_sstats) || null,
+        player_id: playerMap.get(ps._player_sstats) || null,
+        minutes_played: ps.minutes_played,
+        goals: ps.goals, assists: ps.assists,
+        yellow_cards: ps.yellow_cards, red_cards: ps.red_cards,
+        shots: ps.shots, shots_on_target: ps.shots_on_target,
+        passes: ps.passes, passes_completed: ps.passes_completed,
+        tackles: ps.tackles, interceptions: ps.interceptions,
+        fouls_committed: ps.fouls_committed, fouls_suffered: ps.fouls_suffered,
+        rating: ps.rating
+      })).filter(p => p.player_id);
+
+      const counts = { statistics: 0, events: 0, lineups: 0, playerStats: 0, gameUpdated: 0 };
+
+      if (mappedStats) {
+        try { await transaction.batchUpsert('game_statistics', [mappedStats]); counts.statistics = 1; }
+        catch (e) { logger.warn({ err: e.message }, 'game_statistics upsert failed'); }
+      }
+      if (mappedEvents.length > 0) {
+        try { await transaction.batchUpsert('game_events', mappedEvents); counts.events = mappedEvents.length; }
+        catch (e) { logger.warn({ err: e.message, count: mappedEvents.length }, 'game_events upsert failed'); }
+      }
+      if (mappedLineups.length > 0) {
+        try { await transaction.batchUpsert('game_lineups', mappedLineups); counts.lineups = mappedLineups.length; }
+        catch (e) { logger.warn({ err: e.message, count: mappedLineups.length }, 'game_lineups upsert failed'); }
+      }
+      if (mappedPlayerStats.length > 0) {
+        try { await transaction.batchUpsert('game_player_stats', mappedPlayerStats); counts.playerStats = mappedPlayerStats.length; }
+        catch (e) { logger.warn({ err: e.message, count: mappedPlayerStats.length }, 'game_player_stats upsert failed'); }
+      }
+
+      const updates = [];
+      const params = [];
+      let i = 1;
+      if (gameUpdate.referee != null) { updates.push('referee = $' + (i++)); params.push(gameUpdate.referee); }
+      if (gameUpdate.stadium != null) { updates.push('stadium = $' + (i++)); params.push(gameUpdate.stadium); }
+      if (gameUpdate.attendance != null) { updates.push('attendance = $' + (i++)); params.push(gameUpdate.attendance); }
+      if (gameUpdate.round != null) { updates.push('round = $' + (i++)); params.push(gameUpdate.round); }
+      if (updates.length > 0) {
+        params.push(gameSstatsId);
+        await transaction.query(
+          'UPDATE games SET ' + updates.join(', ') + ' WHERE sstats_id = $' + i,
+          params
+        );
+        counts.gameUpdated = 1;
+      }
+
+      this._completeStep(11, {
+        presyncedPlayers,
+        teamsLookedUp: teamMap.size,
+        playersLookedUp: playerMap.size,
+        statistics: counts.statistics,
+        events: counts.events,
+        lineups: counts.lineups,
+        playerStats: counts.playerStats,
+        gameUpdated: counts.gameUpdated
+      });
+
+      return { updated: counts.statistics + counts.events + counts.lineups + counts.playerStats };
     } catch (error) {
       this._failStep(11, error);
       throw error;
