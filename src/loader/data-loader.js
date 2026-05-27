@@ -96,7 +96,7 @@ class DataLoader {
       skipExisting: config.skipExisting !== false
     };
 
-    this.apiClient = new SStatsClient({ apiKey: this.config.apiKey });
+    this.apiClient = config.apiClient || new SStatsClient({ apiKey: this.config.apiKey });
     this.db = getDatabase();
 
     // Reference data cache (countries, bookmakers, etc.)
