@@ -60,35 +60,32 @@ class GameUpdatesManager {
    */
   async updateLiveGames() {
     try {
-      const client = await this.dbPool.connect();
-      
-      try {
         // Получаем все live игры
-        const result = await client.query(`
+        const result = await this.dbPool.query(`
           SELECT 
-            g.game_id,
+            g.id AS game_id,
             g.league_id,
-            g.season_id,
-            g.start_time,
+            g.season AS season_id,
+            g.date AS start_time,
             g.status,
             g.home_team_id,
             g.away_team_id,
             g.home_score,
             g.away_score,
-            g.current_period,
-            g.minute,
-            g.updated_at,
+            NULL::int AS current_period,
+            NULL::int AS minute,
+            g.last_updated AS updated_at,
             ht.name AS home_team_name,
             at.name AS away_team_name,
             l.name AS league_name
           FROM games g
-          LEFT JOIN teams ht ON g.home_team_id = ht.team_id
-          LEFT JOIN teams at ON g.away_team_id = at.team_id
-          LEFT JOIN leagues l ON g.league_id = l.league_id
-          WHERE g.status IN (
-            'live', 'first_half', 'second_half', 'half_time', 'extra_time', 'penalties'
-          )
-          ORDER BY g.start_time DESC
+          LEFT JOIN teams ht ON g.home_team_id = ht.id
+          LEFT JOIN teams at ON g.away_team_id = at.id
+          LEFT JOIN leagues l ON g.league_id = l.id
+          WHERE g.status = 'live'
+            AND g.date >= NOW() - INTERVAL '1 day'
+            AND g.date <= NOW() + INTERVAL '6 hours'
+          ORDER BY g.date DESC
         `);
 
         const currentGames = new Map();
@@ -134,14 +131,14 @@ class GameUpdatesManager {
           changed: updates.length
         });
 
-      } finally {
-        client.release();
-      }
     } catch (error) {
-      logger.error('Error updating live games', {
-        error: error.message,
-        stack: error.stack
-      });
+      // TEMP DEBUG: log raw to stdout to bypass pino serializers
+      console.error('=== updateLiveGames ERROR ===');
+      console.error('message:', error && error.message);
+      console.error('code:', error && error.code);
+      console.error('detail:', error && error.detail);
+      console.error('stack:', error && error.stack);
+      logger.error({ err: error }, 'Error updating live games');
     }
   }
 
@@ -366,11 +363,11 @@ class GameUpdatesManager {
           gs.red_cards_home,
           gs.red_cards_away
         FROM games g
-        LEFT JOIN teams ht ON g.home_team_id = ht.team_id
-        LEFT JOIN teams at ON g.away_team_id = at.team_id
-        LEFT JOIN leagues l ON g.league_id = l.league_id
-        LEFT JOIN game_stats gs ON g.game_id = gs.game_id
-        WHERE g.game_id = $1
+        LEFT JOIN teams ht ON g.home_team_id = ht.id
+        LEFT JOIN teams at ON g.away_team_id = at.id
+        LEFT JOIN leagues l ON g.league_id = l.id
+        LEFT JOIN game_stats gs ON g.id = gs.game_id
+        WHERE g.id = $1
       `, [gameId]);
 
       if (result.rows.length === 0) {
@@ -433,11 +430,11 @@ class GameUpdatesManager {
           ht.name AS home_team_name,
           at.name AS away_team_name
         FROM games g
-        LEFT JOIN teams ht ON g.home_team_id = ht.team_id
-        LEFT JOIN teams at ON g.away_team_id = at.team_id
+        LEFT JOIN teams ht ON g.home_team_id = ht.id
+        LEFT JOIN teams at ON g.away_team_id = at.id
         WHERE g.league_id = $1
-          AND g.status IN ('live', 'first_half', 'second_half', 'half_time', 'extra_time', 'penalties')
-        ORDER BY g.start_time DESC
+          AND g.status IN ('live')
+        ORDER BY g.date DESC
       `, [leagueId]);
 
       this.wsServer.sendToClient(ws, {
@@ -533,10 +530,10 @@ class GameUpdatesManager {
           at.name AS away_team_name,
           l.name AS league_name
         FROM games g
-        LEFT JOIN teams ht ON g.home_team_id = ht.team_id
-        LEFT JOIN teams at ON g.away_team_id = at.team_id
-        LEFT JOIN leagues l ON g.league_id = l.league_id
-        WHERE g.game_id = $1
+        LEFT JOIN teams ht ON g.home_team_id = ht.id
+        LEFT JOIN teams at ON g.away_team_id = at.id
+        LEFT JOIN leagues l ON g.league_id = l.id
+        WHERE g.id = $1
       `, [gameId]);
 
       if (result.rows.length > 0) {
