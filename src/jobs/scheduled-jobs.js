@@ -15,8 +15,31 @@ const logger = require("../monitoring/logger");
 
 const cron = require('node-cron');
 const DataLoader = require('../loader/data-loader');
+const SStatsClient = require('../api/sstats-client');
 const { getDatabase } = require('../database/db-pool');
 const { getTracer, getMetricsCollector } = require('../monitoring/monitoring');
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+let _liveClient = null, _detailsClient = null;
+function getLiveClient() {
+  if (!_liveClient) {
+    _liveClient = new SStatsClient({
+      apiKey: process.env.SSTATS_LIVE_API_KEY,
+      proxy:  process.env.SSTATS_LIVE_PROXY
+    });
+  }
+  return _liveClient;
+}
+function getDetailsClient() {
+  if (!_detailsClient) {
+    _detailsClient = new SStatsClient({
+      apiKey: process.env.SSTATS_DETAILS_API_KEY,
+      proxy:  process.env.SSTATS_DETAILS_PROXY
+    });
+  }
+  return _detailsClient;
+}
 
 
 /**
@@ -117,7 +140,7 @@ class ScheduledJobsManager {
         // Загружаем коэффициенты для каждой игры
         for (const game of liveGames) {
           try {
-            await (new DataLoader()).load('odds', {
+            await (new DataLoader({ apiClient: getLiveClient() })).load('odds', {
               gameId: game.id
             }, 'odds');
           } catch (error) {
@@ -179,9 +202,10 @@ class ScheduledJobsManager {
 
         for (const team of teams) {
           try {
-            await (new DataLoader()).load('players', {
+            await (new DataLoader({ apiClient: getDetailsClient() })).load('players', {
               teamId: team.id
             }, 'players');
+            await sleep(300); // pace: ~200 req/min, well under 300/min limit
           } catch (error) {
             logger.error({
               teamId: team.id,
@@ -201,7 +225,7 @@ class ScheduledJobsManager {
         const leagues = await this.db.query(
           `SELECT DISTINCT league_id, season 
            FROM games 
-           WHERE game_date > NOW() - INTERVAL '30 days'
+           WHERE date > NOW() - INTERVAL '30 days'
            LIMIT 50`
         );
 
@@ -220,6 +244,46 @@ class ScheduledJobsManager {
             }, 'Failed to update standings');
           }
         }
+      }
+    );
+
+    // Job 10: Догрузка деталей для свежих finished матчей каждые 30 минут
+    this.registerJob(
+      'sync_finished_game_details',
+      '*/30 * * * *', // Каждые 30 минут
+      async () => {
+        const result = await this.db.query(
+          `SELECT g.id, g.sstats_id
+           FROM games g
+           WHERE g.status='finished'
+             AND g.date >= NOW() - INTERVAL '14 days'
+             AND NOT EXISTS (SELECT 1 FROM game_events e WHERE e.game_id = g.id)
+             AND NOT EXISTS (SELECT 1 FROM game_lineups l WHERE l.game_id = g.id)
+             AND NOT EXISTS (SELECT 1 FROM game_statistics s WHERE s.game_id = g.id)
+           ORDER BY g.date DESC
+           LIMIT 30`
+        );
+
+        const candidates = result.rows || [];
+        logger.info({ count: candidates.length }, 'Syncing details for finished games');
+
+        const loader = new DataLoader({ apiClient: getDetailsClient() });
+        let ok = 0, fail = 0;
+        for (const game of candidates) {
+          try {
+            await loader.load('game_details', { gameId: game.sstats_id }, 'games');
+            ok++;
+            await sleep(300); // pace under 300/min on dedicated channel
+          } catch (error) {
+            fail++;
+            logger.error({
+              gameId: game.sstats_id,
+              error: error.message
+            }, 'Failed to sync game details');
+          }
+        }
+
+        logger.info({ ok, fail, total: candidates.length }, 'Finished game details sync completed');
       }
     );
 
