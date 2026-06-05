@@ -134,7 +134,7 @@ async function withRetry(fn, label, maxAttempts = 5) {
     circuitBreakerThreshold: 20,   // tolerate more failures before opening
     circuitBreakerTimeout: 10000,  // 10s recovery window
     maxRetries: 3
-  }) });
+  , apiKey: args['api-key'] || process.env.SSTATS_API_KEY, proxy: args.proxy || process.env.SSTATS_PROXY }) });
 
   const startedAt = Date.now();
   let done = 0, ok = 0, fail = 0, empty = 0;

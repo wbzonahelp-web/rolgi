@@ -80,7 +80,7 @@ class SStatsClient {
     };
 
     // Axios instance
-    this.axios = axios.create({
+    const axiosConfig = {
       baseURL: this.config.baseURL,
       timeout: this.config.timeout,
       headers: {
@@ -88,7 +88,19 @@ class SStatsClient {
         'Accept': 'application/json',
         ...(this.config.apiKey && { 'Authorization': `ApiKey ${this.config.apiKey}` })
       }
-    });
+    };
+
+    // Proxy support (config.proxy or env SSTATS_PROXY)
+    const proxyUrl = config.proxy || process.env.SSTATS_PROXY;
+    if (proxyUrl) {
+      const { HttpsProxyAgent } = require('https-proxy-agent');
+      axiosConfig.httpsAgent = new HttpsProxyAgent(proxyUrl);
+      axiosConfig.httpAgent = new HttpsProxyAgent(proxyUrl);
+      axiosConfig.proxy = false;
+      this.proxyUrl = proxyUrl;
+    }
+
+    this.axios = axios.create(axiosConfig);
 
     // Rate limiter (300 req/min с ключом)
     this.rateLimiter = new RateLimiter({
@@ -130,7 +142,8 @@ class SStatsClient {
       baseURL: this.config.baseURL,
       hasApiKey: !!this.config.apiKey,
       rateLimit: this.config.rateLimitPerMin,
-      cacheEnabled: this.config.enableCache
+      cacheEnabled: this.config.enableCache,
+      proxy: this.proxyUrl ? this.proxyUrl.replace(/:[^:@]+@/, ':***@') : null
     }, 'SStatsClient initialized');
   }
 
