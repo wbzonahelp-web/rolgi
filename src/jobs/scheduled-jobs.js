@@ -118,7 +118,7 @@ class ScheduledJobsManager {
     // Job 1: Загрузка живых игр каждые 5 минут
     this.registerJob(
       'load_live_games',
-      '*/5 * * * *', // Каждые 5 минут
+      '* * * * *', // Каждую минуту
       async () => {
         const today = new Date().toISOString().slice(0,10);
         await (new DataLoader()).load("games", { date: today, limit: 500 }, "games");
