@@ -118,10 +118,21 @@ class ScheduledJobsManager {
     // Job 1: Загрузка живых игр каждые 5 минут
     this.registerJob(
       'load_live_games',
-      '* * * * *', // Каждую минуту
+      '* * * * *', // Каждую минуту: тянем все live матчи (status 3,4,5) одним проходом
       async () => {
-        const today = new Date().toISOString().slice(0,10);
-        await (new DataLoader()).load("games", { date: today, limit: 500 }, "games");
+        // SStats коды live-статусов: 3=First Half, 4=Halftime, 5=Second Half
+        const LIVE_STATUSES = [3, 4, 5];
+        let totalLoaded = 0;
+        for (const status of LIVE_STATUSES) {
+          try {
+            const session = await (new DataLoader()).load("games", { status, limit: 500 }, "games");
+            const cnt = session && session.stats ? (session.stats.totalRecords || 0) : 0;
+            totalLoaded += cnt;
+          } catch (err) {
+            logger.error({ status, error: err.message }, 'Failed to load live games for status');
+          }
+        }
+        logger.info({ totalLoaded, statuses: LIVE_STATUSES }, 'load_live_games: live snapshot loaded');
       }
     );
 
