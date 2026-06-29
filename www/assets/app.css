@@ -1,0 +1,575 @@
+/* Rolgi SStats — общий стиль (v1.0)
+   Используется на index.html, leagues.html, teams.html, players.html, game.html
+*/
+
+/* ─── CSS-переменные (тема) ─── */
+:root {
+    --primary-color: #1a5f7a;
+    --primary-dark: #134b5f;
+    --secondary-color: #57c5b6;
+    --accent-color: #159895;
+    --bg-color: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-color: #333;
+    --text-muted: #6c757d;
+    --border-color: #e0e0e0;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --live-color: #ff4757;
+    --odds-home: #3498db;
+    --odds-draw: #95a5a6;
+    --odds-away: #e74c3c;
+    --goal-color: #27ae60;
+    --card-yellow: #f1c40f;
+    --card-red: #e74c3c;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 15px;
+    --shadow-sm: 0 2px 6px rgba(0,0,0,0.05);
+    --shadow-md: 0 2px 10px rgba(0,0,0,0.08);
+    --shadow-lg: 0 5px 20px rgba(0,0,0,0.1);
+    --container-w: 1400px;
+}
+
+/* ─── Reset ─── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { font-family: inherit; cursor: pointer; }
+
+/* ─── Header ─── */
+.r-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 15px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.r-header-content {
+    max-width: var(--container-w);
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.r-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: white;
+    text-decoration: none;
+}
+.r-logo:hover { text-decoration: none; }
+.r-logo i { color: var(--secondary-color); }
+
+.r-nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.r-nav a {
+    color: white;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+    font-size: 0.95em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.r-nav a:hover { background: rgba(255,255,255,0.1); text-decoration: none; }
+.r-nav a.active { background: var(--secondary-color); }
+
+/* Бургер для мобильной навигации */
+.r-burger {
+    display: none;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 1.1em;
+}
+
+/* ─── Контейнер ─── */
+.r-container {
+    max-width: var(--container-w);
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ─── Карточки ─── */
+.r-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.r-card-padded { padding: 20px; }
+.r-card + .r-card { margin-top: 20px; }
+
+/* ─── Кнопки ─── */
+.r-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--primary-color);
+    color: white;
+    font-size: 0.95em;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.r-btn:hover { background: var(--primary-dark); text-decoration: none; }
+.r-btn-secondary { background: var(--secondary-color); }
+.r-btn-secondary:hover { background: var(--accent-color); }
+.r-btn-ghost { background: transparent; color: var(--text-color); border: 1px solid var(--border-color); }
+.r-btn-ghost:hover { background: #f5f5f5; }
+.r-btn-danger { background: var(--danger-color); }
+.r-btn-danger:hover { background: #c82333; }
+
+/* ─── Спиннер / загрузка ─── */
+.r-spinner {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: r-spin 0.8s linear infinite;
+}
+@keyframes r-spin { to { transform: rotate(360deg); } }
+
+.r-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* Скелетон */
+.r-skeleton {
+    background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+    background-size: 200% 100%;
+    animation: r-shimmer 1.4s ease-in-out infinite;
+    border-radius: 6px;
+    height: 1em;
+}
+@keyframes r-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ─── WS-индикатор (живое подключение) ─── */
+.r-ws-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75em;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(148,163,184,0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(148,163,184,0.3);
+    transition: all 0.3s;
+    font-weight: 500;
+}
+.r-ws-indicator .r-ws-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #94a3b8;
+    transition: background 0.3s;
+}
+.r-ws-indicator.connected {
+    color: #22c55e;
+    background: rgba(34,197,94,0.12);
+    border-color: rgba(34,197,94,0.4);
+}
+.r-ws-indicator.connected .r-ws-dot {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34,197,94,0.6);
+    animation: r-ws-pulse 2s ease-in-out infinite;
+}
+.r-ws-indicator.disconnected {
+    color: #ef4444;
+    background: rgba(239,68,68,0.12);
+    border-color: rgba(239,68,68,0.4);
+}
+.r-ws-indicator.disconnected .r-ws-dot { background: #ef4444; }
+@keyframes r-ws-pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.6; transform: scale(1.3); }
+}
+
+/* ─── Live-точка и счёт ─── */
+.r-live-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--live-color);
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: r-live-pulse 1.2s ease-in-out infinite;
+}
+@keyframes r-live-pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.4; transform: scale(0.85); }
+}
+
+.r-score-flash { animation: r-score-flash 1.5s ease-out; }
+@keyframes r-score-flash {
+    0%   { color: #22c55e; transform: scale(1.25); text-shadow: 0 0 20px rgba(34,197,94,0.8); }
+    40%  { color: #22c55e; transform: scale(1.15); text-shadow: 0 0 14px rgba(34,197,94,0.6); }
+    100% { color: inherit; transform: scale(1); text-shadow: none; }
+}
+
+/* ─── Тост "Гол!" ─── */
+.r-goal-toast-container {
+    position: fixed;
+    top: 20px; right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.r-goal-toast {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: white;
+    padding: 14px 22px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(34,197,94,0.4);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: r-toast-in 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    min-width: 240px;
+}
+.r-goal-toast.leaving { animation: r-toast-out 0.4s ease-in forwards; }
+.r-goal-toast .r-goal-emoji { font-size: 1.5em; }
+@keyframes r-toast-in {
+    0%   { opacity: 0; transform: translateX(120%) scale(0.8); }
+    100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes r-toast-out {
+    0%   { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(120%); }
+}
+
+/* ─── Статусы матча (бейджи) ─── */
+.r-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.r-status-live      { background: var(--live-color);    color: white; animation: r-live-pulse 1.5s infinite; }
+.r-status-finished  { background: var(--success-color); color: white; }
+.r-status-scheduled { background: var(--info-color);    color: white; }
+.r-status-postponed { background: var(--warning-color); color: #333; }
+.r-status-cancelled { background: #adb5bd;              color: white; }
+
+/* ─── Утилиты ─── */
+.r-flex { display: flex; }
+.r-flex-center { display: flex; align-items: center; justify-content: center; }
+.r-gap-sm { gap: 6px; }
+.r-gap-md { gap: 12px; }
+.r-mt-sm { margin-top: 8px; }
+.r-mt-md { margin-top: 16px; }
+.r-text-muted { color: var(--text-muted); }
+.r-text-sm { font-size: 0.85em; }
+.r-hidden { display: none !important; }
+
+/* ─── Адаптив ─── */
+@media (max-width: 1024px) {
+    :root { --container-w: 100%; }
+}
+@media (max-width: 768px) {
+    .r-burger { display: inline-flex; }
+    .r-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0; right: 0;
+        background: var(--primary-dark);
+        flex-direction: column;
+        padding: 10px;
+        gap: 4px;
+        box-shadow: var(--shadow-lg);
+    }
+    .r-nav.open { display: flex; }
+    .r-nav a { padding: 12px 16px; }
+    .r-header-content { position: relative; }
+    .r-container { padding: 12px; }
+    .r-card-padded { padding: 14px; }
+    .r-goal-toast-container { top: 10px; right: 10px; left: 10px; }
+    .r-goal-toast { min-width: 0; }
+}
+@media (max-width: 480px) {
+    .r-logo { font-size: 1.15em; }
+    .r-logo span { display: none; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Tabs (универсальные)
+   ────────────────────────────────────────────────────────────── */
+.r-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.r-tab {
+    padding: 10px 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.95em;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+.r-tab:hover { color: var(--text-color); }
+.r-tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Search row (поиск + фильтры)
+   ────────────────────────────────────────────────────────────── */
+.r-search-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.r-search-row input,
+.r-search-row select {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95em;
+    background: white;
+    color: var(--text-color);
+}
+.r-search-row input:focus,
+.r-search-row select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   List item (универсальный — для лиг, команд, игроков)
+   ────────────────────────────────────────────────────────────── */
+.r-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+.r-list-item:hover {
+    background: #f8f9fa;
+    border-color: var(--primary-color);
+    transform: translateX(2px);
+}
+.r-list-item-flag {
+    font-size: 1.4em;
+    flex-shrink: 0;
+}
+.r-list-item-main { flex: 1; min-width: 0; }
+.r-list-item-title {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.r-list-item-sub {
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+.r-list-item-meta {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Modal (универсальная)
+   ────────────────────────────────────────────────────────────── */
+.r-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+}
+.r-modal-overlay.active { display: flex; }
+.r-modal {
+    background: white;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 720px;
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: r-modal-in 0.18s ease-out;
+}
+@keyframes r-modal-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.r-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.r-modal-title { font-size: 1.15em; font-weight: 600; margin: 0; }
+.r-modal-close {
+    background: transparent; border: none;
+    font-size: 1.5em; line-height: 1;
+    cursor: pointer; color: var(--text-muted);
+    padding: 4px 8px;
+}
+.r-modal-close:hover { color: var(--text-color); }
+.r-modal-body { padding: 16px 20px; overflow-y: auto; }
+
+/* ──────────────────────────────────────────────────────────────
+   Match row (для списка матчей в модалке и на других страницах)
+   ────────────────────────────────────────────────────────────── */
+.r-match {
+    display: grid;
+    grid-template-columns: 70px 1fr auto 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.12s ease;
+}
+.r-match:hover {
+    background: #f8f9fa;
+    border-color: var(--primary-color);
+    text-decoration: none;
+}
+.r-match-date { font-size: 0.8em; color: var(--text-muted); }
+.r-match-team { font-weight: 500; }
+.r-match-team-home { text-align: right; }
+.r-match-team-away { text-align: left; }
+.r-match-score {
+    font-weight: 700;
+    font-size: 1.05em;
+    padding: 4px 10px;
+    background: #f0f2f5;
+    border-radius: 4px;
+    min-width: 50px;
+    text-align: center;
+}
+.r-match-score-live { background: var(--live-color); color: white; }
+.r-match-score-scheduled { background: transparent; color: var(--text-muted); font-weight: 500; }
+
+/* ──────────────────────────────────────────────────────────────
+   Stat grid (мини-сводка)
+   ────────────────────────────────────────────────────────────── */
+.r-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.r-stat-mini {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 10px 12px;
+    text-align: center;
+}
+.r-stat-mini-value {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+.r-stat-mini-label {
+    font-size: 0.75em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Responsive
+   ────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .r-search-row { grid-template-columns: 1fr; }
+    .r-modal { max-width: 100%; }
+    .r-match {
+        grid-template-columns: 1fr auto 1fr;
+        gap: 6px;
+        font-size: 0.9em;
+    }
+    .r-match-date {
+        grid-column: 1 / -1;
+        text-align: center;
+        font-size: 0.75em;
+        margin-bottom: 2px;
+    }
+}
+
+/* Значок популярной лиги */
+.r-badge-pop {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 0.85em;
+    color: #f59e0b;
+}

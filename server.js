@@ -26,6 +26,7 @@ const { getHealthMonitor, getTracer, getErrorCollector, getMetricsCollector } = 
 const { getJobsManager } = require('./src/jobs/scheduled-jobs');
 const WSServer = require('./src/websocket/ws-server');
 const GameUpdatesManager = require('./src/websocket/game-updates');
+const PrometheusCollector = require('./src/monitoring/prometheus/collector');
 
 const logger = pino({
   name: 'server',
@@ -50,6 +51,7 @@ class RolgiServer {
     this.redis = null;
     this.wsServer = null;
     this.gameUpdatesManager = null;
+    this.prometheusCollector = null;
     this.jobsManager = null;
     this.healthMonitor = getHealthMonitor();
     this.tracer = getTracer();
@@ -190,20 +192,28 @@ class RolgiServer {
       return this.api !== null;
     }, 60000); // Every 60 seconds
 
-    // Memory health check
+    // Memory health check — FIXED: heap_size_limit metric
+    // (heapTotal — это текущий выделенный V8 кусок и почти всегда близок к heapUsed;
+    //  правильная метрика — heapUsed/heap_size_limit, как в scheduled-jobs.js)
+    const v8 = require('v8');
     this.healthMonitor.registerCheck('memory', async () => {
       const usage = process.memoryUsage();
+      const heapStats = v8.getHeapStatistics();
       const heapUsedMB = usage.heapUsed / 1024 / 1024;
       const heapTotalMB = usage.heapTotal / 1024 / 1024;
-      const usagePercent = (heapUsedMB / heapTotalMB) * 100;
+      const heapLimitMB = heapStats.heap_size_limit / 1024 / 1024;
+      const rssMB = usage.rss / 1024 / 1024;
+      const usagePercent = (heapUsedMB / heapLimitMB) * 100;
 
-      if (usagePercent > 90) {
-        throw new Error(`Memory usage critical: ${usagePercent.toFixed(2)}%`);
+      if (usagePercent > 92) {
+        throw new Error(`Memory usage critical: ${usagePercent.toFixed(2)}% of heap_size_limit (${heapLimitMB.toFixed(0)}MB)`);
       }
 
       return {
         heapUsedMB: heapUsedMB.toFixed(2),
         heapTotalMB: heapTotalMB.toFixed(2),
+        heapLimitMB: heapLimitMB.toFixed(2),
+        rssMB: rssMB.toFixed(2),
         usagePercent: usagePercent.toFixed(2)
       };
     }, 60000); // Every 60 seconds
@@ -330,6 +340,12 @@ class RolgiServer {
       const traceId = this.tracer.startTrace('shutdown');
 
       try {
+        // Stop Prometheus collector
+        if (this.prometheusCollector) {
+          this.prometheusCollector.stop();
+          logger.info('Prometheus collector stopped');
+        }
+
         // Stop scheduled jobs
         if (this.jobsManager) {
           this.jobsManager.stop();
@@ -485,6 +501,11 @@ class RolgiServer {
 
       // Step 6: Initialize WebSocket server
       await this._initializeWebSocket();
+
+      // Step 6.5: Start Prometheus metrics collector (DB + WS + business)
+      this.prometheusCollector = new PrometheusCollector(this.db, this.wsServer);
+      this.prometheusCollector.start();
+      logger.info('Prometheus metrics collector started');
 
       // Step 7: Initialize scheduled jobs
       await this._initializeScheduledJobs();

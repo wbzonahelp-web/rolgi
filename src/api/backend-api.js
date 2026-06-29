@@ -45,6 +45,8 @@ const { jwtAuthPlugin } = require('../auth/fastify-auth');
 const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const cachedProxyRoutes = require('./routes/cached-proxy');
+const dbRoutes          = require('./routes/db-routes');
+const strategiesRoutes = require('./routes/strategies-routes');
 const scoutRoutes = require('./routes/scout-routes');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
@@ -122,10 +124,19 @@ class BackendApi {
       contentSecurityPolicy: false
     });
 
-    // CORS
+    // CORS — whitelist из CORS_ORIGINS (через запятую) и/или FRONTEND_URL
     if (this.config.enableCors) {
+      const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || 'https://rolgi.com')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
       await this.app.register(cors, {
-        origin: true,
+        origin: (origin, cb) => {
+          // Без Origin (curl, server-to-server, mobile) — разрешаем
+          if (!origin) return cb(null, true);
+          if (allowedOrigins.includes(origin)) return cb(null, true);
+          return cb(null, false);
+        },
         credentials: true
       });
     }
@@ -278,6 +289,8 @@ class BackendApi {
 
     // Cached proxy routes for frontend (SStats with cache)
     this.app.register(cachedProxyRoutes, { prefix: '/api/cached' });
+    this.app.register(dbRoutes,          { prefix: '/api/db' });
+    this.app.register(strategiesRoutes, { prefix: '/api/strategies' });
 
     // Scout routes (uses full /api/scout/* paths internally)
     this.app.register(scoutRoutes);

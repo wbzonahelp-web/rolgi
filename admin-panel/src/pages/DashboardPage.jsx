@@ -130,7 +130,7 @@ const DashboardPage = () => {
           {health && (
             <div className="text-right">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Uptime: {Math.floor(health.uptime / 1000 / 60)} minutes
+                Uptime: {Math.floor(health.uptime / 3600)}h {Math.floor((health.uptime % 3600) / 60)}m
               </p>
             </div>
           )}
@@ -141,21 +141,21 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Database Status"
-          value={health?.database?.healthy ? 'Healthy' : 'Error'}
+          value={health?.database === true || health?.database?.healthy ? 'Healthy' : 'Error'}
           icon={Database}
-          color={health?.database?.healthy ? 'green' : 'red'}
+          color={health?.database === true || health?.database?.healthy ? 'green' : 'red'}
         />
         
         <StatCard
           title="API Requests"
-          value={metrics?.apiRequests?.total || '—'}
+          value={metrics?.httpRequestsTotal != null ? Math.round(metrics.httpRequestsTotal).toLocaleString() : '—'}
           icon={Activity}
           color="blue"
         />
         
         <StatCard
-          title="Active Users"
-          value={metrics?.activeUsers || '—'}
+          title="DB Pool"
+          value={metrics?.dbPoolConnections != null ? Math.round(metrics.dbPoolConnections) : '—'}
           icon={Users}
           color="purple"
         />
@@ -164,9 +164,9 @@ const DashboardPage = () => {
           title="Alerts Sent"
           value={
             alertStats
-              ? (alertStats.sent.email || 0) + 
-                (alertStats.sent.slack || 0) + 
-                (alertStats.sent.webhook || 0)
+              ? ((alertStats.sent?.email || 0) || 0) + 
+                ((alertStats.sent?.slack || 0) || 0) + 
+                ((alertStats.sent?.webhook || 0) || 0)
               : '—'
           }
           icon={Bell}
@@ -175,7 +175,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Database Info */}
-      {health?.database && (
+      {health?.database?.pool && (
         <div className="card">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             Database Connection Pool
@@ -220,13 +220,13 @@ const DashboardPage = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Email</p>
               <div className="flex items-baseline space-x-4">
                 <span className="text-2xl font-bold text-green-600">
-                  {alertStats.sent.email || 0}
+                  {(alertStats.sent?.email || 0) || 0}
                 </span>
                 <span className="text-sm text-gray-500">sent</span>
               </div>
-              {alertStats.failed.email > 0 && (
+              {(alertStats.failed?.email || 0) > 0 && (
                 <span className="text-sm text-red-600">
-                  {alertStats.failed.email} failed
+                  {(alertStats.failed?.email || 0)} failed
                 </span>
               )}
             </div>
@@ -235,13 +235,13 @@ const DashboardPage = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Slack</p>
               <div className="flex items-baseline space-x-4">
                 <span className="text-2xl font-bold text-green-600">
-                  {alertStats.sent.slack || 0}
+                  {(alertStats.sent?.slack || 0) || 0}
                 </span>
                 <span className="text-sm text-gray-500">sent</span>
               </div>
-              {alertStats.failed.slack > 0 && (
+              {(alertStats.failed?.slack || 0) > 0 && (
                 <span className="text-sm text-red-600">
-                  {alertStats.failed.slack} failed
+                  {(alertStats.failed?.slack || 0)} failed
                 </span>
               )}
             </div>
@@ -250,13 +250,13 @@ const DashboardPage = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Webhook</p>
               <div className="flex items-baseline space-x-4">
                 <span className="text-2xl font-bold text-green-600">
-                  {alertStats.sent.webhook || 0}
+                  {(alertStats.sent?.webhook || 0) || 0}
                 </span>
                 <span className="text-sm text-gray-500">sent</span>
               </div>
-              {alertStats.failed.webhook > 0 && (
+              {(alertStats.failed?.webhook || 0) > 0 && (
                 <span className="text-sm text-red-600">
-                  {alertStats.failed.webhook} failed
+                  {(alertStats.failed?.webhook || 0)} failed
                 </span>
               )}
             </div>

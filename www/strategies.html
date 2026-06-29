@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Конструктор стратегий — rolgi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --bg: #0f1117; --card: #1a1d24; --border: #2a2d36; --text: #e4e4e7; --muted: #71717a; --accent: #6366f1; --green: #22c55e; --red: #ef4444; --yellow: #f59e0b; --blue: #3b82f6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        a { color: var(--accent); text-decoration: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .topbar-logo { font-size: 1.3em; font-weight: 700; color: var(--accent); }
+        .topbar-nav { display: flex; gap: 16px; align-items: center; }
+        .topbar-nav a { color: var(--muted); font-size: 0.9em; }
+        .topbar-nav a:hover { color: var(--text); }
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85em; font-weight: 600; transition: all 0.15s; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: #4f46e5; }
+        .btn-secondary { background: var(--border); color: var(--text); }
+        .btn-secondary:hover { background: #3a3d46; }
+        .btn-danger { background: var(--red); color: #fff; }
+        .btn-sm { padding: 4px 10px; font-size: 0.8em; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .card-title { font-size: 1.1em; font-weight: 700; margin-bottom: 12px; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .tab { padding: 10px 20px; cursor: pointer; color: var(--muted); font-weight: 600; border-bottom: 2px solid transparent; font-size: 0.9em; }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab:hover { color: var(--text); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { text-align: left; padding: 10px 8px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+        td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+        tr:hover { background: rgba(99,102,241,0.05); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600; }
+        .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+        .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+        .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+        .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+        .empty { text-align: center; padding: 40px; color: var(--muted); }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.85em; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.9em; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); outline: none; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .analyzer-row { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg); border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
+        .analyzer-row.enabled { border-color: var(--accent); }
+        .analyzer-row .name { flex: 1; font-weight: 600; font-size: 0.9em; }
+        .analyzer-row .name small { color: var(--muted); font-weight: 400; display: block; font-size: 0.8em; }
+        .analyzer-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+        .analyzer-row input[type="range"] { width: 120px; accent-color: var(--accent); }
+        .analyzer-row .weight-val { min-width: 40px; text-align: right; font-size: 0.85em; color: var(--muted); }
+        .weight-bar { flex: 0 0 120px; }
+        .auth-bar { display: flex; align-items: center; gap: 12px; }
+        .auth-bar .user-info { font-size: 0.85em; color: var(--muted); }
+        .auth-bar .user-info strong { color: var(--text); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; }
+        .modal h3 { margin-bottom: 16px; }
+        .modal .error { color: var(--red); font-size: 0.85em; margin-bottom: 8px; display: none; }
+        .modal-tabs { display: flex; gap: 16px; margin-bottom: 16px; }
+        .modal-tabs span { cursor: pointer; color: var(--muted); font-weight: 600; }
+        .modal-tabs span.active { color: var(--accent); }
+        .accuracy-bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--green); min-width: 4px; }
+        @media (max-width: 720px) {
+            .form-row { flex-direction: column; }
+            .analyzer-row { flex-wrap: wrap; }
+            .analyzer-row .weight-bar { flex: 1 1 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div style="display:flex;align-items:center;gap:16px">
+        <a href="/" class="topbar-logo">⚽ rolgi</a>
+        <nav class="topbar-nav">
+            <a href="/">Матчи</a>
+            <a href="/strategies.html" style="color:var(--accent)">Стратегии</a>
+            <a href="/predictions-history.html">Прогнозы</a>
+        </nav>
+    </div>
+    <div class="auth-bar" id="authBar"></div>
+</div>
+
+<div class="container">
+    <h1 style="font-size:1.4em;margin-bottom:16px">🎯 Конструктор стратегий</h1>
+
+    <div class="tabs" id="mainTabs">
+        <div class="tab active" data-tab="builder">Конструктор</div>
+        <div class="tab" data-tab="my">Мои стратегии</div>
+        <div class="tab" data-tab="leaderboard">Лидерборд</div>
+        <div class="tab" data-tab="backtest">Бэктест</div>
+    </div>
+
+    <!-- Tab: Builder -->
+    <div class="tab-content active" id="tab-builder">
+        <div class="card">
+            <div class="card-title">Создать стратегию</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="stratName" placeholder="Моя стратегия" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <input type="text" id="stratDesc" placeholder="Краткое описание" maxlength="255">
+                </div>
+            </div>
+            <div class="form-group">
+                <label><input type="checkbox" id="stratPublic"> Сделать публичной (видна в лидерборде)</label>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Анализаторы и веса</div>
+            <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px">Вес определяет влияние анализатора на итоговый прогноз. Чем выше вес — тем сильнее голос этого анализатора. Все веса суммируются к 100%.</p>
+            <div id="analyzersList"></div>
+            <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:0.85em;color:var(--muted)" id="totalWeight"></span>
+                <button class="btn btn-primary" id="btnNormalize">Нормализовать веса</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Параметры</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Окно матчей (N)</label>
+                    <select id="stratN">
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20" selected>20</option>
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Фильтр лиги</label>
+                    <select id="stratLeague">
+                        <option value="true" selected>Только текущая лига</option>
+                        <option value="false">Все турниры</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Учёт дом/гости</label>
+                    <select id="stratVenue">
+                        <option value="true" selected>Да</option>
+                        <option value="false">Нет</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-bottom:24px">
+            <button class="btn btn-primary" id="btnSave" style="flex:1">💾 Сохранить стратегию</button>
+            <button class="btn btn-secondary" id="btnTest">🧪 Тестировать на матче</button>
+        </div>
+
+        <!-- Test result -->
+        <div class="card" id="testCard" style="display:none">
+            <div class="card-title">Результат тестирования</div>
+            <div id="testResult"></div>
+        </div>
+    </div>
+
+    <!-- Tab: My Strategies -->
+    <div class="tab-content" id="tab-my">
+        <div id="myStrategies"><div class="empty">Загрузка...</div></div>
+    </div>
+
+    <!-- Tab: Leaderboard -->
+    <div class="tab-content" id="tab-leaderboard">
+        <div class="card">
+            <div class="card-title">🏆 Лидерборд стратегий</div>
+            <div id="leaderboard"><div class="empty">Загрузка...</div></div>
+        </div>
+    </div>
+</div>
+
+    <!-- Tab: Backtest -->
+    <div class="tab-content" id="tab-backtest">
+        <div class="card">
+            <div class="card-title">Бэктестинг стратегии</div>
+            <p style="font-size:0.85em;color:var(--muted);margin-bottom:16px">Прогоните стратегию по прошедшим матчам лиги и сезона.</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Стратегия</label>
+                    <select id="btStrategy"><option value="">загрузка...</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Лига</label>
+                    <select id="btLeague"><option value="">загрузка...</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Сезон</label>
+                    <select id="btSeason"><option value="">-</option></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Количество матчей</label>
+                    <select id="btLimit">
+                        <option value="50">50</option>
+                        <option value="100" selected>100</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display:flex;align-items:flex-end">
+                    <button class="btn btn-primary" id="btnBacktest" style="width:100%">Запустить бэктест</button>
+                </div>
+            </div>
+        </div>
+        <div id="backtestResults" style="display:none"></div>
+    </div>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal">
+        <div class="modal-tabs" id="authTabs">
+            <span class="active" data-auth="login">Вход</span>
+            <span data-auth="register">Регистрация</span>
+        </div>
+        <div class="error" id="authError"></div>
+        <div id="authLoginForm">
+            <div class="form-group"><label>Логин</label><input type="text" id="loginUser"></div>
+            <div class="form-group"><label>Пароль</label><input type="password" id="loginPass"></div>
+            <button class="btn btn-primary" id="btnLogin" style="width:100%">Войти</button>
+        </div>
+        <div id="authRegForm" style="display:none">
+            <div class="form-group"><label>Логин</label><input type="text" id="regUser"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="regEmail"></div>
+            <div class="form-group"><label>Пароль</label><input type="password" id="regPass"></div>
+            <button class="btn btn-primary" id="btnRegister" style="width:100%">Зарегистрироваться</button>
+        </div>
+        <div style="text-align:right;margin-top:12px"><span style="cursor:pointer;color:var(--muted)" onclick="closeAuthModal()">Закрыть</span></div>
+    </div>
+</div>
+
+<!-- Test Modal -->
+<div class="modal-overlay" id="testModal">
+    <div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto">
+        <h3>Тест стратегии</h3>
+        <div class="form-group">
+            <label>Стратегия</label>
+            <select id="testStrategy"><option value="">Текущая (из конструктора)</option></select>
+        </div>
+        <div class="tabs" id="testModeTabs" style="margin:12px 0">
+            <div class="tab active" data-testmode="single">Один матч</div>
+            <div class="tab" data-testmode="league">Вся лига</div>
+        </div>
+        <div id="testModeSingle">
+            <div class="form-group">
+                <label>Название команды</label>
+                <input type="text" id="testTeamSearch" placeholder="Manchester City" autocomplete="off">
+                <div id="searchResults" style="max-height:250px;overflow-y:auto;margin-top:4px"></div>
+            </div>
+            <div id="selectedGame" style="display:none;margin-bottom:12px"></div>
+            <button class="btn btn-primary" id="btnRunTest" style="width:100%" disabled>Запустить тест</button>
+        </div>
+        <div id="testModeLeague" style="display:none">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Лига</label>
+                    <select id="testLeague"><option value="">загрузка...</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Сезон</label>
+                    <select id="testSeason"><option value="">-</option></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Количество матчей</label>
+                <select id="testLimit">
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" id="btnRunLeagueTest" style="width:100%">Прогнать лигу</button>
+        </div>
+        <div id="testModalResult" style="margin-top:12px"></div>
+        <div style="text-align:right;margin-top:12px"><span style="cursor:pointer;color:var(--muted)" onclick="closeTestModal()">Закрыть</span></div>
+    </div>
+</div>
+
+
+
+<script src="/assets/app.js"></script>
+<script>
+(function() {
+    'use strict';
+    const R = window.Rolgi;
+    const { api, auth, fmt, on, off } = R;
+
+    // ─── Analyzer definitions ───
+    const ANALYZERS = [
+        { key: 'markov_outcome',  name: 'Markov-прогноз',    desc: 'Прогноз W/D/L по цепи Маркова. ↑ вес = больше доверия к сериям',        defaultWeight: 0.30 },
+        { key: 'markov_state',    name: 'Предсказуемость',    desc: 'Стабильность результатов. ↑ вес = сильнее влияние стабильных команд',   defaultWeight: 0.10 },
+        { key: 'shannon_entropy', name: 'Энтропия тоталов',   desc: 'Разнообразие тоталов. ↑ вес = больше штраф хаотичным командам',        defaultWeight: 0.05 },
+        { key: 'form_inertia',    name: 'Инерция формы',      desc: 'Сохраняет ли форма. ↑ вес = тренд-команды получают бонус',              defaultWeight: 0.15 },
+        { key: 'multipeak',       name: 'Мультимодальность',   desc: 'Биполярность. ↑ вес = сильнее штраф непредсказуемым командам',         defaultWeight: 0.10 },
+        { key: 'hmm',             name: 'HMM состояние',       desc: 'ML-модель скрытых состояний. ↑ вес = больше влияние машинного обучения', defaultWeight: 0.30 },
+    ];
+
+    let analyzersState = ANALYZERS.map(a => ({
+        ...a, enabled: true, weight: a.defaultWeight,
+    }));
+
+    // ─── Auth UI ───
+    function renderAuthBar() {
+        const bar = document.getElementById('authBar');
+        if (auth.isLoggedIn()) {
+            const u = auth.getUser();
+            bar.innerHTML = '<span class="user-info">👤 <strong>' + fmt.escapeHtml(u?.username || 'User') + '</strong></span>' +
+                '<button class="btn btn-secondary btn-sm" id="btnLogout">Выйти</button>';
+            document.getElementById('btnLogout').onclick = async () => { await auth.logout(); renderAuthBar(); loadMyStrategies(); };
+        } else {
+            bar.innerHTML = '<button class="btn btn-primary btn-sm" onclick="openAuthModal()">Войти</button>';
+        }
+    }
+
+    window.openAuthModal = function() {
+        document.getElementById('authModal').classList.add('open');
+        document.getElementById('authError').style.display = 'none';
+    };
+    window.closeAuthModal = function() {
+        document.getElementById('authModal').classList.remove('open');
+    };
+
+    document.getElementById('authTabs').addEventListener('click', e => {
+        const t = e.target.closest('[data-auth]');
+        if (!t) return;
+        document.querySelectorAll('#authTabs span').forEach(s => s.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('authLoginForm').style.display = t.dataset.auth === 'login' ? 'block' : 'none';
+        document.getElementById('authRegForm').style.display = t.dataset.auth === 'register' ? 'block' : 'none';
+    });
+
+    document.getElementById('btnLogin').onclick = async () => {
+        const errEl = document.getElementById('authError');
+        try {
+            await auth.login(
+                document.getElementById('loginUser').value,
+                document.getElementById('loginPass').value
+            );
+            closeAuthModal();
+            renderAuthBar();
+            loadMyStrategies();
+        } catch (e) {
+            errEl.textContent = e.message;
+            errEl.style.display = 'block';
+        }
+    };
+
+    document.getElementById('btnRegister').onclick = async () => {
+        const errEl = document.getElementById('authError');
+        try {
+            await auth.register(
+                document.getElementById('regUser').value,
+                document.getElementById('regEmail').value,
+                document.getElementById('regPass').value
+            );
+            closeAuthModal();
+            renderAuthBar();
+            loadMyStrategies();
+        } catch (e) {
+            errEl.textContent = e.message;
+            errEl.style.display = 'block';
+        }
+    };
+
+    // ─── Tabs ───
+    document.getElementById('mainTabs').addEventListener('click', e => {
+        const t = e.target.closest('.tab');
+        if (!t) return;
+        document.querySelectorAll('.tab').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+        if (t.dataset.tab === 'my') loadMyStrategies();
+        if (t.dataset.tab === 'leaderboard') loadLeaderboard();
+    });
+
+    // ─── Analyzer builder ───
+    function renderAnalyzers() {
+        const el = document.getElementById('analyzersList');
+        el.innerHTML = analyzersState.map((a, i) =>
+            '<div class="analyzer-row' + (a.enabled ? ' enabled' : '') + '">' +
+                '<input type="checkbox" data-idx="' + i + '" ' + (a.enabled ? 'checked' : '') + '>' +
+                '<div class="name">' + fmt.escapeHtml(a.name) + '<small>' + fmt.escapeHtml(a.desc) + '</small></div>' +
+                '<div class="weight-bar">' +
+                    '<input type="range" min="0" max="100" value="' + Math.round(a.weight * 100) + '" data-idx="' + i + '">' +
+                '</div>' +
+                '<span class="weight-val">' + Math.round(a.weight * 100) + '%</span>' +
+            '</div>'
+        ).join('');
+        updateTotalWeight();
+    }
+
+    function updateTotalWeight() {
+        const enabled = analyzersState.filter(a => a.enabled);
+        const total = enabled.reduce((s, a) => s + a.weight, 0);
+        const el = document.getElementById('totalWeight');
+        el.innerHTML = 'Σ весов: <strong>' + Math.round(total * 100) + '%</strong>' +
+            (Math.abs(total - 1) > 0.01 ? ' <span style="color:var(--yellow)">⚠ не 100%</span>' : ' ✓');
+    }
+
+    document.getElementById('analyzersList').addEventListener('change', e => {
+        const cb = e.target.closest('input[type="checkbox"]');
+        if (!cb) return;
+        const idx = parseInt(cb.dataset.idx);
+        analyzersState[idx].enabled = cb.checked;
+        renderAnalyzers();
+    });
+
+    document.getElementById('analyzersList').addEventListener('input', e => {
+        const slider = e.target.closest('input[type="range"]');
+        if (!slider) return;
+        const idx = parseInt(slider.dataset.idx);
+        analyzersState[idx].weight = parseInt(slider.value) / 100;
+        slider.closest('.analyzer-row').querySelector('.weight-val').textContent = slider.value + '%';
+        updateTotalWeight();
+    });
+
+    document.getElementById('btnNormalize').onclick = () => {
+        const enabled = analyzersState.filter(a => a.enabled);
+        const total = enabled.reduce((s, a) => s + a.weight, 0);
+        if (total > 0) enabled.forEach(a => a.weight = a.weight / total);
+        renderAnalyzers();
+    };
+
+    function getConfig() {
+        return {
+            analyzers: analyzersState.filter(a => a.enabled).map(a => ({
+                name: a.key, weight: Math.round(a.weight * 10000) / 10000, enabled: true,
+            })),
+            n_window: parseInt(document.getElementById('stratN').value),
+            league_filter: document.getElementById('stratLeague').value === 'true',
+            venue_filter: document.getElementById('stratVenue').value === 'true',
+        };
+    }
+
+    // ─── Save strategy ───
+    document.getElementById('btnSave').onclick = async () => {
+        if (!auth.isLoggedIn()) { openAuthModal(); return; }
+        const name = document.getElementById('stratName').value.trim();
+        if (!name) { alert('Введите название стратегии'); return; }
+        const config = getConfig();
+        if (config.analyzers.length === 0) { alert('Выберите хотя бы один анализатор'); return; }
+        try {
+            const r = await api.post('/api/strategies', {
+                name,
+                description: document.getElementById('stratDesc').value.trim() || null,
+                config,
+                is_public: document.getElementById('stratPublic').checked,
+            });
+            if (r.success) {
+                alert('Стратегия «' + name + '» сохранена!');
+                loadMyStrategies();
+            } else {
+                alert('Ошибка: ' + (r.error || 'unknown'));
+            }
+        } catch (e) {
+            alert('Ошибка: ' + e.message);
+        }
+    };
+
+    // ─── Test modal (two modes: single match + league backtest) ───
+    let _selectedGameId = null;
+    let _searchTimeout = null;
+
+    // Mode tabs
+    document.getElementById('testModeTabs').addEventListener('click', function(e) {
+        const t = e.target.closest('[data-testmode]');
+        if (!t) return;
+        this.querySelectorAll('.tab').forEach(s => s.classList.remove('active'));
+        t.classList.add('active');
+        const mode = t.dataset.testmode;
+        document.getElementById('testModeSingle').style.display = mode === 'single' ? 'block' : 'none';
+        document.getElementById('testModeLeague').style.display = mode === 'league' ? 'block' : 'none';
+        document.getElementById('testModalResult').innerHTML = '';
+    });
+
+    document.getElementById('btnTest').onclick = () => {
+        document.getElementById('testModal').classList.add('open');
+        document.getElementById('testModalResult').innerHTML = '';
+        document.getElementById('searchResults').innerHTML = '';
+        document.getElementById('selectedGame').style.display = 'none';
+        document.getElementById('testTeamSearch').value = '';
+        document.getElementById('btnRunTest').disabled = true;
+        _selectedGameId = null;
+        // Load leagues for league mode
+        loadTestLeagues();
+    };
+    window.closeTestModal = function() {
+        document.getElementById('testModal').classList.remove('open');
+    };
+
+    // Load leagues into test modal dropdown
+    async function loadTestLeagues() {
+        try {
+            const r = await api.get('/api/strategies/leagues', {}, { cacheType: 'leagues' });
+            if (!r.success || !r.data) return;
+            const sel = document.getElementById('testLeague');
+            sel.innerHTML = '<option value="">Выберите лигу</option>' +
+                r.data.map(l => '<option value="' + l.id + '" data-min="' + l.min_season + '" data-max="' + l.max_season + '">' +
+                    fmt.escapeHtml(l.country_name || '') + ' ' + fmt.escapeHtml(l.name || '') + ' (' + l.games_count + ')</option>').join('');
+        } catch (_) {}
+    }
+
+    // Update seasons when league changes
+    document.getElementById('testLeague').addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        const sel = document.getElementById('testSeason');
+        sel.innerHTML = '<option value="">-</option>';
+        if (!opt.value) return;
+        const minS = parseInt(opt.dataset.min);
+        const maxS = parseInt(opt.dataset.max);
+        let html = '';
+        for (let s = maxS; s >= minS; s--) {
+            html += '<option value="' + s + '"' + (s === maxS ? ' selected' : '') + '>' + s + '</option>';
+        }
+        sel.innerHTML = html;
+    });
+
+    // Search teams for single match
+    document.getElementById('testTeamSearch').addEventListener('input', function() {
+        clearTimeout(_searchTimeout);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            document.getElementById('searchResults').innerHTML = '';
+            return;
+        }
+        _searchTimeout = setTimeout(async () => {
+            try {
+                const r = await api.get('/api/db/games/list', { team: q, statusGroup: 'upcoming', limit: 15 }, { noCache: true });
+                const games = r.data || [];
+                if (!games.length) {
+                    document.getElementById('searchResults').innerHTML = '<div style="padding:8px;color:var(--muted);font-size:0.85em">Матчи не найдены</div>';
+                    return;
+                }
+                document.getElementById('searchResults').innerHTML = games.map(g => {
+                    const d = g.date ? new Date(g.date).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit'}) : '';
+                    return '<div class="sidebar-item" style="cursor:pointer;padding:8px 10px" data-game-id="' + g.id + '">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                            '<span><strong>' + fmt.escapeHtml(g.home_name || '?') + '</strong> vs <strong>' + fmt.escapeHtml(g.away_name || '?') + '</strong></span>' +
+                            '<span style="color:var(--muted);font-size:0.8em;margin-left:8px">' + d + '</span>' +
+                        '</div>' +
+                        '<div style="font-size:0.8em;color:var(--muted)">' + fmt.escapeHtml(g.league_name || '') + '</div>' +
+                    '</div>';
+                }).join('');
+                document.getElementById('searchResults').querySelectorAll('[data-game-id]').forEach(el => {
+                    el.onclick = () => {
+                        _selectedGameId = el.dataset.gameId;
+                        const game = games.find(g => String(g.id) === String(_selectedGameId));
+                        document.getElementById('selectedGame').innerHTML =
+                            '<div style="padding:10px;background:var(--bg);border-radius:6px;border:1px solid var(--accent)">' +
+                                '<strong>' + fmt.escapeHtml(game?.home_name || '?') + '</strong> vs <strong>' + fmt.escapeHtml(game?.away_name || '?') + '</strong>' +
+                                '<div style="font-size:0.85em;color:var(--muted)">' + fmt.escapeHtml(game?.league_name || '') + '</div>' +
+                            '</div>';
+                        document.getElementById('selectedGame').style.display = 'block';
+                        document.getElementById('searchResults').innerHTML = '';
+                        document.getElementById('testTeamSearch').value = '';
+                        document.getElementById('btnRunTest').disabled = false;
+                    };
+                });
+            } catch (_) {
+                document.getElementById('searchResults').innerHTML = '<div style="padding:8px;color:var(--red);font-size:0.85em">Ошибка поиска</div>';
+            }
+        }, 400);
+    });
+
+    function getTestConfig() {
+        const savedStrategyId = document.getElementById('testStrategy') ? document.getElementById('testStrategy').value : '';
+        if (savedStrategyId) return { strategy_id: parseInt(savedStrategyId) };
+        return { config: getConfig() };
+    }
+
+    function renderTestResult(d, saved) {
+        const outColors = { HOME: 'green', AWAY: 'blue', DRAW: 'yellow' };
+        const outLabels = { HOME: 'Победа дома', AWAY: 'Победа гостей', DRAW: 'Ничья' };
+        let detailsHtml = '';
+        if (d.home_analyzers) {
+            detailsHtml = '<div style="margin-top:12px;font-size:0.8em">';
+            for (const [k, v] of Object.entries(d.home_analyzers)) {
+                const val = v && v.value != null ? (typeof v.value === 'number' ? v.value.toFixed(3) : v.value) : '—';
+                detailsHtml += '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--border)"><span>' + k + '</span><span>' + val + '</span></div>';
+            }
+            detailsHtml += '</div>';
+        }
+        return '<div style="text-align:center;margin:12px 0">' +
+            '<div style="font-size:0.85em;color:var(--muted);margin-bottom:4px">' + (outLabels[d.predicted_outcome] || d.predicted_outcome) + '</div>' +
+            '<span class="badge badge-' + (outColors[d.predicted_outcome] || 'blue') + '" style="font-size:1.5em;padding:8px 24px">' + d.predicted_outcome + '</span>' +
+            '<div style="margin-top:8px">' +
+                '<div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden;margin:4px 0">' +
+                    '<div style="background:var(--accent);height:100%;width:' + Math.round(d.confidence * 100) + '%;border-radius:4px"></div>' +
+                '</div>' +
+                '<span style="font-size:0.85em;color:var(--muted)">Уверенность: ' + (d.confidence * 100).toFixed(1) + '%</span>' +
+            '</div>' +
+        '</div>' + detailsHtml +
+        (saved ? '<div style="text-align:center;color:var(--green);font-size:0.85em;margin-top:8px">Прогноз сохранён</div>' : '');
+    }
+
+    // Run single match test
+    document.getElementById('btnRunTest').onclick = async () => {
+        if (!_selectedGameId) { alert('Выберите матч'); return; }
+        const body = getTestConfig();
+        document.getElementById('testModalResult').innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px">Загрузка...</div>';
+        document.getElementById('btnRunTest').disabled = true;
+        try {
+            const r = await api.post('/api/strategies/games/' + _selectedGameId + '/predict', body);
+            document.getElementById('btnRunTest').disabled = false;
+            if (!r.success) {
+                document.getElementById('testModalResult').innerHTML = '<div style="color:var(--red)">Ошибка: ' + (r.error || 'unknown') + '</div>';
+                return;
+            }
+            document.getElementById('testModalResult').innerHTML = renderTestResult(r.data, r.saved);
+        } catch (e) {
+            document.getElementById('btnRunTest').disabled = false;
+            document.getElementById('testModalResult').innerHTML = '<div style="color:var(--red)">' + e.message + '</div>';
+        }
+    };
+
+    // Run league backtest from test modal
+    document.getElementById('btnRunLeagueTest').onclick = async () => {
+        const body = getTestConfig();
+        const leagueId = document.getElementById('testLeague').value;
+        const season = document.getElementById('testSeason').value;
+        const limit = document.getElementById('testLimit').value;
+        if (!leagueId) { alert('Выберите лигу'); return; }
+        if (!season) { alert('Выберите сезон'); return; }
+        if (!body.strategy_id && (!body.config || body.config.analyzers.length === 0)) { alert('Выберите стратегию или анализаторы'); return; }
+
+        const el = document.getElementById('testModalResult');
+        el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)"><div class="r-spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite"></div><div style="margin-top:8px">Прогон по ' + limit + ' матчам...<br>Это может занять 30-60 секунд.</div></div>';
+
+        try {
+            body.league_id = parseInt(leagueId);
+            body.season = parseInt(season);
+            body.limit = parseInt(limit);
+            const r = await api.post('/api/strategies/backtest', body);
+            if (!r.success) {
+                el.innerHTML = '<div style="color:var(--red)">Ошибка: ' + (r.error || 'unknown') + '</div>';
+                return;
+            }
+            const d = r.data;
+            const s = d.summary;
+            const accPct = s.accuracy != null ? s.accuracy : 0;
+            const accColor = accPct >= 50 ? 'var(--green)' : accPct >= 35 ? 'var(--yellow)' : 'var(--red)';
+
+            let html = '<div style="margin-bottom:16px">' +
+                '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">' +
+                    '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:' + accColor + '">' + accPct + '%</div><div style="font-size:0.8em;color:var(--muted)">Точность</div></div>' +
+                    '<div style="text-align:center"><div style="font-size:2em;font-weight:700">' + d.processed + '</div><div style="font-size:0.8em;color:var(--muted)">Матчей</div></div>' +
+                    '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--green)">' + s.hits + '</div><div style="font-size:0.8em;color:var(--muted)">Попаданий</div></div>' +
+                    '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--red)">' + s.misses + '</div><div style="font-size:0.8em;color:var(--muted)">Промахов</div></div>' +
+                '</div>';
+
+            if (s.by_outcome) {
+                const outLabels = { HOME: 'Победа дома', DRAW: 'Ничья', AWAY: 'Победа гостей' };
+                html += '<div style="font-size:0.85em;margin-bottom:8px"><strong>По исходам:</strong></div>';
+                for (const [out, data] of Object.entries(s.by_outcome)) {
+                    const pct = data.predicted > 0 ? (data.hits / data.predicted * 100).toFixed(1) : '—';
+                    html += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:0.85em">' +
+                        '<span>' + (outLabels[out] || out) + '</span>' +
+                        '<span>' + data.predicted + ' предск., ' + data.hits + ' попад. (' + pct + '%)</span></div>';
+                }
+            }
+            html += '</div>';
+
+            // Results table
+            html += '<div style="max-height:400px;overflow-y:auto"><table style="font-size:0.8em"><thead><tr><th>Дата</th><th>Матч</th><th>Счёт</th><th>Прогноз</th><th>Факт</th><th>Увер.</th><th></th></tr></thead><tbody>';
+            const outColors = { HOME: 'badge-green', AWAY: 'badge-blue', DRAW: 'badge-yellow' };
+            for (const g of d.results) {
+                const hitCls = g.is_hit ? 'badge-green' : 'badge-red';
+                html += '<tr>' +
+                    '<td>' + (g.date || '—') + '</td>' +
+                    '<td style="white-space:nowrap">' + fmt.escapeHtml(g.home_name || '?') + ' vs ' + fmt.escapeHtml(g.away_name || '?') + '</td>' +
+                    '<td><strong>' + (g.home_score != null ? g.home_score + ':' + g.away_score : '—') + '</strong></td>' +
+                    '<td><span class="badge ' + (outColors[g.predicted] || '') + '">' + g.predicted + '</span></td>' +
+                    '<td><span class="badge ' + (outColors[g.actual] || '') + '">' + g.actual + '</span></td>' +
+                    '<td>' + (g.confidence * 100).toFixed(1) + '%</td>' +
+                    '<td><span class="badge ' + hitCls + '">' + (g.is_hit ? '✓' : '✗') + '</span></td>' +
+                '</tr>';
+            }
+            html += '</tbody></table></div>';
+            el.innerHTML = html;
+        } catch (e) {
+            el.innerHTML = '<div style="color:var(--red)">Ошибка: ' + e.message + '</div>';
+        }
+    };
+
+    // ─── My Strategies ───
+    async function loadMyStrategies() {
+        const el = document.getElementById('myStrategies');
+        if (!auth.isLoggedIn()) {
+            el.innerHTML = '<div class="empty">Войдите, чтобы видеть свои стратегии</div>';
+            return;
+        }
+        el.innerHTML = '<div class="empty">Загрузка...</div>';
+        try {
+            const r = await api.get('/api/strategies', {}, { noCache: true });
+            if (!r.success || !r.data.length) {
+                el.innerHTML = '<div class="empty">У вас пока нет стратегий. Создайте в конструкторе!</div>';
+                return;
+            }
+            el.innerHTML = '<table><thead><tr><th>Название</th><th>Анализаторы</th><th>Прогнозов</th><th>Точность</th><th>Публичная</th><th></th></tr></thead><tbody>' +
+                r.data.map(s => {
+                    const aNames = (s.config?.analyzers || []).map(a => a.name.replace('markov_outcome','MO').replace('markov_state','MS').replace('shannon_entropy','SE').replace('form_inertia','FI').replace('multipeak','MP').replace('hmm','HMM')).join(', ');
+                    const acc = s.accuracy != null ? (s.accuracy * 100).toFixed(1) + '%' : '—';
+                    const accW = s.accuracy != null ? Math.round(s.accuracy * 100) : 0;
+                    return '<tr>' +
+                        '<td><strong>' + fmt.escapeHtml(s.name) + '</strong>' + (s.description ? '<br><small style="color:var(--muted)">' + fmt.escapeHtml(s.description) + '</small>' : '') + '</td>' +
+                        '<td style="font-size:0.8em">' + aNames + '</td>' +
+                        '<td>' + (s.predictions_count || 0) + '</td>' +
+                        '<td><div class="accuracy-bar" style="width:' + accW + 'px"></div> ' + acc + '</td>' +
+                        '<td>' + (s.is_public ? '<span class="badge badge-green">Да</span>' : '<span class="badge badge-red">Нет</span>') + '</td>' +
+                        '<td><button class="btn btn-danger btn-sm" data-delete="' + s.id + '"><i class="fas fa-trash"></i></button></td>' +
+                    '</tr>';
+                }).join('') + '</tbody></table>';
+
+            el.querySelectorAll('[data-delete]').forEach(btn => {
+                btn.onclick = async () => {
+                    if (!confirm('Удалить стратегию?')) return;
+                    await api.delete('/api/strategies/' + btn.dataset.delete);
+                    loadMyStrategies();
+                };
+            });
+        } catch (e) {
+            el.innerHTML = '<div class="empty">Ошибка загрузки</div>';
+        }
+    }
+
+    // ─── Leaderboard ───
+    async function loadLeaderboard() {
+        const el = document.getElementById('leaderboard');
+        el.innerHTML = '<div class="empty">Загрузка...</div>';
+        try {
+            const r = await api.get('/api/strategies/leaderboard', {}, { noCache: true });
+            if (!r.success || !r.data.length) {
+                el.innerHTML = '<div class="empty">Пока нет публичных стратегий с ≥5 прогнозами</div>';
+                return;
+            }
+            el.innerHTML = '<table><thead><tr><th>#</th><th>Стратегия</th><th>Автор</th><th>Прогнозов</th><th>Попаданий</th><th>Точность</th></tr></thead><tbody>' +
+                r.data.map((s, i) => {
+                    const accW = s.accuracy != null ? Math.round(s.accuracy * 100) : 0;
+                    const acc = s.accuracy != null ? (s.accuracy * 100).toFixed(1) + '%' : '—';
+                    return '<tr>' +
+                        '<td><strong>' + (i + 1) + '</strong></td>' +
+                        '<td>' + fmt.escapeHtml(s.name) + '</td>' +
+                        '<td style="color:var(--muted)">' + fmt.escapeHtml(s.username) + '</td>' +
+                        '<td>' + (s.predictions_count || 0) + '</td>' +
+                        '<td>' + (s.hits_count || 0) + '</td>' +
+                        '<td><div class="accuracy-bar" style="width:' + accW + 'px"></div> ' + acc + '</td>' +
+                    '</tr>';
+                }).join('') + '</tbody></table>';
+        } catch (e) {
+            el.innerHTML = '<div class="empty">Ошибка загрузки</div>';
+        }
+    }
+
+    // ─── Backtest tab ───
+    async function loadSavedStrategies() {
+        if (!auth.isLoggedIn()) return;
+        try {
+            const r = await api.get('/api/strategies', {}, { noCache: true });
+            if (!r.success || !r.data) return;
+            const opts = r.data.map(s => '<option value="' + s.id + '">' + fmt.escapeHtml(s.name) + '</option>').join('');
+            const btSel = document.getElementById('btStrategy');
+            if (btSel) btSel.innerHTML = '<option value="">Выберите стратегию</option>' + opts;
+            const testSel = document.getElementById('testStrategy');
+            if (testSel) testSel.innerHTML = '<option value="">Текущая (из конструктора)</option>' + opts;
+        } catch (_) {}
+    }
+    on('auth:login', loadSavedStrategies);
+
+    async function loadLeagues() {
+        try {
+            const r = await api.get('/api/strategies/leagues', {}, { noCache: true, cacheType: 'leagues' });
+            if (!r.success || !r.data) return;
+            const opts = '<option value="">Выберите лигу</option>' +
+                r.data.map(l => '<option value="' + l.id + '" data-min="' + l.min_season + '" data-max="' + l.max_season + '">' +
+                    fmt.escapeHtml(l.country_name || '') + ' ' + fmt.escapeHtml(l.name || '') + ' (' + l.games_count + ')</option>').join('');
+            const btSel = document.getElementById('btLeague');
+            if (btSel) btSel.innerHTML = opts;
+            const tlSel = document.getElementById('testLeague');
+            if (tlSel) tlSel.innerHTML = opts;
+        } catch (_) {}
+    }
+
+    function updateSeasons(leagueSelId, seasonSelId) {
+        document.getElementById(leagueSelId).addEventListener('change', function() {
+            const opt = this.options[this.selectedIndex];
+            const sel = document.getElementById(seasonSelId);
+            sel.innerHTML = '<option value="">-</option>';
+            if (!opt.value) return;
+            const minS = parseInt(opt.dataset.min);
+            const maxS = parseInt(opt.dataset.max);
+            let html = '';
+            for (let s = maxS; s >= minS; s--) html += '<option value="' + s + '"' + (s === maxS ? ' selected' : '') + '>' + s + '</option>';
+            sel.innerHTML = html;
+        });
+    }
+    updateSeasons('btLeague', 'btSeason');
+    updateSeasons('testLeague', 'testSeason');
+
+    // Switch to backtest tab
+    document.querySelector('[data-tab="backtest"]').addEventListener('click', function() {
+        loadSavedStrategies();
+        loadLeagues();
+    });
+
+    // Run backtest
+    document.getElementById('btnBacktest').onclick = async () => {
+        const strategyId = document.getElementById('btStrategy').value;
+        const leagueId = document.getElementById('btLeague').value;
+        const season = document.getElementById('btSeason').value;
+        const limit = document.getElementById('btLimit').value;
+        if (!strategyId) { alert('Выберите стратегию'); return; }
+        if (!leagueId) { alert('Выберите лигу'); return; }
+        if (!season) { alert('Выберите сезон'); return; }
+
+        const el = document.getElementById('backtestResults');
+        el.style.display = 'block';
+        el.innerHTML = '<div class="card" style="text-align:center;padding:30px"><div class="r-spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite"></div><div style="margin-top:8px;color:var(--muted)">Прогон по ' + limit + ' матчам...<br>Это может занять 30-60 секунд.</div></div>';
+
+        try {
+            const r = await api.post('/api/strategies/backtest', {
+                strategy_id: parseInt(strategyId),
+                league_id: parseInt(leagueId),
+                season: parseInt(season),
+                limit: parseInt(limit),
+            });
+            if (!r.success) {
+                el.innerHTML = '<div class="card" style="color:var(--red)">Ошибка: ' + (r.error || 'unknown') + '</div>';
+                return;
+            }
+            const d = r.data;
+            const s = d.summary;
+            const accPct = s.accuracy != null ? s.accuracy : 0;
+            const accColor = accPct >= 50 ? 'var(--green)' : accPct >= 35 ? 'var(--yellow)' : 'var(--red)';
+
+            let html = '<div class="card"><div class="card-title">Результаты бэктеста</div>' +
+                '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px">' +
+                    '<div><div style="font-size:2em;font-weight:700;color:' + accColor + '">' + accPct + '%</div><div style="font-size:0.85em;color:var(--muted)">Точность</div></div>' +
+                    '<div><div style="font-size:2em;font-weight:700">' + d.processed + '</div><div style="font-size:0.85em;color:var(--muted)">Матчей</div></div>' +
+                    '<div><div style="font-size:2em;font-weight:700;color:var(--green)">' + s.hits + '</div><div style="font-size:0.85em;color:var(--muted)">Попаданий</div></div>' +
+                    '<div><div style="font-size:2em;font-weight:700;color:var(--red)">' + s.misses + '</div><div style="font-size:0.85em;color:var(--muted)">Промахов</div></div>' +
+                '</div>';
+
+            if (s.by_outcome) {
+                const outLabels = { HOME: 'Победа дома', DRAW: 'Ничья', AWAY: 'Победа гостей' };
+                html += '<div style="font-size:0.9em"><strong>По исходам:</strong>';
+                for (const [out, data] of Object.entries(s.by_outcome)) {
+                    const pct = data.predicted > 0 ? (data.hits / data.predicted * 100).toFixed(1) : '—';
+                    html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">' +
+                        '<span>' + (outLabels[out] || out) + '</span>' +
+                        '<span>предсказано: ' + data.predicted + ', попаданий: ' + data.hits + ' (' + pct + '%)</span></div>';
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+
+            // Games table
+            const outColors = { HOME: 'badge-green', AWAY: 'badge-blue', DRAW: 'badge-yellow' };
+            html += '<div class="card"><div class="card-title">Матчи (' + d.results.length + ')</div>' +
+                '<div style="max-height:500px;overflow-y:auto"><table><thead><tr><th>Дата</th><th>Матч</th><th>Счёт</th><th>Прогноз</th><th>Факт</th><th>Увер.</th><th></th></tr></thead><tbody>';
+            for (const g of d.results) {
+                const hitCls = g.is_hit ? 'badge-green' : 'badge-red';
+                html += '<tr>' +
+                    '<td>' + (g.date || '—') + '</td>' +
+                    '<td style="white-space:nowrap">' + fmt.escapeHtml(g.home_name || '?') + ' vs ' + fmt.escapeHtml(g.away_name || '?') + '</td>' +
+                    '<td><strong>' + (g.home_score != null ? g.home_score + ':' + g.away_score : '—') + '</strong></td>' +
+                    '<td><span class="badge ' + (outColors[g.predicted] || '') + '">' + g.predicted + '</span></td>' +
+                    '<td><span class="badge ' + (outColors[g.actual] || '') + '">' + g.actual + '</span></td>' +
+                    '<td>' + (g.confidence * 100).toFixed(1) + '%</td>' +
+                    '<td><span class="badge ' + hitCls + '">' + (g.is_hit ? '✓' : '✗') + '</span></td>' +
+                '</tr>';
+            }
+            html += '</tbody></table></div></div>';
+            el.innerHTML = html;
+        } catch (e) {
+            el.innerHTML = '<div class="card" style="color:var(--red)">Ошибка: ' + e.message + '</div>';
+        }
+    };
+
+    // ─── Init ───
+    renderAuthBar();
+    renderAnalyzers();
+    loadLeaderboard();
+    loadLeagues();
+    if (auth.isLoggedIn()) loadSavedStrategies();
+
+})();
+</script>
+</body>
+</html>

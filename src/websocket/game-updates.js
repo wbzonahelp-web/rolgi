@@ -64,6 +64,7 @@ class GameUpdatesManager {
         const result = await this.dbPool.query(`
           SELECT 
             g.id AS game_id,
+            g.sstats_id,
             g.league_id,
             g.season AS season_id,
             g.date AS start_time,
@@ -183,8 +184,14 @@ class GameUpdatesManager {
       changes: previousGame ? this.getChanges(previousGame, game) : null
     };
 
-    // Отправляем в канал конкретной игры
+    // Отправляем в канал конкретной игры (internal id)
     this.wsServer.broadcastToChannel(`game:${gameId}`, updateData);
+
+    // Дублируем в канал по sstats_id (для клиентов с URL ?id=<sstats_id>)
+    const _sstatsIdU = game.sstats_id;
+    if (_sstatsIdU && _sstatsIdU !== gameId) {
+      this.wsServer.broadcastToChannel(`game:${_sstatsIdU}`, updateData);
+    }
     
     // Отправляем в канал лиги
     this.wsServer.broadcastToChannel(`league:${leagueId}`, updateData);
@@ -214,6 +221,10 @@ class GameUpdatesManager {
     };
 
     this.wsServer.broadcastToChannel(`game:${gameId}`, finishData);
+    const _sstatsIdF = game.sstats_id;
+    if (_sstatsIdF && _sstatsIdF !== gameId) {
+      this.wsServer.broadcastToChannel(`game:${_sstatsIdF}`, finishData);
+    }
     this.wsServer.broadcastToChannel(`league:${leagueId}`, finishData);
 
     logger.info('Game finished broadcast', {
@@ -229,6 +240,7 @@ class GameUpdatesManager {
   formatGameData(game) {
     return {
       gameId: game.game_id,
+      sstatsId: game.sstats_id,
       leagueId: game.league_id,
       leagueName: game.league_name,
       seasonId: game.season_id,
@@ -327,10 +339,8 @@ class GameUpdatesManager {
           await this.sendStandingsSnapshot(ws, leagueId);
         }
       } catch (error) {
-        logger.error('Error sending snapshot', {
-          channel,
-          error: error.message
-        });
+        logger.error({ err: error, channel }, 'Error sending snapshot: ' + error.message);
+        console.error('SNAPSHOT_ERR', channel, error);
       }
     });
   }
@@ -339,19 +349,17 @@ class GameUpdatesManager {
    * Отправка snapshot игры
    */
   async sendGameSnapshot(ws, gameId) {
-    const client = await this.dbPool.connect();
-    
     try {
-      const result = await client.query(`
-        SELECT 
+      const result = await this.dbPool.query(`
+        SELECT
           g.*,
           ht.name AS home_team_name,
           at.name AS away_team_name,
           l.name AS league_name,
           gs.possession_home,
           gs.possession_away,
-          gs.shots_total_home,
-          gs.shots_total_away,
+          gs.shots_home AS shots_total_home,
+          gs.shots_away AS shots_total_away,
           gs.shots_on_target_home,
           gs.shots_on_target_away,
           gs.corners_home,
@@ -366,8 +374,12 @@ class GameUpdatesManager {
         LEFT JOIN teams ht ON g.home_team_id = ht.id
         LEFT JOIN teams at ON g.away_team_id = at.id
         LEFT JOIN leagues l ON g.league_id = l.id
-        LEFT JOIN game_stats gs ON g.id = gs.game_id
-        WHERE g.id = $1
+        LEFT JOIN game_statistics gs ON g.id = gs.game_id
+        WHERE g.sstats_id = $1 OR g.id = $1
+        ORDER BY
+          CASE WHEN g.sstats_id = $1 THEN 0 ELSE 1 END,
+          g.last_updated DESC NULLS LAST
+        LIMIT 1
       `, [gameId]);
 
       if (result.rows.length === 0) {
@@ -376,13 +388,12 @@ class GameUpdatesManager {
       }
 
       const game = result.rows[0];
-      
-      // Получаем последние события
-      const eventsResult = await client.query(`
+
+      const eventsResult = await this.dbPool.query(`
         SELECT *
         FROM game_events
         WHERE game_id = $1
-        ORDER BY event_time DESC
+        ORDER BY minute DESC NULLS LAST, id DESC
         LIMIT 20
       `, [gameId]);
 
@@ -411,9 +422,9 @@ class GameUpdatesManager {
         },
         timestamp: new Date().toISOString()
       });
-
-    } finally {
-      client.release();
+    } catch (e) {
+      // пробрасываем выше — её поймает setupSnapshotHandler и залогирует
+      throw e;
     }
   }
 
