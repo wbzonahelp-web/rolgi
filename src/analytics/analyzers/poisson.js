@@ -241,16 +241,24 @@ function analyze(homeGames, awayGames, leagueParams = {}, leagueId = null, seaso
     }
 
     // 6. Определяем прогноз
+    // Phase 1.3: confidence threshold для DRAW (предсказываем только при уверенности ≥35%)
     let predicted, confidence;
+    const DRAW_CONFIDENCE_THRESHOLD = 0.35;
+    
     if (pHome >= pDraw && pHome >= pAway) {
         predicted = 'HOME';
         confidence = pHome;
     } else if (pAway >= pDraw) {
         predicted = 'AWAY';
         confidence = pAway;
-    } else {
+    } else if (pDraw >= DRAW_CONFIDENCE_THRESHOLD) {
+        // DRAW только если уверенность ≥35%
         predicted = 'DRAW';
         confidence = pDraw;
+    } else {
+        // Низкая уверенность в DRAW → выбираем между HOME/AWAY
+        predicted = pHome > pAway ? 'HOME' : 'AWAY';
+        confidence = Math.max(pHome, pAway);
     }
 
     // 7. Value = вероятность предсказанного исхода
