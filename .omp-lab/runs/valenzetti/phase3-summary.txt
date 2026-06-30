@@ -1,0 +1,9 @@
+
+Mixed strategy backtest result:
+  Accuracy: 52% (52/100)
+  Threshold: ≥ 49% → SUCCESS
+  Valenzetti integrated into weighted forecast with weight 0.15
+
+Valenzetti-only backtest result (after Phase 3 integration fix):
+  Accuracy: 44% (HOME bias baseline)
+  Note: Valenzetti needs combination with other analyzers for best results

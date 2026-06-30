@@ -1,0 +1,8 @@
+Baseline accuracy: 44
+
+Grid search results (all 44% - valenzetti not yet in backtest prediction function):
+  - Conservative: 44%
+  - Aggressive: 44%
+  - Temporal: 44%
+Conclusion: No variant improves >2pp over baseline (44%). Keeping default θ = [0.12, 0.18, 0.16, 0.06, 0.08, 0.07].
+Note: Backtest predictFromAnalyzers doesn't use valenzetti yet. Integration in Phase 3.
