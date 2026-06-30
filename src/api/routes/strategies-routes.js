@@ -539,41 +539,46 @@ async function strategiesRoutes(fastify) {
 
             function predictFromAnalyzers(homeResults, awayResults, homeGames, awayGames) {
                 // === V4 Forecast: Poisson primary + corrections ===
+                // Build weight map from config, fallback to defaults
+                const defaultWeights = { poisson: 0.60, markov_outcome: 0.15, form_inertia: 0.10, hmm: 0.15 };
+                const _w = {};
+                for (const a of (strategyConfig?.analyzers || [])) { _w[a.name] = a.weight; }
+                const w = (name) => _w[name] ?? defaultWeights[name] ?? 0;
                 let homeScore = 0, drawScore = 0, awayScore = 0;
 
-                // Poisson base (weight 0.60)
+                // Poisson base
                 const poissonRes = homeResults.poisson;
                 if (poissonRes && poissonRes.details && !poissonRes.details.error) {
                     const probs = poissonRes.details.probabilities || {};
-                    homeScore += (probs.home || 0.333) * 0.60;
-                    drawScore += (probs.draw || 0.333) * 0.60;
-                    awayScore += (probs.away || 0.333) * 0.60;
+                    homeScore += (probs.home || 0.333) * w('poisson');
+                    drawScore += (probs.draw || 0.333) * w('poisson');
+                    awayScore += (probs.away || 0.333) * w('poisson');
                 } else {
-                    homeScore += 0.333 * 0.60;
-                    drawScore += 0.333 * 0.60;
-                    awayScore += 0.333 * 0.60;
+                    homeScore += 0.333 * w('poisson');
+                    drawScore += 0.333 * w('poisson');
+                    awayScore += 0.333 * w('poisson');
                 }
 
-                // Momentum (weight 0.15)
+                // Momentum
                 const homeStreak = homeResults.markov_outcome?.details?.streak || {};
                 const awayStreak = awayResults.markov_outcome?.details?.streak || {};
-                if (homeStreak.current_outcome === 'W' && homeStreak.current_length >= 3) homeScore += 0.15 * 0.5;
-                else if (homeStreak.current_outcome === 'L' && homeStreak.current_length >= 3) awayScore += 0.15 * 0.5;
-                if (awayStreak.current_outcome === 'W' && awayStreak.current_length >= 3) awayScore += 0.15 * 0.7;
-                else if (awayStreak.current_outcome === 'L' && awayStreak.current_length >= 3) homeScore += 0.15 * 0.5;
+                if (homeStreak.current_outcome === 'W' && homeStreak.current_length >= 3) homeScore += w('markov_outcome') * 0.5;
+                else if (homeStreak.current_outcome === 'L' && homeStreak.current_length >= 3) awayScore += w('markov_outcome') * 0.5;
+                if (awayStreak.current_outcome === 'W' && awayStreak.current_length >= 3) awayScore += w('markov_outcome') * 0.7;
+                else if (awayStreak.current_outcome === 'L' && awayStreak.current_length >= 3) homeScore += w('markov_outcome') * 0.5;
 
-                // HMM (weight 0.15)
+                // HMM
                 const hmmConf = strategyConfig.analyzers.find(a => a.name === 'hmm' && a.enabled);
                 if (homeResults.hmm && awayResults.hmm && hmmConf) {
                     const homeExp = homeResults.hmm.details?.expected_next_level ?? 1;
                     const awayExp = awayResults.hmm.details?.expected_next_level ?? 1;
                     const hmmAdv = (homeExp - awayExp) / 3;
-                    if (hmmAdv > 0) homeScore += hmmAdv * 0.15;
-                    else if (hmmAdv < 0) awayScore += Math.abs(hmmAdv) * 0.15;
-                    if (Math.abs(hmmAdv) < 0.1) drawScore += 0.15 * 0.2;
+                    if (hmmAdv > 0) homeScore += hmmAdv * w('hmm');
+                    else if (hmmAdv < 0) awayScore += Math.abs(hmmAdv) * w('hmm');
+                    if (Math.abs(hmmAdv) < 0.1) drawScore += w('hmm') * 0.2;
                 }
 
-                // Form inertia (weight 0.10)
+                // Form inertia
                 const homeFI = homeResults.form_inertia;
                 const awayFI = awayResults.form_inertia;
                 if (homeFI?.details && awayFI?.details) {
@@ -581,10 +586,10 @@ async function strategiesRoutes(fastify) {
                     const aLag1 = awayFI.details.lag1_corr || 0;
                     const hMean = homeFI.details.mean_value || 0;
                     const aMean = awayFI.details.mean_value || 0;
-                    if (homeFI.details.trend === 'persistent' && hLag1 > 0.15 && hMean > 0.3) homeScore += 0.10 * Math.min(hLag1, 1);
-                    else if (homeFI.details.trend === 'persistent' && hLag1 > 0.15 && hMean < -0.3) awayScore += 0.10 * Math.min(hLag1, 1);
-                    if (awayFI.details.trend === 'persistent' && aLag1 > 0.15 && aMean > 0.3) awayScore += 0.10 * Math.min(aLag1, 1);
-                    else if (awayFI.details.trend === 'persistent' && aLag1 > 0.15 && aMean < -0.3) homeScore += 0.10 * Math.min(aLag1, 1);
+                    if (homeFI.details.trend === 'persistent' && hLag1 > 0.15 && hMean > 0.3) homeScore += w('form_inertia') * Math.min(hLag1, 1);
+                    else if (homeFI.details.trend === 'persistent' && hLag1 > 0.15 && hMean < -0.3) awayScore += w('form_inertia') * Math.min(hLag1, 1);
+                    if (awayFI.details.trend === 'persistent' && aLag1 > 0.15 && aMean > 0.3) awayScore += w('form_inertia') * Math.min(aLag1, 1);
+                    else if (awayFI.details.trend === 'persistent' && aLag1 > 0.15 && aMean < -0.3) homeScore += w('form_inertia') * Math.min(aLag1, 1);
                 }
 
                 // Determine outcome
