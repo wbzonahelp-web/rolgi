@@ -939,6 +939,7 @@ async function dbRoutes(fastify) {
             const aMC         = require('../../analytics/analyzers/monte-carlo.js');
             const pythonClient = require('../../analytics/python-client.js');
             const aPoisson     = require('../../analytics/analyzers/poisson.js');
+            const aValenzetti  = require('../../analytics/analyzers/valenzetti.js');
 
             const leagueWeights = require('../../analytics/league-weights.js');
             const gameStatsAnalyzer = require('../../analytics/analyzers/game-stats.js');
@@ -954,6 +955,7 @@ async function dbRoutes(fastify) {
                 game_stats:      gameStatsAnalyzer.analyze(homeHistHome, 'home'),
                 multipeak:        aMultipeak.analyze(homeHistAny),
                 poisson:          aPoisson.analyze(homeHistAny, awayHistAny, { avgHomeGoals: leagueAvgHome, avgAwayGoals: leagueAvgAway }),
+                valenzetti:        aValenzetti.analyze(homeHistAny, awayHistAny, {}),
             };
             const awayAnalyzers = {
                 markov_outcome:   aMarkovOut.analyze(awayHistAny),
@@ -962,6 +964,7 @@ async function dbRoutes(fastify) {
                 form_inertia:     aInertia.analyze(awayHistAny),
                 game_stats:      gameStatsAnalyzer.analyze(awayHistAway, 'away'),
                 multipeak:        aMultipeak.analyze(awayHistAny),
+                valenzetti:        aValenzetti.analyzeTeam(awayHistAny),
             };
 
             // 6b) HMM (async, graceful degradation)
@@ -1029,6 +1032,21 @@ async function dbRoutes(fastify) {
                     predicted_score: poissonResult.details.predicted_score,
                     home_attack: poissonResult.details.attack_defense?.home_attack,
                     away_attack: poissonResult.details.attack_defense?.away_attack,
+                });
+            }
+  
+            // === Valenzetti correction (вес 0.15) ===
+            const valResult = homeAnalyzers.valenzetti;
+            if (valResult && valResult.details && !valResult.details.error) {
+                reasons.push({
+                    type: 'valenzetti', weight: 0.15,
+                    lambda_home: valResult.details?.lambda_home,
+                    lambda_away: valResult.details?.lambda_away,
+                    entropy: valResult.details?.entropy,
+                    confidence_level: valResult.details?.confidence_level,
+                    p_home: valResult.details?.probabilities?.home,
+                    p_draw: valResult.details?.probabilities?.draw,
+                    p_away: valResult.details?.probabilities?.away,
                 });
             }
 

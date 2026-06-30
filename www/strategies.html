@@ -310,6 +310,7 @@
         { key: 'form_inertia',    name: 'Инерция формы',      desc: 'Сохраняет ли форма. ↑ вес = тренд-команды получают бонус',              defaultWeight: 0.15 },
         { key: 'multipeak',       name: 'Мультимодальность',   desc: 'Биполярность. ↑ вес = сильнее штраф непредсказуемым командам',         defaultWeight: 0.10 },
         { key: 'hmm',             name: 'HMM состояние',       desc: 'ML-модель скрытых состояний. ↑ вес = больше влияние машинного обучения', defaultWeight: 0.30 },
+        { key: 'valenzetti',      name: 'Уравнение Валенцетти', desc: 'Poisson-модель с 6 факторами. ↑ вес = больше влияния Valenzetti',       defaultWeight: 0.15 },
     ];
 
     let analyzersState = ANALYZERS.map(a => ({
@@ -714,9 +715,8 @@
                 el.innerHTML = '<div class="empty">У вас пока нет стратегий. Создайте в конструкторе!</div>';
                 return;
             }
-            el.innerHTML = '<table><thead><tr><th>Название</th><th>Анализаторы</th><th>Прогнозов</th><th>Точность</th><th>Публичная</th><th></th></tr></thead><tbody>' +
                 r.data.map(s => {
-                    const aNames = (s.config?.analyzers || []).map(a => a.name.replace('markov_outcome','MO').replace('markov_state','MS').replace('shannon_entropy','SE').replace('form_inertia','FI').replace('multipeak','MP').replace('hmm','HMM')).join(', ');
+                    const aNames = (s.config?.analyzers || []).map(a => a.name.replace('markov_outcome','MO').replace('markov_state','MS').replace('shannon_entropy','SE').replace('form_inertia','FI').replace('multipeak','MP').replace('hmm','HMM').replace('valenzetti','VAL')).join(', ');
                     const acc = s.accuracy != null ? (s.accuracy * 100).toFixed(1) + '%' : '—';
                     const accW = s.accuracy != null ? Math.round(s.accuracy * 100) : 0;
                     return '<tr>' +

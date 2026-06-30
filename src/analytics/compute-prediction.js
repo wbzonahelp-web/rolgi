@@ -17,6 +17,7 @@ const aShannon   = require('./analyzers/shannon-entropy.js');
 const aInertia   = require('./analyzers/form-inertia.js');
 const aMultipeak = require('./analyzers/multipeak-density.js');
 const aMC        = require('./analyzers/monte-carlo.js');
+const aValenzetti = require('./analyzers/valenzetti.js');
 
 /**
  * Загружает матч по sstats_id или internal id с каноническим резолвом.
@@ -160,6 +161,7 @@ async function computePrediction({
         shannon_entropy: aShannon.analyze(homeHistAny),
         form_inertia:    aInertia.analyze(homeHistAny),
         multipeak:       aMultipeak.analyze(homeHistAny),
+        valenzetti:      aValenzetti.analyzeTeam(homeHistAny),
     };
     const awayAnalyzers = {
         markov_outcome:  aMarkovOut.analyze(awayHistAny),
@@ -167,6 +169,7 @@ async function computePrediction({
         shannon_entropy: aShannon.analyze(awayHistAny),
         form_inertia:    aInertia.analyze(awayHistAny),
         multipeak:       aMultipeak.analyze(awayHistAny),
+        valenzetti:      aValenzetti.analyzeTeam(awayHistAny),
     };
 
     // Monte Carlo betting

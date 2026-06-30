@@ -1277,6 +1277,15 @@
                     '<b>Важно:</b> работает на Python-сервисе, требует ≥20 матчей. Degenerate = слишком мало данных.',
                 ],
             },
+            valenzetti: {
+                title: 'Уравнение Валенцетти',
+                rows: [
+                    '<b>Что:</b> Poisson-модель с 6 факторами команды (базовая сила, атака, защита, контекст, человеческий фактор, временная динамика).',
+                    '<b>Как читать:</b> <b>lambda_home/lambda_away</b> = ожидаемые голы. <b>confidence_level</b> = уверенность исхода (1-энтропия).',
+                    '<b>6 факторов:</b> base_strength, attack_power, defensive_stability, match_context, human_factor, temporal_dynamics.',
+                    '<b>Когда сигнал:</b> confidence_level >0.4 + достаточная история (>6 матчей/команду) = модель уверена.',
+                ],
+            },
             betting_edge: {
                 title: 'Edge per bet',
                 rows: [
@@ -1377,6 +1386,7 @@
             form_inertia:     'Инерция формы',
             multipeak:        'Мультимодальность',
             hmm:              'HMM состояние',
+            valenzetti:       'Уравнение Валенцетти',
         };
         const ANZ_DESCR = {
             markov_outcome:   'Прогноз следующего исхода по цепи Маркова',
@@ -1385,6 +1395,7 @@
             form_inertia:     'Сохраняет ли команда полосу',
             multipeak:        'Сколько режимов игры',
             hmm:              'Скрытое состояние формы',
+            valenzetti:       '6-факторная Poisson-модель (сила, атака, защита, контекст, дисциплина, форма)',
         };
 
         function fmtPct(v) {
@@ -1398,10 +1409,8 @@
         function recClass(rec) {
             return (rec || '').toLowerCase().replace('_', '-');
         }
-
         function renderTeamCard(teamName, teamLogo, analyzers) {
-            const rows = [];
-            for (const key of ['markov_outcome', 'markov_state', 'shannon_entropy', 'form_inertia', 'multipeak', 'hmm']) {
+            for (const key of ['markov_outcome', 'markov_state', 'shannon_entropy', 'form_inertia', 'multipeak', 'hmm', 'valenzetti']) {
                 const a = analyzers[key] || {};
                 const d = a.details || {};
                 const conf = a.confidence != null ? '<span class="anz-metric-conf">conf ' + fmtPct(a.confidence) + '</span>' : '';
@@ -1443,6 +1452,21 @@
                         extra = '<div class="anz-metric-conf">' + [stab, domShare, expLvl].filter(Boolean).join(', ') + '</div>';
                     } else {
                         valueHtml = '<span class="anz-metric-conf">нет данных</span>';
+                    }
+                } else if (key === 'valenzetti' && d.lambda_home != null) {
+                    const probs = d.probabilities || {};
+                    valueHtml = 'λ=' + fmtN(d.lambda_home, 2) + '/' + fmtN(d.lambda_away, 2);
+                    const factorsInfo = d.factors ? 'F: [' + d.factors.home.map(v => fmtN(v,2)).join(',') + ']' : '';
+                    if (d.entropy != null) {
+                        extra = '<div class="anz-metric-conf">H=' + fmtPct(d.entropy) + ' conf=' + fmtPct(d.confidence_level) + '</div>';
+                    }
+                    if (probs.home != null) {
+                        extra += '<div class="anz-metric-conf">' +
+                            'П1 ' + fmtPct(probs.home) + ' X ' + fmtPct(probs.draw) + ' П2 ' + fmtPct(probs.away) +
+                            '</div>';
+                    }
+                    if (factorsInfo) {
+                        extra += '<div class="anz-metric-conf" style="font-size:0.8em">' + factorsInfo + '</div>';
                     }
                 }
 

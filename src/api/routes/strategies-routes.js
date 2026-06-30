@@ -21,7 +21,7 @@ async function strategiesRoutes(fastify) {
             return 'config.analyzers must be a non-empty array';
         const validAnalyzers = [
             'markov_outcome', 'markov_state', 'shannon_entropy',
-            'form_inertia', 'multipeak', 'hmm', 'poisson'
+            'form_inertia', 'multipeak', 'hmm', 'poisson', 'valenzetti'
         ];
         for (const a of config.analyzers) {
             if (!validAnalyzers.includes(a.name))
@@ -51,7 +51,7 @@ async function strategiesRoutes(fastify) {
         const n = config.n_window || 20;
         const leagueInternal = config.league_filter ? game.league_id : null;
         // Build weight map from config, fallback to defaults
-        const defaultWeights = { poisson: 0.60, markov_outcome: 0.15, form_inertia: 0.10, hmm: 0.15 };
+        const defaultWeights = { poisson: 0.60, markov_outcome: 0.15, form_inertia: 0.10, hmm: 0.15, valenzetti: 0.15 };
         const _w = {};
         for (const a of (config?.analyzers || [])) { _w[a.name] = a.weight; }
         const w = (name) => _w[name] ?? defaultWeights[name] ?? 0;
@@ -99,12 +99,14 @@ async function strategiesRoutes(fastify) {
 
         // Прогон анализаторов
         const aPoisson = require('../../analytics/analyzers/poisson.js');
+        const aValenzetti = require('../../analytics/analyzers/valenzetti.js');
         const modules = {
             markov_outcome:  require('../../analytics/analyzers/markov-outcome.js'),
             markov_state:    require('../../analytics/analyzers/markov-state.js'),
             shannon_entropy: require('../../analytics/analyzers/shannon-entropy.js'),
             form_inertia:    require('../../analytics/analyzers/form-inertia.js'),
             multipeak:       require('../../analytics/analyzers/multipeak-density.js'),
+            valenzetti:      require('../../analytics/analyzers/valenzetti.js'),
         };
 
         const homeResults = {};
@@ -130,6 +132,16 @@ async function strategiesRoutes(fastify) {
                 avgHomeGoals: leagueParams.avg_home_goals,
                 avgAwayGoals: leagueParams.avg_away_goals
             });
+        }
+
+        // Valenzetti needs both teams (like Poisson)
+        const valenzettiConfig = config.analyzers.find(a => a.name === 'valenzetti' && a.enabled);
+        if (valenzettiConfig) {
+            const leagueParamsV = getLeagueParams(game.league_id, game.season);
+            homeResults.valenzetti = aValenzetti.analyze(homeGames, awayGames, {
+                alpha: leagueParamsV?.avg_home_goals ? Math.log(Number(leagueParamsV.avg_home_goals)) : undefined,
+            });
+            awayResults.valenzetti = aValenzetti.analyzeTeam(homeGames);
         }
 
         // HMM (async, graceful)
