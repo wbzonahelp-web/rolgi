@@ -1,0 +1,143 @@
+{
+  "phase": "1.5",
+  "timestamp": "20260630-132627",
+  "weights": {
+    "poisson": 0.75,
+    "markov_outcome": 0.1,
+    "form_inertia": 0.08,
+    "hmm": 0.07
+  },
+  "results": [
+    {
+      "league": "Premier League",
+      "league_id": 39,
+      "total_games": 100,
+      "processed": 100,
+      "accuracy": 54,
+      "hits": 54,
+      "misses": 46,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 62,
+          "actual": 62,
+          "hits": 35
+        },
+        "DRAW": {
+          "predicted": 12,
+          "actual": 12,
+          "hits": 4
+        },
+        "AWAY": {
+          "predicted": 26,
+          "actual": 26,
+          "hits": 15
+        }
+      }
+    },
+    {
+      "league": "La Liga",
+      "league_id": 140,
+      "total_games": 100,
+      "processed": 100,
+      "accuracy": 44,
+      "hits": 44,
+      "misses": 56,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 65,
+          "actual": 65,
+          "hits": 33
+        },
+        "DRAW": {
+          "predicted": 24,
+          "actual": 24,
+          "hits": 8
+        },
+        "AWAY": {
+          "predicted": 11,
+          "actual": 11,
+          "hits": 3
+        }
+      }
+    },
+    {
+      "league": "Bundesliga",
+      "league_id": 78,
+      "total_games": 100,
+      "processed": 100,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 72,
+          "actual": 72,
+          "hits": 39
+        },
+        "DRAW": {
+          "predicted": 14,
+          "actual": 14,
+          "hits": 3
+        },
+        "AWAY": {
+          "predicted": 14,
+          "actual": 14,
+          "hits": 6
+        }
+      }
+    },
+    {
+      "league": "Serie A",
+      "league_id": 135,
+      "total_games": 100,
+      "processed": 100,
+      "accuracy": 40,
+      "hits": 40,
+      "misses": 60,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 53,
+          "actual": 53,
+          "hits": 23
+        },
+        "DRAW": {
+          "predicted": 29,
+          "actual": 29,
+          "hits": 6
+        },
+        "AWAY": {
+          "predicted": 18,
+          "actual": 18,
+          "hits": 11
+        }
+      }
+    },
+    {
+      "league": "Ligue 1",
+      "league_id": 61,
+      "total_games": 100,
+      "processed": 100,
+      "accuracy": 38,
+      "hits": 38,
+      "misses": 62,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 55,
+          "actual": 55,
+          "hits": 23
+        },
+        "DRAW": {
+          "predicted": 32,
+          "actual": 32,
+          "hits": 11
+        },
+        "AWAY": {
+          "predicted": 13,
+          "actual": 13,
+          "hits": 4
+        }
+      }
+    }
+  ],
+  "avg_accuracy": 44.8
+}

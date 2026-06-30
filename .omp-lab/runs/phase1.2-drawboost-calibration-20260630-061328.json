@@ -1,0 +1,151 @@
+{
+  "run_type": "phase1.2-drawboost-calibration",
+  "timestamp": "20260630-061328",
+  "avg_accuracy": 48,
+  "total_tests": 14,
+  "total_draw_predicted": 323,
+  "total_draw_hits": 102,
+  "draw_hit_rate": 0.3157894736842105,
+  "results": [
+    {
+      "league": "Premier League",
+      "league_id": 39,
+      "season": 2023,
+      "accuracy": 52,
+      "hits": 52,
+      "misses": 48,
+      "draw_predicted": 16,
+      "draw_hits": 3
+    },
+    {
+      "league": "Premier League",
+      "league_id": 39,
+      "season": 2024,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "draw_predicted": 19,
+      "draw_hits": 5
+    },
+    {
+      "league": "La Liga",
+      "league_id": 140,
+      "season": 2023,
+      "accuracy": 49,
+      "hits": 49,
+      "misses": 51,
+      "draw_predicted": 24,
+      "draw_hits": 10
+    },
+    {
+      "league": "La Liga",
+      "league_id": 140,
+      "season": 2024,
+      "accuracy": 55,
+      "hits": 55,
+      "misses": 45,
+      "draw_predicted": 31,
+      "draw_hits": 14
+    },
+    {
+      "league": "Serie A",
+      "league_id": 135,
+      "season": 2023,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "draw_predicted": 28,
+      "draw_hits": 8
+    },
+    {
+      "league": "Serie A",
+      "league_id": 135,
+      "season": 2024,
+      "accuracy": 46,
+      "hits": 46,
+      "misses": 54,
+      "draw_predicted": 24,
+      "draw_hits": 8
+    },
+    {
+      "league": "Bundesliga",
+      "league_id": 78,
+      "season": 2023,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "draw_predicted": 14,
+      "draw_hits": 1
+    },
+    {
+      "league": "Bundesliga",
+      "league_id": 78,
+      "season": 2024,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "draw_predicted": 15,
+      "draw_hits": 5
+    },
+    {
+      "league": "Ligue 1",
+      "league_id": 61,
+      "season": 2023,
+      "accuracy": 44,
+      "hits": 44,
+      "misses": 56,
+      "draw_predicted": 35,
+      "draw_hits": 15
+    },
+    {
+      "league": "Ligue 1",
+      "league_id": 61,
+      "season": 2024,
+      "accuracy": 49,
+      "hits": 49,
+      "misses": 51,
+      "draw_predicted": 27,
+      "draw_hits": 7
+    },
+    {
+      "league": "Eredivisie",
+      "league_id": 88,
+      "season": 2023,
+      "accuracy": 55,
+      "hits": 55,
+      "misses": 45,
+      "draw_predicted": 6,
+      "draw_hits": 1
+    },
+    {
+      "league": "Eredivisie",
+      "league_id": 88,
+      "season": 2024,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "draw_predicted": 14,
+      "draw_hits": 0
+    },
+    {
+      "league": "Liga Profesional Argentina",
+      "league_id": 128,
+      "season": 2023,
+      "accuracy": 36,
+      "hits": 36,
+      "misses": 64,
+      "draw_predicted": 35,
+      "draw_hits": 12
+    },
+    {
+      "league": "Liga Profesional Argentina",
+      "league_id": 128,
+      "season": 2024,
+      "accuracy": 49,
+      "hits": 49,
+      "misses": 51,
+      "draw_predicted": 35,
+      "draw_hits": 13
+    }
+  ]
+}

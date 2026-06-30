@@ -1,0 +1,290 @@
+{
+  "phase": "2.0",
+  "timestamp": "20260630-131421",
+  "config": {
+    "n_window": 20,
+    "venue_filter": true,
+    "league_filter": true,
+    "analyzers": [
+      {
+        "name": "poisson",
+        "weight": 0.6,
+        "enabled": true
+      },
+      {
+        "name": "markov-outcome",
+        "weight": 0.15,
+        "enabled": true
+      },
+      {
+        "name": "form-inertia",
+        "weight": 0.1,
+        "enabled": true
+      },
+      {
+        "name": "hmm",
+        "weight": 0.15,
+        "enabled": true
+      }
+    ]
+  },
+  "leagues": [
+    {
+      "league_id": 78,
+      "league_name": "Bundesliga",
+      "country": "Germany",
+      "season": 2023,
+      "accuracy": 46,
+      "hits": 46,
+      "misses": 54,
+      "total_games": 100,
+      "draw_predicted": 18,
+      "draw_hits": 3
+    },
+    {
+      "league_id": 78,
+      "league_name": "Bundesliga",
+      "country": "Germany",
+      "season": 2024,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "total_games": 100,
+      "draw_predicted": 18,
+      "draw_hits": 4
+    },
+    {
+      "league_id": 88,
+      "league_name": "Eredivisie",
+      "country": "Netherlands",
+      "season": 2023,
+      "accuracy": 54,
+      "hits": 54,
+      "misses": 46,
+      "total_games": 100,
+      "draw_predicted": 11,
+      "draw_hits": 1
+    },
+    {
+      "league_id": 88,
+      "league_name": "Eredivisie",
+      "country": "Netherlands",
+      "season": 2024,
+      "accuracy": 59,
+      "hits": 59,
+      "misses": 41,
+      "total_games": 100,
+      "draw_predicted": 7,
+      "draw_hits": 2
+    },
+    {
+      "league_id": 144,
+      "league_name": "Jupiler Pro League",
+      "country": "Belgium",
+      "season": 2023,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "total_games": 100,
+      "draw_predicted": 25,
+      "draw_hits": 11
+    },
+    {
+      "league_id": 144,
+      "league_name": "Jupiler Pro League",
+      "country": "Belgium",
+      "season": 2024,
+      "accuracy": 38,
+      "hits": 38,
+      "misses": 62,
+      "total_games": 100,
+      "draw_predicted": 24,
+      "draw_hits": 6
+    },
+    {
+      "league_id": 140,
+      "league_name": "La Liga",
+      "country": "Spain",
+      "season": 2023,
+      "accuracy": 43,
+      "hits": 43,
+      "misses": 57,
+      "total_games": 100,
+      "draw_predicted": 23,
+      "draw_hits": 7
+    },
+    {
+      "league_id": 140,
+      "league_name": "La Liga",
+      "country": "Spain",
+      "season": 2024,
+      "accuracy": 49,
+      "hits": 49,
+      "misses": 51,
+      "total_games": 100,
+      "draw_predicted": 25,
+      "draw_hits": 9
+    },
+    {
+      "league_id": 128,
+      "league_name": "Liga Profesional Argentina",
+      "country": "Argentina",
+      "season": 2023,
+      "accuracy": 43,
+      "hits": 43,
+      "misses": 57,
+      "total_games": 100,
+      "draw_predicted": 39,
+      "draw_hits": 15
+    },
+    {
+      "league_id": 128,
+      "league_name": "Liga Profesional Argentina",
+      "country": "Argentina",
+      "season": 2024,
+      "accuracy": 41,
+      "hits": 41,
+      "misses": 59,
+      "total_games": 100,
+      "draw_predicted": 40,
+      "draw_hits": 11
+    },
+    {
+      "league_id": 61,
+      "league_name": "Ligue 1",
+      "country": "France",
+      "season": 2023,
+      "accuracy": 39,
+      "hits": 39,
+      "misses": 61,
+      "total_games": 100,
+      "draw_predicted": 32,
+      "draw_hits": 12
+    },
+    {
+      "league_id": 61,
+      "league_name": "Ligue 1",
+      "country": "France",
+      "season": 2024,
+      "accuracy": 49,
+      "hits": 49,
+      "misses": 51,
+      "total_games": 100,
+      "draw_predicted": 29,
+      "draw_hits": 8
+    },
+    {
+      "league_id": 39,
+      "league_name": "Premier League",
+      "country": "England",
+      "season": 2023,
+      "accuracy": 53,
+      "hits": 53,
+      "misses": 47,
+      "total_games": 100,
+      "draw_predicted": 15,
+      "draw_hits": 4
+    },
+    {
+      "league_id": 39,
+      "league_name": "Premier League",
+      "country": "England",
+      "season": 2024,
+      "accuracy": 51,
+      "hits": 51,
+      "misses": 49,
+      "total_games": 100,
+      "draw_predicted": 19,
+      "draw_hits": 7
+    },
+    {
+      "league_id": 94,
+      "league_name": "Primeira Liga",
+      "country": "Portugal",
+      "season": 2023,
+      "accuracy": 48,
+      "hits": 48,
+      "misses": 52,
+      "total_games": 100,
+      "draw_predicted": 29,
+      "draw_hits": 7
+    },
+    {
+      "league_id": 94,
+      "league_name": "Primeira Liga",
+      "country": "Portugal",
+      "season": 2024,
+      "accuracy": 53,
+      "hits": 53,
+      "misses": 47,
+      "total_games": 100,
+      "draw_predicted": 27,
+      "draw_hits": 5
+    },
+    {
+      "league_id": 135,
+      "league_name": "Serie A",
+      "country": "Italy",
+      "season": 2023,
+      "accuracy": 40,
+      "hits": 40,
+      "misses": 60,
+      "total_games": 100,
+      "draw_predicted": 31,
+      "draw_hits": 6
+    },
+    {
+      "league_id": 135,
+      "league_name": "Serie A",
+      "country": "Italy",
+      "season": 2024,
+      "accuracy": 44,
+      "hits": 44,
+      "misses": 56,
+      "total_games": 100,
+      "draw_predicted": 31,
+      "draw_hits": 10
+    },
+    {
+      "league_id": 203,
+      "league_name": "S\u00fcper Lig",
+      "country": "Turkey",
+      "season": 2023,
+      "accuracy": 53,
+      "hits": 53,
+      "misses": 47,
+      "total_games": 100,
+      "draw_predicted": 18,
+      "draw_hits": 5
+    },
+    {
+      "league_id": 203,
+      "league_name": "S\u00fcper Lig",
+      "country": "Turkey",
+      "season": 2024,
+      "accuracy": 46,
+      "hits": 46,
+      "misses": 54,
+      "total_games": 100,
+      "draw_predicted": 14,
+      "draw_hits": 2
+    }
+  ],
+  "summary": {
+    "total_leagues": 10,
+    "total_tests": 20,
+    "total_matches": 2000,
+    "total_hits": 945,
+    "total_draw_predicted": 475,
+    "total_draw_hits": 135,
+    "avg_accuracy": 47.2,
+    "avg_draw_hit_rate": 28.4
+  },
+  "comparison_phase1_3": {
+    "baseline_avg_accuracy": 48.1,
+    "phase2_avg_accuracy": 47.1,
+    "delta_pp": -1.0,
+    "overlap_leagues_count": 7,
+    "total_overlap_tests": 14
+  }
+}

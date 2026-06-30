@@ -1,0 +1,165 @@
+{
+  "run_type": "phase1.2-final",
+  "timestamp": "2026-06-30T06-21-34",
+  "avg_accuracy": 0,
+  "total_tests": 0,
+  "total_draw_predicted": 0,
+  "total_draw_hits": 0,
+  "draw_hit_rate": 0,
+  "results": [
+    {
+      "league": "Premier League",
+      "league_id": 39,
+      "season": 2023,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Premier League",
+      "league_id": 39,
+      "season": 2024,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "La Liga",
+      "league_id": 140,
+      "season": 2023,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "La Liga",
+      "league_id": 140,
+      "season": 2024,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Serie A",
+      "league_id": 135,
+      "season": 2023,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Serie A",
+      "league_id": 135,
+      "season": 2024,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Bundesliga",
+      "league_id": 78,
+      "season": 2023,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Bundesliga",
+      "league_id": 78,
+      "season": 2024,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Ligue 1",
+      "league_id": 61,
+      "season": 2023,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Ligue 1",
+      "league_id": 61,
+      "season": 2024,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Eredivisie",
+      "league_id": 88,
+      "season": 2023,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Eredivisie",
+      "league_id": 88,
+      "season": 2024,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Liga Profesional Argentina",
+      "league_id": 128,
+      "season": 2023,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    },
+    {
+      "league": "Liga Profesional Argentina",
+      "league_id": 128,
+      "season": 2024,
+      "accuracy": 0,
+      "hits": 0,
+      "misses": 0,
+      "draw_predicted": 0,
+      "draw_hits": 0,
+      "error": "Unable to connect. Is the computer able to access the url?"
+    }
+  ]
+}
