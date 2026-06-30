@@ -197,13 +197,27 @@ async function computePrediction({
     }
 
     // Integrated forecast
-    const homeMO = homeAnalyzers.markov_outcome;
-    const awayMO = awayAnalyzers.markov_outcome;
-
     let predictedOutcome = 'DRAW';
     let predictedConfidence = 0;
     let homeScore = 0, drawScore = 0, awayScore = 0;
     const reasons = [];
+
+    // Valenzetti integrated probabilities (weighted 0.15)
+    const valP = aValenzetti.analyze(homeHistAny, awayHistAny, {});
+    if (valP.details && !valP.details.error && valP.details.probabilities) {
+        const p = valP.details.probabilities;
+        const VW = 0.15;
+        homeScore += p.home * VW;
+        drawScore += p.draw * VW;
+        awayScore += p.away * VW;
+        reasons.push({
+            type: 'valenzetti', weight: VW,
+            probabilities: { home: p.home, draw: p.draw, away: p.away },
+        });
+    }
+
+    const homeMO = homeAnalyzers.markov_outcome;
+    const awayMO = awayAnalyzers.markov_outcome;
 
     if (homeMO.details && homeMO.details.next_outcome && awayMO.details && awayMO.details.next_outcome) {
         const homePred = homeMO.details.next_outcome.prediction;

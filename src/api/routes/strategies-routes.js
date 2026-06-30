@@ -114,6 +114,8 @@ async function strategiesRoutes(fastify) {
         for (const a of config.analyzers) {
             if (!a.enabled) continue;
             if (a.name === 'hmm') continue; // HMM — через Python, ниже
+            if (a.name === 'poisson') continue; // Poisson requires both teams
+            if (a.name === 'valenzetti') continue; // Valenzetti requires both teams
             const mod = modules[a.name];
             if (!mod) continue;
             homeResults[a.name] = mod.analyze(homeGames);
@@ -141,7 +143,7 @@ async function strategiesRoutes(fastify) {
             homeResults.valenzetti = aValenzetti.analyze(homeGames, awayGames, {
                 alpha: leagueParamsV?.avg_home_goals ? Math.log(Number(leagueParamsV.avg_home_goals)) : undefined,
             });
-            awayResults.valenzetti = aValenzetti.analyzeTeam(homeGames);
+            awayResults.valenzetti = aValenzetti.analyzeTeam(awayGames);
         }
 
         // HMM (async, graceful)
@@ -202,6 +204,19 @@ async function strategiesRoutes(fastify) {
             else if (homeFI.details.trend === 'persistent' && hLag1 > 0.15 && hMean < -0.3) awayScore += w('form_inertia') * Math.min(hLag1, 1);
             if (awayFI.details.trend === 'persistent' && aLag1 > 0.15 && aMean > 0.3) awayScore += w('form_inertia') * Math.min(aLag1, 1);
             else if (awayFI.details.trend === 'persistent' && aLag1 > 0.15 && aMean < -0.3) homeScore += w('form_inertia') * Math.min(aLag1, 1);
+        }
+
+        // Valenzetti probabilities (weight 0.15)
+        const valenzettiRes = homeResults.valenzetti;
+        if (valenzettiRes && valenzettiRes.details && !valenzettiRes.details.error && valenzettiRes.details.probabilities) {
+            const probs = valenzettiRes.details.probabilities;
+            homeScore += (probs.home || 0.333) * w('valenzetti');
+            drawScore += (probs.draw || 0.333) * w('valenzetti');
+            awayScore += (probs.away || 0.333) * w('valenzetti');
+        } else {
+            homeScore += 0.333 * w('valenzetti');
+            drawScore += 0.333 * w('valenzetti');
+            awayScore += 0.333 * w('valenzetti');
         }
 
         // Determine outcome
@@ -520,7 +535,7 @@ async function strategiesRoutes(fastify) {
                 markov_state:    require('../../analytics/analyzers/markov-state.js'),
                 shannon_entropy: require('../../analytics/analyzers/shannon-entropy.js'),
                 form_inertia:    require('../../analytics/analyzers/form-inertia.js'),
-                multipeak:       require('../../analytics/analyzers/multipeak-density.js'),
+                valenzetti:      require('../../analytics/analyzers/valenzetti.js'),
             };
             const aPoisson = require('../../analytics/analyzers/poisson.js');
             const pythonClient = require('../../analytics/python-client.js');
@@ -618,6 +633,19 @@ async function strategiesRoutes(fastify) {
                     else if (awayFI.details.trend === 'persistent' && aLag1 > 0.15 && aMean < -0.3) homeScore += w('form_inertia') * Math.min(aLag1, 1);
                 }
 
+                // Valenzetti probabilities (weighted from analyze())
+                const valenzettiRes = homeResults.valenzetti;
+                if (valenzettiRes && valenzettiRes.details && !valenzettiRes.details.error && valenzettiRes.details.probabilities) {
+                    const probs = valenzettiRes.details.probabilities;
+                    homeScore += (probs.home || 0.333) * w('valenzetti');
+                    drawScore += (probs.draw || 0.333) * w('valenzetti');
+                    awayScore += (probs.away || 0.333) * w('valenzetti');
+                } else {
+                    homeScore += 0.333 * w('valenzetti');
+                    drawScore += 0.333 * w('valenzetti');
+                    awayScore += 0.333 * w('valenzetti');
+                }
+
                 // Determine outcome
                 let predicted, confidence;
                 const totalScore = homeScore + drawScore + awayScore;
@@ -660,7 +688,8 @@ async function strategiesRoutes(fastify) {
                     for (const a of strategyConfig.analyzers) {
                         if (!a.enabled) continue;
                         if (a.name === 'hmm') continue;
-                        if (a.name === 'poisson') continue; // poisson требует обе команды, обработаем ниже
+                        if (a.name === 'poisson') continue; // poisson requires both teams, handled below
+                        if (a.name === 'valenzetti') continue; // valenzetti requires both teams, handled below
                         const mod = modules[a.name];
                         if (!mod) continue;
                         homeResults[a.name] = mod.analyze(homeGames);
@@ -683,6 +712,22 @@ async function strategiesRoutes(fastify) {
                         } catch (_) {
                             homeResults.poisson = null;
                             awayResults.poisson = null;
+                        }
+                    }
+
+                    // Valenzetti — needs both teams (like Poisson)
+                    const valenzettiConf = strategyConfig.analyzers.find(a => a.name === 'valenzetti' && a.enabled);
+                    if (valenzettiConf) {
+                        try {
+                            homeResults.valenzetti = aValenzetti.analyze(homeGames, awayGames, {
+                                alpha: leagueParamsV?.avg_home_goals ? Math.log(Number(leagueParamsV.avg_home_goals)) : undefined,
+                                theta: Array.isArray(valenzettiConf.theta) && valenzettiConf.theta.length === 6
+                                    ? valenzettiConf.theta : undefined,
+                            });
+                            awayResults.valenzetti = aValenzetti.analyzeTeam(awayGames);
+                        } catch (_) {
+                            homeResults.valenzetti = null;
+                            awayResults.valenzetti = null;
                         }
                     }
 
