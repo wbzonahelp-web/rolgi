@@ -224,12 +224,12 @@ function analyze(homeGames, awayGames, leagueParams = {}, leagueId = null, seaso
     // 5b. Draw boost: when λ_home ≈ λ_away, increase P(DRAW)
     // Phase 1.1: enhanced draw boost with wider threshold and quadratic formula
     const lambdaDiff = Math.abs(lambdaHome - lambdaAway);
-    const DRAW_THRESHOLD = 0.45;  // калибровка: было 0.5, уменьшено для точности
-    const DRAW_CAP = 0.23;        // калибровка: было 0.28, уменьшено для баланса
+    const DRAW_THRESHOLD = 0.40;  // Phase 1.4: уже охват для баланса
+    const DRAW_CAP = 0.20;        // Phase 1.4: меньше агрессивность
     
     if (lambdaDiff < DRAW_THRESHOLD) {
         // Квадратичная формула: больше boost для очень близких lambda
-        const closenessBoost = Math.pow((DRAW_THRESHOLD - lambdaDiff) / DRAW_THRESHOLD, 1.3);
+        const closenessBoost = Math.pow((DRAW_THRESHOLD - lambdaDiff) / DRAW_THRESHOLD, 1.5);
         const baseDrawBoost = Math.min(DRAW_CAP, closenessBoost * 0.35);
         const drawBoost = baseDrawBoost * drawBoostMultiplier;
         pDraw += drawBoost;
