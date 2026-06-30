@@ -64,7 +64,8 @@
         "avg_home_goals": 1.7143,
         "avg_away_goals": 1.4627
       },
-      "draw_boost_multiplier": 17.33
+      "draw_boost_multiplier": 17.33,
+      "dixon_coles_rho": -0.100
     },
     "3892": {
       "name": "Championship",
@@ -108,7 +109,8 @@
         "avg_home_goals": 1.7399,
         "avg_away_goals": 1.3847
       },
-      "draw_boost_multiplier": 25.2
+      "draw_boost_multiplier": 25.2,
+      "dixon_coles_rho": -0.050
     },
     "3108": {
       "name": "La Liga",
@@ -130,7 +132,8 @@
         "avg_home_goals": 1.4684,
         "avg_away_goals": 1.1631
       },
-      "draw_boost_multiplier": 1.91
+      "draw_boost_multiplier": 1.91,
+      "dixon_coles_rho": 0.000
     },
     "2544": {
       "name": "Liga MX",
@@ -174,7 +177,8 @@
         "avg_home_goals": 1.2006,
         "avg_away_goals": 0.8329
       },
-      "draw_boost_multiplier": 1.28
+      "draw_boost_multiplier": 1.28,
+      "dixon_coles_rho": -0.075
     },
     "2994": {
       "name": "Ligue 1",
@@ -196,7 +200,8 @@
         "avg_home_goals": 1.5276,
         "avg_away_goals": 1.3085
       },
-      "draw_boost_multiplier": 2.24
+      "draw_boost_multiplier": 2.24,
+      "dixon_coles_rho": -0.075
     },
     "2530": {
       "name": "Major League Soccer",
@@ -240,7 +245,8 @@
         "avg_home_goals": 1.6566,
         "avg_away_goals": 1.45
       },
-      "draw_boost_multiplier": 4.18
+      "draw_boost_multiplier": 4.18,
+      "dixon_coles_rho": 0.025
     },
     "1457": {
       "name": "Premier League",
@@ -372,7 +378,8 @@
         "avg_home_goals": 1.3868,
         "avg_away_goals": 1.1987
       },
-      "draw_boost_multiplier": 3.21
+      "draw_boost_multiplier": 3.21,
+      "dixon_coles_rho": -0.025
     },
     "1270": {
       "name": "Serie B",
@@ -490,6 +497,6 @@
     "avg_away_goals": 1.3124,
     "draw_boost_multiplier": 3.0
   },
-  "generated_at": "2026-06-30T05:30:10Z",
-  "calibration_notes": "Draw boost multipliers integrated from draw-calibration.json. Multiplier = real_draw_pct / predicted_draw_pct."
+  "generated_at": "2026-06-30T12:25:00Z",
+  "calibration_notes": "Draw boost multipliers integrated from draw-calibration.json. Dixon-Coles rho calibrated per league via max-likelihood on 2021-2024 low-score frequencies. Multiplier = real_draw_pct / predicted_draw_pct."
 }
