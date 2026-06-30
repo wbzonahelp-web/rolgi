@@ -1,5 +1,7 @@
 'use strict';
 
+const { getLeagueParams, getLeagueRho, getLeagueDrawBoost } = require('../utils/league-params');
+
 /**
  * Poisson Analyzer (Dixon-Coles model)
  *
@@ -30,7 +32,6 @@
  */
 
 const MAX_GOALS = 10; // максимальное количество голов для суммирования
-const RHO = -0.10; // Dixon-Coles correlation parameter
 
 /**
  * Факториал (для Poisson PMF)
@@ -76,11 +77,18 @@ function dixonColesTau(homeGoals, awayGoals, lambdaHome, lambdaAway, rho) {
  *   Каждая игра: { gf, ga, venue: 'home'|'away' }
  * @param {Array} awayGames — последние N матчей away команды
  * @param {Object} leagueParams — { avgHomeGoals, avgAwayGoals } (опц., default 1.52/1.32)
+ * @param {number|string} [leagueId] — League ID for league-specific params
+ * @param {string} [season] — Season for league-specific params
  * @returns {{value, confidence, details}}
  */
-function analyze(homeGames, awayGames, leagueParams = {}) {
-    const avgHomeGoals = leagueParams.avgHomeGoals || 1.52;
-    const avgAwayGoals = leagueParams.avgAwayGoals || 1.32;
+function analyze(homeGames, awayGames, leagueParams = {}, leagueId = null, season = null) {
+    // Get league-specific parameters or fallback to defaults
+    const leagueSpecific = leagueId ? getLeagueParams(leagueId, season) : null;
+    const RHO = leagueId ? getLeagueRho(leagueId) : -0.10;
+    const drawBoostMultiplier = leagueId ? getLeagueDrawBoost(leagueId) : 1.0;
+
+    const avgHomeGoals = leagueSpecific?.avg_home_goals ?? leagueParams.avgHomeGoals ?? 1.52;
+    const avgAwayGoals = leagueSpecific?.avg_away_goals ?? leagueParams.avgAwayGoals ?? 1.32;
     const MIN_GAMES = 6;
 
     if (!Array.isArray(homeGames) || homeGames.length < MIN_GAMES ||
@@ -216,7 +224,9 @@ function analyze(homeGames, awayGames, leagueParams = {}) {
     // 5b. Draw boost: when λ_home ≈ λ_away, increase P(DRAW)
     const lambdaDiff = Math.abs(lambdaHome - lambdaAway);
     if (lambdaDiff < 0.3) {
-        const drawBoost = (1 - lambdaDiff / 0.3) * 0.10; // up to +10%
+        const closenessBoost = (0.3 - lambdaDiff) / 0.3;
+        const baseDrawBoost = Math.min(0.10, closenessBoost * 0.15);
+        const drawBoost = baseDrawBoost * drawBoostMultiplier;
         pDraw += drawBoost;
         const sumOther = pHome + pAway;
         if (sumOther > 0) {
@@ -264,9 +274,16 @@ function analyze(homeGames, awayGames, leagueParams = {}) {
                 away_attack: Math.round(awayAttack * 1000) / 1000,
                 away_defense: Math.round(awayDefense * 1000) / 1000,
             },
-            league_params: {
+            league_params: leagueSpecific ? {
                 avg_home_goals: avgHomeGoals,
                 avg_away_goals: avgAwayGoals,
+                rho: RHO,
+                draw_boost_multiplier: drawBoostMultiplier,
+                source: 'league_specific'
+            } : {
+                avg_home_goals: avgHomeGoals,
+                avg_away_goals: avgAwayGoals,
+                source: 'defaults'
             },
             games_used: {
                 home_home: homeGamesHome,
@@ -274,7 +291,6 @@ function analyze(homeGames, awayGames, leagueParams = {}) {
                 away_home: awayGamesHome,
                 away_away: awayGamesAway,
             },
-            rho: RHO,
         },
     };
 }

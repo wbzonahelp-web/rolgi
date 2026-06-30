@@ -1,0 +1,495 @@
+{
+  "params": {
+    "22659": {
+      "name": "2. Bundesliga",
+      "country_name": "Germany",
+      "sstats_id": 79,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.7143,
+          "avg_away_goals": 1.3831,
+          "matches": 308
+        },
+        "2024": {
+          "avg_home_goals": 1.6266,
+          "avg_away_goals": 1.3896,
+          "matches": 308
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.6704,
+        "avg_away_goals": 1.3864
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1312": {
+      "name": "Bundesliga",
+      "country_name": "Austria",
+      "sstats_id": 218,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.3385,
+          "avg_away_goals": 1.241,
+          "matches": 195
+        },
+        "2024": {
+          "avg_home_goals": 1.5692,
+          "avg_away_goals": 1.1846,
+          "matches": 195
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.4538,
+        "avg_away_goals": 1.2128
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1492": {
+      "name": "Bundesliga",
+      "country_name": "Germany",
+      "sstats_id": 78,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.7955,
+          "avg_away_goals": 1.4221,
+          "matches": 308
+        },
+        "2024": {
+          "avg_home_goals": 1.6331,
+          "avg_away_goals": 1.5032,
+          "matches": 308
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.7143,
+        "avg_away_goals": 1.4627
+      },
+      "draw_boost_multiplier": 17.33
+    },
+    "3892": {
+      "name": "Championship",
+      "country_name": "England",
+      "sstats_id": 40,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.4811,
+          "avg_away_goals": 1.1921,
+          "matches": 557
+        },
+        "2024": {
+          "avg_home_goals": 1.4309,
+          "avg_away_goals": 1.0215,
+          "matches": 557
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.456,
+        "avg_away_goals": 1.1068
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1478": {
+      "name": "Eredivisie",
+      "country_name": "Netherlands",
+      "sstats_id": 88,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.7882,
+          "avg_away_goals": 1.4922,
+          "matches": 321
+        },
+        "2024": {
+          "avg_home_goals": 1.6916,
+          "avg_away_goals": 1.2773,
+          "matches": 321
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.7399,
+        "avg_away_goals": 1.3847
+      },
+      "draw_boost_multiplier": 25.2
+    },
+    "3108": {
+      "name": "La Liga",
+      "country_name": "Spain",
+      "sstats_id": 140,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.4842,
+          "avg_away_goals": 1.1605,
+          "matches": 380
+        },
+        "2024": {
+          "avg_home_goals": 1.4526,
+          "avg_away_goals": 1.1658,
+          "matches": 380
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.4684,
+        "avg_away_goals": 1.1631
+      },
+      "draw_boost_multiplier": 1.91
+    },
+    "2544": {
+      "name": "Liga MX",
+      "country_name": "Mexico",
+      "sstats_id": 262,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.6,
+          "avg_away_goals": 1.2441,
+          "matches": 340
+        },
+        "2024": {
+          "avg_home_goals": 1.5912,
+          "avg_away_goals": 1.1529,
+          "matches": 340
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.5956,
+        "avg_away_goals": 1.1985
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "3009": {
+      "name": "Liga Profesional Argentina",
+      "country_name": "Argentina",
+      "sstats_id": 128,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.1969,
+          "avg_away_goals": 0.8362,
+          "matches": 574
+        },
+        "2024": {
+          "avg_home_goals": 1.2063,
+          "avg_away_goals": 0.828,
+          "matches": 378
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.2006,
+        "avg_away_goals": 0.8329
+      },
+      "draw_boost_multiplier": 1.28
+    },
+    "2994": {
+      "name": "Ligue 1",
+      "country_name": "France",
+      "sstats_id": 61,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.4513,
+          "avg_away_goals": 1.25,
+          "matches": 308
+        },
+        "2024": {
+          "avg_home_goals": 1.6039,
+          "avg_away_goals": 1.3669,
+          "matches": 308
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.5276,
+        "avg_away_goals": 1.3085
+      },
+      "draw_boost_multiplier": 2.24
+    },
+    "2530": {
+      "name": "Major League Soccer",
+      "country_name": "USA",
+      "sstats_id": 253,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.691,
+          "avg_away_goals": 1.0653,
+          "matches": 521
+        },
+        "2024": {
+          "avg_home_goals": 1.7299,
+          "avg_away_goals": 1.3831,
+          "matches": 522
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.7105,
+        "avg_away_goals": 1.2244
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1323": {
+      "name": "Premier League",
+      "country_name": "England",
+      "sstats_id": 39,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.8,
+          "avg_away_goals": 1.4789,
+          "matches": 380
+        },
+        "2024": {
+          "avg_home_goals": 1.5132,
+          "avg_away_goals": 1.4211,
+          "matches": 380
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.6566,
+        "avg_away_goals": 1.45
+      },
+      "draw_boost_multiplier": 4.18
+    },
+    "1457": {
+      "name": "Premier League",
+      "country_name": "Ukraine",
+      "sstats_id": 333,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.2705,
+          "avg_away_goals": 1.2131,
+          "matches": 244
+        },
+        "2024": {
+          "avg_home_goals": 1.2389,
+          "avg_away_goals": 1.0202,
+          "matches": 247
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.2546,
+        "avg_away_goals": 1.1161
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1369": {
+      "name": "Premier League",
+      "country_name": "Russia",
+      "sstats_id": 235,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.4795,
+          "avg_away_goals": 1.1721,
+          "matches": 244
+        },
+        "2024": {
+          "avg_home_goals": 1.5164,
+          "avg_away_goals": 1.1885,
+          "matches": 244
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.4979,
+        "avg_away_goals": 1.1803
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1495": {
+      "name": "Premiership",
+      "country_name": "Scotland",
+      "sstats_id": 179,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.5256,
+          "avg_away_goals": 1.2479,
+          "matches": 234
+        },
+        "2024": {
+          "avg_home_goals": 1.6709,
+          "avg_away_goals": 1.2778,
+          "matches": 234
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.5982,
+        "avg_away_goals": 1.2628
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1399": {
+      "name": "Primeira Liga",
+      "country_name": "Portugal",
+      "sstats_id": 94,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.5844,
+          "avg_away_goals": 1.2825,
+          "matches": 308
+        },
+        "2024": {
+          "avg_home_goals": 1.4091,
+          "avg_away_goals": 1.1656,
+          "matches": 308
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.4968,
+        "avg_away_goals": 1.224
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "2527": {
+      "name": "Serie A",
+      "country_name": "Brazil",
+      "sstats_id": 71,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.4184,
+          "avg_away_goals": 1.0711,
+          "matches": 380
+        },
+        "2024": {
+          "avg_home_goals": 1.4105,
+          "avg_away_goals": 1.0342,
+          "matches": 380
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.4144,
+        "avg_away_goals": 1.0526
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "3894": {
+      "name": "Serie A",
+      "country_name": "Italy",
+      "sstats_id": 135,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.4342,
+          "avg_away_goals": 1.1763,
+          "matches": 380
+        },
+        "2024": {
+          "avg_home_goals": 1.3395,
+          "avg_away_goals": 1.2211,
+          "matches": 380
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.3868,
+        "avg_away_goals": 1.1987
+      },
+      "draw_boost_multiplier": 3.21
+    },
+    "1270": {
+      "name": "Serie B",
+      "country_name": "Brazil",
+      "sstats_id": 72,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.2553,
+          "avg_away_goals": 0.8395,
+          "matches": 380
+        },
+        "2024": {
+          "avg_home_goals": 1.3237,
+          "avg_away_goals": 0.8658,
+          "matches": 380
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.2895,
+        "avg_away_goals": 0.8527
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1322": {
+      "name": "Serie B",
+      "country_name": "Italy",
+      "sstats_id": 136,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.341,
+          "avg_away_goals": 1.1795,
+          "matches": 390
+        },
+        "2024": {
+          "avg_home_goals": 1.3548,
+          "avg_away_goals": 1.1054,
+          "matches": 389
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.3479,
+        "avg_away_goals": 1.1425
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1489": {
+      "name": "Super League",
+      "country_name": "Switzerland",
+      "sstats_id": 207,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.613,
+          "avg_away_goals": 1.2174,
+          "matches": 230
+        },
+        "2024": {
+          "avg_home_goals": 1.7261,
+          "avg_away_goals": 1.2478,
+          "matches": 230
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.6695,
+        "avg_away_goals": 1.2326
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "1469": {
+      "name": "Super League 1",
+      "country_name": "Greece",
+      "sstats_id": 197,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.6708,
+          "avg_away_goals": 1.2958,
+          "matches": 240
+        },
+        "2024": {
+          "avg_home_goals": 1.2966,
+          "avg_away_goals": 1.1525,
+          "matches": 236
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.4853,
+        "avg_away_goals": 1.2248
+      },
+      "draw_boost_multiplier": 1.0
+    },
+    "2958": {
+      "name": "Süper Lig",
+      "country_name": "Turkey",
+      "sstats_id": 203,
+      "seasons": {
+        "2023": {
+          "avg_home_goals": 1.5789,
+          "avg_away_goals": 1.2158,
+          "matches": 380
+        },
+        "2024": {
+          "avg_home_goals": 1.6608,
+          "avg_away_goals": 1.269,
+          "matches": 342
+        }
+      },
+      "combined_2023_2024": {
+        "avg_home_goals": 1.6177,
+        "avg_away_goals": 1.241
+      },
+      "draw_boost_multiplier": 1.0
+    }
+  },
+  "global_avg": {
+    "avg_home_goals": 1.6029,
+    "avg_away_goals": 1.3124,
+    "draw_boost_multiplier": 3.0
+  },
+  "generated_at": "2026-06-30T05:30:10Z",
+  "calibration_notes": "Draw boost multipliers integrated from draw-calibration.json. Multiplier = real_draw_pct / predicted_draw_pct."
+}

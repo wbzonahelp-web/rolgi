@@ -8,6 +8,7 @@
  */
 
 const { authenticate } = require('../../auth/fastify-auth');
+const { getLeagueParams } = require('../../analytics/utils/league-params');
 
 async function strategiesRoutes(fastify) {
     const db = fastify.db || require('../../database/db-pool').getDatabase();
@@ -38,11 +39,11 @@ async function strategiesRoutes(fastify) {
     async function computeStrategyPrediction(db, gameId, config) {
         // Резолвим матч
         const gRes = await db.query(
-            `SELECT g.id, g.sstats_id, g.home_team_id, g.away_team_id, g.league_id,
-                    g.date, g.status
-             FROM games g
-             WHERE g.sstats_id = $1 OR g.id = $1
-             ORDER BY (g.sstats_id = $1) DESC, g.id ASC LIMIT 1`, [gameId]
+    `SELECT g.id, g.sstats_id, g.home_team_id, g.away_team_id, g.league_id,
+            g.date, g.season, g.status
+     FROM games g
+     WHERE g.sstats_id = $1 OR g.id = $1
+     ORDER BY (g.sstats_id = $1) DESC, g.id ASC LIMIT 1`, [gameId]
         );
         if (!gRes.rows.length) return { error: 'Game not found' };
         const game = gRes.rows[0];
@@ -115,7 +116,15 @@ async function strategiesRoutes(fastify) {
         // Poisson needs both teams
         const poissonConfig = config.analyzers.find(a => a.name === 'poisson' && a.enabled);
         if (poissonConfig) {
-            homeResults.poisson = aPoisson.analyze(homeGames, awayGames, { avgHomeGoals: 1.52, avgAwayGoals: 1.32 });
+            const leagueParams = getLeagueParams(game.league_id, game.season);
+            homeResults.poisson = aPoisson.analyze(homeGames, awayGames, {
+                avgHomeGoals: leagueParams.avg_home_goals,
+                avgAwayGoals: leagueParams.avg_away_goals
+            });
+            awayResults.poisson = aPoisson.analyze(awayGames, homeGames, {
+                avgHomeGoals: leagueParams.avg_home_goals,
+                avgAwayGoals: leagueParams.avg_away_goals
+            });
         }
 
         // HMM (async, graceful)
@@ -537,7 +546,7 @@ async function strategiesRoutes(fastify) {
                 });
             }
 
-            function predictFromAnalyzers(homeResults, awayResults, homeGames, awayGames) {
+            function predictFromAnalyzers(homeResults, awayResults, homeGames, awayGames, leagueParams = {}) {
                 // === V4 Forecast: Poisson primary + corrections ===
                 // Build weight map from config, fallback to defaults
                 const defaultWeights = { poisson: 0.60, markov_outcome: 0.15, form_inertia: 0.10, hmm: 0.15 };
@@ -643,11 +652,20 @@ async function strategiesRoutes(fastify) {
 
                     // Poisson — нужны обе команды
                     const poissonConf = strategyConfig.analyzers.find(a => a.name === 'poisson' && a.enabled);
+                    const leagueParams = getLeagueParams(league_id, season);
                     if (poissonConf) {
                         try {
-                            homeResults.poisson = aPoisson.analyze(homeGames, awayGames, { avgHomeGoals: 1.52, avgAwayGoals: 1.32 });
+                            homeResults.poisson = aPoisson.analyze(homeGames, awayGames, {
+                                avgHomeGoals: leagueParams.avg_home_goals,
+                                avgAwayGoals: leagueParams.avg_away_goals
+                            });
+                            awayResults.poisson = aPoisson.analyze(awayGames, homeGames, {
+                                avgHomeGoals: leagueParams.avg_home_goals,
+                                avgAwayGoals: leagueParams.avg_away_goals
+                            });
                         } catch (_) {
                             homeResults.poisson = null;
+                            awayResults.poisson = null;
                         }
                     }
 
@@ -663,7 +681,7 @@ async function strategiesRoutes(fastify) {
                         } catch (_) {}
                     }
 
-                    const pred = predictFromAnalyzers(homeResults, awayResults, homeGames, awayGames);
+                    const pred = predictFromAnalyzers(homeResults, awayResults, homeGames, awayGames, leagueParams);
                     let actual;
                     if (game.home_score > game.away_score) actual = 'HOME';
                     else if (game.home_score < game.away_score) actual = 'AWAY';
