@@ -1,0 +1,23 @@
+{
+  "phase": "2.1",
+  "timestamp": "20260630-123054",
+  "method": "Maximum likelihood grid search (NLL) on low scores (0-0, 1-0, 0-1, 1-1)",
+  "rho_range": "[-0.25, +0.05] step 0.025",
+  "data_seasons": "2021-2024 (finished matches, all available)",
+  "backtest_status": "NOT RUN - API server failed to connect to database (Docker hostname vs localhost)",
+  "leagues": [
+    {"league": "Premier League", "sstats_id": 39, "league_param_key": "1323", "old_rho": -0.10, "new_rho": 0.025, "avg_home": 1.6151, "avg_away": 1.3559, "matches": 1520},
+    {"league": "La Liga", "sstats_id": 140, "league_param_key": "3108", "old_rho": -0.10, "new_rho": 0.000, "avg_home": 1.4518, "avg_away": 1.1161, "matches": 1516},
+    {"league": "Serie A", "sstats_id": 135, "league_param_key": "3894", "old_rho": -0.10, "new_rho": -0.025, "avg_home": 1.4221, "avg_away": 1.2288, "matches": 1521},
+    {"league": "Bundesliga", "sstats_id": 78, "league_param_key": "1492", "old_rho": -0.10, "new_rho": -0.100, "avg_home": 1.7589, "avg_away": 1.4002, "matches": 1232},
+    {"league": "Ligue 1", "sstats_id": 61, "league_param_key": "2994", "old_rho": -0.10, "new_rho": -0.075, "avg_home": 1.5246, "avg_away": 1.2881, "matches": 1239},
+    {"league": "Eredivisie", "sstats_id": 88, "league_param_key": "1478", "old_rho": -0.10, "new_rho": -0.050, "avg_home": 1.7018, "avg_away": 1.3565, "matches": 1167},
+    {"league": "Liga Profesional Argentina", "sstats_id": 128, "league_param_key": "3009", "old_rho": -0.10, "new_rho": -0.075, "avg_home": 1.2740, "avg_away": 0.9487, "matches": 2029}
+  ],
+  "summary": {
+    "total_leagues": 7,
+    "total_matches_calibration": 10224,
+    "rho_changed_count": 6,
+    "rho_unchanged_count": 1
+  }
+}

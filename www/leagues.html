@@ -3,631 +3,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Лиги и сезоны - Rolgi SStats</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>Лиги — Rolgi SStats</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/app.css">
     <style>
-        :root {
-            --primary-color: #1a5f7a;
-            --primary-dark: #134b5f;
-            --secondary-color: #57c5b6;
-            --bg-color: #f5f7fa;
-            --card-bg: #ffffff;
-            --text-color: #333;
-            --text-muted: #6c757d;
-            --border-color: #e0e0e0;
-            --success-color: #28a745;
+        .league-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .r-filter-pills {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin: 12px 0;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color);
+        .r-pill {
+            padding: 6px 14px;
+            background: #f0f2f5;
+            border: 1px solid transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.88em;
             color: var(--text-color);
-            line-height: 1.5;
+            transition: all 0.12s;
         }
-        .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            padding: 15px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.5em;
-            font-weight: bold;
-            text-decoration: none;
-            color: white;
-        }
-        .logo i { color: var(--secondary-color); }
-        .nav-links { display: flex; gap: 15px; }
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
-        .nav-links a:hover { background: rgba(255,255,255,0.1); }
-        .nav-links a.active { background: var(--secondary-color); }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .search-section {
-            background: var(--card-bg);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .search-title { font-size: 1.2em; margin-bottom: 15px; color: var(--primary-color); }
-        .search-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
-        .search-input, .filter-select {
-            padding: 12px 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1em;
-            outline: none;
-        }
-        .search-input { flex: 1; min-width: 200px; }
-        .search-input:focus, .filter-select:focus { border-color: var(--primary-color); }
-        .search-btn {
-            padding: 12px 25px;
+        .r-pill:hover { background: #e4e8ed; }
+        .r-pill.active {
             background: var(--primary-color);
             color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background 0.3s;
+            border-color: var(--primary-color);
         }
-        .search-btn:hover { background: var(--primary-dark); }
-        .results-section {
-            background: var(--card-bg);
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .results-header {
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .league-list { list-style: none; }
-        .league-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .league-item:hover { background: #f8f9fa; }
-        .league-item:last-child { border-bottom: none; }
-        .league-logo {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            background: #f5f5f5;
-            border-radius: 5px;
-            padding: 5px;
-        }
-        .league-info { flex: 1; }
-        .league-name { font-weight: 600; margin-bottom: 3px; }
-        .league-meta { font-size: 0.85em; color: var(--text-muted); }
-        .country-flag { width: 20px; height: 15px; object-fit: cover; border-radius: 2px; margin-right: 5px; }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-        }
-        .loading i { font-size: 2em; margin-bottom: 10px; color: var(--primary-color); }
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-        }
-        .no-data i { font-size: 3em; margin-bottom: 15px; opacity: 0.5; }
-        .api-info {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
+        .r-pill .r-pill-count {
+            display: inline-block;
+            margin-left: 6px;
+            background: rgba(255,255,255,0.25);
+            padding: 1px 7px;
             border-radius: 10px;
             font-size: 0.85em;
-            color: var(--text-muted);
-        }
-        .api-info code {
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-        /* Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal {
-            background: white;
-            border-radius: 15px;
-            max-width: 800px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-        }
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-            color: var(--text-muted);
-        }
-        .modal-close:hover { color: #dc3545; }
-        .modal-body { padding: 20px; }
-        .season-list { list-style: none; }
-        .season-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .season-item:hover { background: #e3f2fd; }
-        .season-name { font-weight: 500; }
-        .season-meta { font-size: 0.85em; color: var(--text-muted); }
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
-        .tab-btn {
-            padding: 10px 20px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .tab-btn:hover { border-color: var(--primary-color); }
-        .tab-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
-        .standings-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9em;
-        }
-        .standings-table th, .standings-table td {
-            padding: 10px 12px;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .standings-table th {
-            background: var(--primary-color);
-            color: white;
             font-weight: 600;
         }
-        .standings-table th:nth-child(2), .standings-table td:nth-child(2) { text-align: left; }
-        .standings-table tr:hover { background: #f8f9fa; }
+        .r-pill:not(.active) .r-pill-count { background: rgba(0,0,0,0.08); }
+        .r-load-more {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            background: white;
+            border: 1px dashed var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--primary-color);
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: all 0.12s;
+        }
+        .r-load-more:hover { background: #f8f9fa; border-color: var(--primary-color); }
+        .r-load-more:disabled { color: var(--text-muted); cursor: default; }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="header-content">
-            <a href="/" class="logo">
-                <i class="fas fa-futbol"></i>
-                <span>Rolgi SStats</span>
-            </a>
-            <nav class="nav-links">
-                <a href="/"><i class="fas fa-home"></i> Матчи</a>
-                <a href="/teams.html"><i class="fas fa-users"></i> Команды</a>
-                <a href="/players.html"><i class="fas fa-user"></i> Игроки</a>
-                <a href="/leagues.html" class="active"><i class="fas fa-trophy"></i> Лиги</a>
-            </nav>
-        </div>
-    </header>
+    <div id="header-mount"></div>
 
-    <div class="container">
-        <div class="search-section">
-            <h2 class="search-title"><i class="fas fa-trophy"></i> Поиск лиг</h2>
-            <div class="search-row">
-                <input type="text" class="search-input" id="searchInput" placeholder="Введите название лиги..." onkeyup="if(event.key==='Enter')searchLeagues()">
-                <select class="filter-select" id="countryFilter">
-                    <option value="">Все страны</option>
-                    <option value="England">Англия</option>
-                    <option value="Spain">Испания</option>
-                    <option value="Germany">Германия</option>
-                    <option value="Italy">Италия</option>
-                    <option value="France">Франция</option>
-                    <option value="Russia">Россия</option>
+    <main class="r-container">
+        <div class="r-card r-card-padded">
+            <h1 style="margin: 0 0 16px; font-size: 1.4em;">
+                <i class="fas fa-trophy" style="color: var(--secondary-color); margin-right: 8px;"></i>
+                Футбольные лиги
+                <span class="r-text-muted r-text-sm" style="font-weight:400; margin-left:8px;">из БД</span>
+            </h1>
+
+            <div class="r-tabs" id="tabs">
+                <button class="r-tab active" data-tab="popular">⭐ Популярные</button>
+                <button class="r-tab" data-tab="all">Все лиги</button>
+            </div>
+
+            <div class="r-search-row">
+                <input type="text" id="searchInput" placeholder="🔍 Поиск по названию или стране…">
+                <select id="countryFilter"><option value="">Все страны</option></select>
+                <select id="sortBy">
+                    <option value="name">По имени</option>
+                    <option value="seasons">По сезонам</option>
+                    <option value="country">По стране</option>
                 </select>
-                <select class="filter-select" id="sourceFilter">
-                    <option value="sstats">SStats API</option>
-                    <option value="flashscore">Flashscore API</option>
-                </select>
-                <button class="search-btn" onclick="searchLeagues()">
-                    <i class="fas fa-search"></i> Найти
-                </button>
             </div>
-        </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('popular')"><i class="fas fa-star"></i> Популярные</button>
-            <button class="tab-btn" onclick="switchTab('all')"><i class="fas fa-list"></i> Все лиги</button>
+            <div id="resultsInfo" class="r-text-muted r-text-sm" style="margin-bottom: 12px;"></div>
+            <div id="leaguesContent"><div class="r-loading"><div class="r-spinner"></div> Загрузка…</div></div>
         </div>
+    </main>
 
-        <div class="results-section">
-            <div class="results-header">
-                <h3><i class="fas fa-trophy"></i> Лиги</h3>
-                <span class="results-count" id="resultsCount">0 лиг</span>
-            </div>
-            <div id="leaguesContent">
-                <div class="loading"><i class="fas fa-spinner spinner"></i><div>Загрузка лиг...</div></div>
-            </div>
-        </div>
+    <div id="modal-mount"></div>
 
-        <div class="api-info">
-            <i class="fas fa-info-circle"></i> <strong>Используемые API:</strong><br>
-            <code>GET /leagues</code> - Список лиг SStats<br>
-            <code>GET /Ls/Leagues</code> - Список лиг Flashscore<br>
-            <code>GET /Ls/Seasons?leagueId=...</code> - Сезоны лиги<br>
-            <code>GET /Seasons/standings?seasonUid=...</code> - Турнирная таблица сезона
-        </div>
-    </div>
-
-    <!-- League Modal -->
-    <div class="modal-overlay" id="leagueModal" onclick="if(event.target===this)closeModal()">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 id="modalTitle">Лига</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body" id="modalBody">
-                <div class="loading"><i class="fas fa-spinner spinner"></i><div>Загрузка...</div></div>
-            </div>
-        </div>
-    </div>
-
+    <script src="/assets/app.js"></script>
+    <script src="/assets/components.js"></script>
     <script>
-        // API Configuration
-        // API configuration - use cached proxy for faster loading
-        const API_BASE = '/api/cached';
-        const DIRECT_API = 'https://api.sstats.net';
-        const API_KEY = 'fl3qjc4crvx8cppm';
-        
-        // Client-side cache
-        const clientCache = new Map();
-        const CACHE_TTL = { leagues: 3600000, seasons: 300000, standings: 300000 };
-        
-        // Helper to add API key to URL (for direct API calls)
-        function withApiKey(url) {
-            const separator = url.includes('?') ? '&' : '?';
-            return `${url}${separator}apikey=${API_KEY}`;
-        }
-        
-        // Cached fetch - uses local proxy with server cache
-        async function cachedFetch(endpoint, params = {}, cacheType = 'leagues') {
-            const cacheKey = endpoint + JSON.stringify(params);
-            const cached = clientCache.get(cacheKey);
-            if (cached && Date.now() - cached.time < (CACHE_TTL[cacheType] || 300000)) {
-                console.log('Client cache hit:', endpoint);
-                return cached.data;
-            }
-            
-            const queryString = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-            const response = await fetch(API_BASE + endpoint + queryString);
-            const result = await response.json();
-            
-            if (result.success) {
-                clientCache.set(cacheKey, { data: result, time: Date.now() });
-                console.log('Loaded from server:', endpoint, 'fromCache:', result.fromCache);
-            }
-            return result;
-        }
-        
+    (function(){
+        const { api, fmt } = Rolgi;
+        const C = Rolgi.components;
+        const PAGE_SIZE = 50;
+
+        document.getElementById('header-mount').innerHTML = C.header('leagues');
+        document.getElementById('modal-mount').innerHTML  = C.modal('leagueModal');
+
+        let allLeagues = [];
         let currentTab = 'popular';
 
-        // Load popular leagues on init
-        document.addEventListener('DOMContentLoaded', () => {
-            loadLeagues();
+        // Состояние открытой модалки (сезон)
+        let modalState = null; // { league, year, summary, group, items, offset, exhausted }
+
+        async function init() {
+            try {
+                const res = await api.get('/api/db/leagues', {}, { ttl: 300000 });
+                allLeagues = (res && res.data) || [];
+                populateCountryFilter();
+                render();
+            } catch (e) {
+                document.getElementById('leaguesContent').innerHTML =
+                    `<div class="league-empty">⚠ ${fmt.escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function populateCountryFilter() {
+            const set = new Set();
+            allLeagues.forEach(l => l.country_name && set.add(l.country_name));
+            const sel = document.getElementById('countryFilter');
+            [...set].sort((a,b) => a.localeCompare(b)).forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name; opt.textContent = name;
+                sel.appendChild(opt);
+            });
+        }
+
+        function render() {
+            const q  = document.getElementById('searchInput').value.trim().toLowerCase();
+            const cc = document.getElementById('countryFilter').value;
+            const sort = document.getElementById('sortBy').value;
+
+            let items = allLeagues.filter(l => {
+                if (cc && l.country_name !== cc) return false;
+                if (q) {
+                    const hay = ((l.name||'') + ' ' + (l.country_name||'')).toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+
+            if (currentTab === 'popular' && !q && !cc) {
+                items = items.filter(l => l.popular_rank).sort((a,b) => a.popular_rank - b.popular_rank);
+            } else {
+                if (sort === 'seasons') items.sort((a,b) => (b.seasons||[]).length - (a.seasons||[]).length);
+                else if (sort === 'country') items.sort((a,b) =>
+                    (a.country_name||'').localeCompare(b.country_name||'') || (a.name||'').localeCompare(b.name||''));
+                else items.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+            }
+
+            document.getElementById('resultsInfo').textContent =
+                `Найдено: ${items.length} из ${allLeagues.length}`;
+            document.getElementById('leaguesContent').innerHTML = items.length
+                ? items.map(C.leagueItemDb).join('')
+                : `<div class="league-empty">Ничего не найдено</div>`;
+        }
+
+        document.getElementById('tabs').addEventListener('click', e => {
+            const t = e.target.closest('[data-tab]'); if (!t) return;
+            document.querySelectorAll('.r-tab').forEach(x => x.classList.remove('active'));
+            t.classList.add('active');
+            currentTab = t.dataset.tab;
+            render();
+        });
+        let timer;
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(timer); timer = setTimeout(render, 200);
+        });
+        document.getElementById('countryFilter').addEventListener('change', render);
+        document.getElementById('sortBy').addEventListener('change', render);
+
+        document.getElementById('leaguesContent').addEventListener('click', e => {
+            const item = e.target.closest('[data-league-id]');
+            if (!item) return;
+            openLeague(+item.dataset.leagueId, item.dataset.leagueName);
         });
 
-        function switchTab(tab) {
-            currentTab = tab;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            loadLeagues();
+        function openLeague(leagueId, leagueName) {
+            modalState = null;
+            const league = allLeagues.find(l => l.id === leagueId);
+            if (!league) return;
+            const seasons = [...(league.seasons || [])].sort((a,b) => (b.year||0) - (a.year||0));
+
+            document.getElementById('leagueModal-title').textContent = leagueName;
+            const body = document.getElementById('leagueModal-body');
+            body.innerHTML = `
+                <div class="r-text-muted r-text-sm" style="margin-bottom: 12px;">
+                    ${fmt.countryFlagByName(league.country_name)} ${fmt.escapeHtml(league.country_name||'')}
+                    · ${seasons.length} сезон${seasons.length === 1 ? '' : 'ов'}
+                </div>
+                ${seasons.length
+                    ? seasons.map(C.seasonItemDb).join('')
+                    : '<div class="league-empty">Сезонов нет</div>'}
+            `;
+            document.getElementById('leagueModal').classList.add('active');
+            body.querySelectorAll('[data-season-year]').forEach(el => {
+                el.addEventListener('click', () => openSeason(league, +el.dataset.seasonYear));
+            });
         }
 
-        async function loadLeagues() {
-            const container = document.getElementById('leaguesContent');
-            container.innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i><div>Загрузка лиг...</div></div>';
+        // ─── Сезон с фильтрами и пагинацией ────────────────────────
+        async function openSeason(league, year) {
+            // По умолчанию выбираем разумную группу: если есть live → live; иначе предстоящие если есть; иначе finished
+            const body = document.getElementById('leagueModal-body');
+            body.innerHTML = `
+                <button class="r-btn r-btn-ghost" id="backBtn" style="margin-bottom: 12px;">← Назад</button>
+                <h4 style="margin: 0 0 12px;">${fmt.escapeHtml(league.name)} · сезон ${year}</h4>
+                <div class="r-loading"><div class="r-spinner"></div> Загрузка…</div>
+            `;
+            document.getElementById('backBtn').addEventListener('click',
+                () => openLeague(league.id, league.name));
 
+            let summary;
             try {
-                const result = await cachedFetch('/leagues', {}, 'leagues');
-                let leagues = result.data || [];
-                
-                if (currentTab === 'popular') {
-                    // Popular leagues - first 20
-                    leagues = leagues.slice(0, 20);
-                }
-                
-                renderLeagues(leagues);
-            } catch (error) {
-                console.error('Error loading leagues:', error);
-                container.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><div>Ошибка загрузки</div></div>';
-            }
-        }
-
-        async function searchLeagues() {
-            const query = document.getElementById('searchInput').value.trim();
-            const country = document.getElementById('countryFilter').value;
-            const source = document.getElementById('sourceFilter').value;
-
-            const container = document.getElementById('leaguesContent');
-            container.innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i><div>Поиск лиг...</div></div>';
-
-            try {
-                let url;
-                if (source === 'flashscore') {
-                    url = API_BASE + '/ls/leagues';
-                    const params = [];
-                    if (query) params.push(`name=${encodeURIComponent(query)}`);
-                    if (country) params.push(`country=${encodeURIComponent(country)}`);
-                    if (params.length) url += '?' + params.join('&');
-                } else {
-                    url = API_BASE + '/leagues';
-                }
-
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                let leagues = result.data || result || [];
-                
-                // Filter by search query if SStats API
-                if (source !== 'flashscore' && query) {
-                    const q = query.toLowerCase();
-                    leagues = leagues.filter(l => 
-                        (l.name || '').toLowerCase().includes(q) ||
-                        (l.country?.name || '').toLowerCase().includes(q)
-                    );
-                }
-                
-                // Filter by country
-                if (country && source !== 'flashscore') {
-                    leagues = leagues.filter(l => 
-                        (l.country?.name || '').toLowerCase() === country.toLowerCase()
-                    );
-                }
-                
-                renderLeagues(leagues);
-            } catch (error) {
-                console.error('Error searching leagues:', error);
-                container.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><div>Ошибка поиска</div></div>';
-            }
-        }
-
-        function renderLeagues(leagues) {
-            const container = document.getElementById('leaguesContent');
-            document.getElementById('resultsCount').textContent = `${leagues.length} лиг`;
-
-            if (!leagues || leagues.length === 0) {
-                container.innerHTML = '<div class="no-data"><i class="fas fa-trophy"></i><div>Лиги не найдены</div></div>';
+                const r = await api.get('/api/db/games/season-summary',
+                    { leagueId: league.id, season: year }, { ttl: 30000 });
+                summary = (r && r.data) || {};
+            } catch (e) {
+                body.innerHTML += `<div class="league-empty">⚠ ${fmt.escapeHtml(e.message)}</div>`;
                 return;
             }
 
-            const countryFlags = {
-                'England': 'gb-eng', 'Spain': 'es', 'Germany': 'de', 'Italy': 'it', 
-                'France': 'fr', 'Russia': 'ru', 'Netherlands': 'nl', 'Portugal': 'pt',
-                'Belgium': 'be', 'Turkey': 'tr', 'Scotland': 'gb-sct', 'Austria': 'at',
-                'Switzerland': 'ch', 'Greece': 'gr', 'Ukraine': 'ua', 'Poland': 'pl'
+            // Дефолтный фильтр
+            let group;
+            if ((summary.live || 0) > 0)               group = 'live';
+            else if ((summary.scheduled || 0) > 0)     group = 'upcoming';
+            else                                        group = 'finished';
+
+            modalState = { league, year, summary, group, items: [], offset: 0, exhausted: false };
+            renderSeasonShell();
+            await loadMore(true);
+        }
+
+        function renderSeasonShell() {
+            const { league, year, summary, group } = modalState;
+            const body = document.getElementById('leagueModal-body');
+
+            const pillCount = (n) => n > 0 ? `<span class="r-pill-count">${n}</span>` : '';
+            const pills = [
+                { id: 'upcoming', label: 'Предстоящие', cnt: (summary.scheduled||0) + (summary.postponed||0) },
+                { id: 'live',     label: '🔴 Live',     cnt: summary.live || 0 },
+                { id: 'finished', label: 'Завершённые', cnt: summary.finished || 0 },
+                { id: 'all',      label: 'Все',         cnt: summary.total || 0 },
+            ];
+
+            body.innerHTML = `
+                <button class="r-btn r-btn-ghost" id="backBtn" style="margin-bottom: 12px;">← Назад</button>
+                <h4 style="margin: 0 0 6px;">${fmt.escapeHtml(league.name)} · сезон ${year}</h4>
+                <div class="r-stat-grid">
+                    ${C.statMiniSafe({ value: summary.total ?? 0,    label: 'Всего матчей' })}
+                    ${C.statMiniSafe({ value: summary.finished ?? 0, label: 'Завершено'   })}
+                    ${(summary.live ?? 0) > 0
+                        ? C.statMiniSafe({ value: summary.live, label: 'Сейчас live', color: 'var(--live-color)' })
+                        : C.statMiniSafe({ value: summary.scheduled ?? 0, label: 'Запланировано' })}
+                </div>
+                <div class="r-filter-pills" id="filterPills">
+                    ${pills.map(p => `
+                        <button class="r-pill ${p.id === group ? 'active' : ''}"
+                                data-group="${p.id}"
+                                ${p.cnt === 0 && p.id !== 'all' ? 'disabled style="opacity:.4;cursor:default;"' : ''}>
+                            ${p.label}${pillCount(p.cnt)}
+                        </button>`).join('')}
+                </div>
+                <div id="matchesList"></div>
+                <div id="loadMoreWrap"></div>
+            `;
+            document.getElementById('backBtn').addEventListener('click',
+                () => openLeague(league.id, league.name));
+            document.getElementById('filterPills').addEventListener('click', e => {
+                const p = e.target.closest('[data-group]');
+                if (!p || p.disabled) return;
+                if (p.dataset.group === modalState.group) return;
+                modalState.group = p.dataset.group;
+                modalState.items = [];
+                modalState.offset = 0;
+                modalState.exhausted = false;
+                renderSeasonShell();
+                loadMore(true);
+            });
+        }
+
+        async function loadMore(initial = false) {
+            const wrap = document.getElementById('loadMoreWrap');
+            wrap.innerHTML = `<button class="r-load-more" disabled>Загрузка…</button>`;
+
+            const { league, year, group, offset } = modalState;
+            const params = {
+                leagueId: league.id,
+                season:   year,
+                limit:    PAGE_SIZE,
+                offset,
             };
-
-            const html = leagues.map(league => {
-                const name = league.name || 'Неизвестно';
-                const country = league.country?.name || league.countryName || '';
-                const logo = league.logo || '';
-                const id = league.id;
-                const flagCode = countryFlags[country] || 'un';
-                
-                return `
-                    <div class="league-item" onclick="openLeagueDetails(${id}, '${name}')">
-                        ${logo ? `<img src="${logo}" class="league-logo" alt="${name}" onerror="this.style.display='none'">` : '<div class="league-logo" style="display:flex;align-items:center;justify-content:center;"><i class="fas fa-trophy" style="color:var(--text-muted);"></i></div>'}
-                        <div class="league-info">
-                            <div class="league-name">${name}</div>
-                            <div class="league-meta">
-                                ${country ? `<img src="https://flagcdn.com/w20/${flagCode}.png" class="country-flag" onerror="this.style.display='none'"> ${country}` : ''}
-                            </div>
-                        </div>
-                        <div style="font-size: 0.85em; color: var(--text-muted);">ID: ${id}</div>
-                        <i class="fas fa-chevron-right" style="color: var(--text-muted);"></i>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = `<ul class="league-list">${html}</ul>`;
-        }
-
-        async function openLeagueDetails(leagueId, leagueName) {
-            const modal = document.getElementById('leagueModal');
-            const modalBody = document.getElementById('modalBody');
-            
-            document.getElementById('modalTitle').textContent = leagueName;
-            modal.classList.add('active');
-            modalBody.innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i><div>Загрузка сезонов...</div></div>';
+            if (group !== 'all') params.statusGroup = group;
 
             try {
-                const result = await cachedFetch('/ls/seasons', { leagueId }, 'seasons');
-                const seasons = result.data || [];
-                renderSeasons(seasons, leagueId, leagueName);
-            } catch (error) {
-                console.error('Error loading seasons:', error);
-                modalBody.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><div>Ошибка загрузки сезонов</div></div>';
+                const r = await api.get('/api/db/games/list', params, { ttl: 30000 });
+                const got = (r && r.data) || [];
+                modalState.items = modalState.items.concat(got);
+                modalState.offset += got.length;
+                if (got.length < PAGE_SIZE) modalState.exhausted = true;
+
+                renderMatches();
+            } catch (e) {
+                wrap.innerHTML = `<div class="league-empty">⚠ ${fmt.escapeHtml(e.message)}</div>`;
             }
         }
 
-        function renderSeasons(seasons, leagueId, leagueName) {
-            const modalBody = document.getElementById('modalBody');
+        function renderMatches() {
+            const { items, exhausted, summary, group } = modalState;
+            const list = document.getElementById('matchesList');
+            const wrap = document.getElementById('loadMoreWrap');
 
-            if (!seasons || seasons.length === 0) {
-                modalBody.innerHTML = `
-                    <div class="no-data">
-                        <i class="fas fa-calendar-times"></i>
-                        <div>Сезоны не найдены</div>
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <a href="/?leagueId=${leagueId}" class="search-btn" style="text-decoration: none; display: inline-block;">
-                            <i class="fas fa-futbol"></i> Матчи лиги
-                        </a>
-                    </div>
-                `;
+            if (!items.length) {
+                list.innerHTML = `<div class="league-empty">Нет матчей в этой категории</div>`;
+                wrap.innerHTML = '';
                 return;
             }
 
-            const html = seasons.map(season => {
-                const name = season.name || season.year || 'Сезон';
-                const uid = season.uid || season.seasonUid || season.id;
-                const year = season.year || '';
-                
-                return `
-                    <div class="season-item" onclick="loadSeasonStandings('${uid}', '${name}')">
-                        <div>
-                            <div class="season-name">${name}</div>
-                            <div class="season-meta">${year ? `Год: ${year}` : ''} | UID: ${uid}</div>
-                        </div>
-                        <i class="fas fa-table" style="color: var(--primary-color);"></i>
-                    </div>
-                `;
-            }).join('');
+            list.innerHTML =
+                `<div class="r-text-muted r-text-sm" style="margin-bottom: 8px;">
+                    Показано ${items.length} матчей
+                 </div>` +
+                items.map(C.matchRowDb).join('');
 
-            modalBody.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <a href="/?leagueId=${leagueId}" class="search-btn" style="text-decoration: none; display: inline-block;">
-                        <i class="fas fa-futbol"></i> Матчи лиги
-                    </a>
-                </div>
-                <h4 style="margin-bottom: 15px; color: var(--primary-color);"><i class="fas fa-calendar"></i> Сезоны</h4>
-                <ul class="season-list">${html}</ul>
-                <div class="api-info" style="margin-top: 20px;">
-                    <strong>API:</strong> <code>GET /Ls/Seasons?leagueId=${leagueId}</code>
-                </div>
-            `;
-        }
-
-        async function loadSeasonStandings(seasonUid, seasonName) {
-            const modalBody = document.getElementById('modalBody');
-            modalBody.innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i><div>Загрузка таблицы...</div></div>';
-
-            try {
-                const result = await cachedFetch('/seasons/standings', { seasonUid }, 'standings');
-                const standings = result.data || [];
-                renderStandings(standings, seasonUid, seasonName);
-            } catch (error) {
-                console.error('Error loading standings:', error);
-                modalBody.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><div>Ошибка загрузки таблицы</div></div>';
+            if (exhausted) {
+                wrap.innerHTML = `<div class="r-text-muted r-text-sm" style="text-align:center; padding: 12px;">
+                    Это все матчи в этой категории
+                </div>`;
+            } else {
+                wrap.innerHTML = `<button class="r-load-more" id="loadMoreBtn">Показать ещё 50 →</button>`;
+                document.getElementById('loadMoreBtn').addEventListener('click', () => loadMore(false));
             }
         }
 
-        function renderStandings(standings, seasonUid, seasonName) {
-            const modalBody = document.getElementById('modalBody');
-            document.getElementById('modalTitle').textContent = seasonName;
-
-            if (!standings || standings.length === 0) {
-                modalBody.innerHTML = '<div class="no-data"><i class="fas fa-table"></i><div>Таблица недоступна</div></div>';
-                return;
+        document.body.addEventListener('click', e => {
+            if (e.target.matches('[data-modal-close]') ||
+                (e.target.classList.contains('r-modal-overlay') && e.target.id === 'leagueModal')) {
+                document.getElementById('leagueModal').classList.remove('active');
+                modalState = null;
             }
-
-            const rows = standings.map((team, index) => {
-                const position = index + 1;
-                const name = team.teamName || team.team?.name || 'N/A';
-                const played = team.played || team.games || 0;
-                const won = team.won || team.wins || 0;
-                const drawn = team.drawn || team.draws || 0;
-                const lost = team.lost || team.losses || 0;
-                const gf = team.goalsFor || team.scored || 0;
-                const ga = team.goalsAgainst || team.conceded || 0;
-                const gd = gf - ga;
-                const points = team.points || 0;
-                
-                return `
-                    <tr>
-                        <td>${position}</td>
-                        <td>${name}</td>
-                        <td>${played}</td>
-                        <td>${won}</td>
-                        <td>${drawn}</td>
-                        <td>${lost}</td>
-                        <td>${gf}:${ga}</td>
-                        <td>${gd > 0 ? '+' + gd : gd}</td>
-                        <td><strong>${points}</strong></td>
-                    </tr>
-                `;
-            }).join('');
-
-            modalBody.innerHTML = `
-                <button onclick="openLeagueDetails(window.currentLeagueId, window.currentLeagueName)" class="search-btn" style="margin-bottom: 20px;">
-                    <i class="fas fa-arrow-left"></i> Назад к сезонам
-                </button>
-                <div style="overflow-x: auto;">
-                    <table class="standings-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Команда</th>
-                                <th>И</th>
-                                <th>В</th>
-                                <th>Н</th>
-                                <th>П</th>
-                                <th>Голы</th>
-                                <th>+/-</th>
-                                <th>Очки</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rows}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="api-info" style="margin-top: 20px;">
-                    <strong>API:</strong> <code>GET /Seasons/standings?seasonUid=${seasonUid}</code>
-                </div>
-            `;
-        }
-
-        function closeModal() {
-            document.getElementById('leagueModal').classList.remove('active');
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
         });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                document.getElementById('leagueModal').classList.remove('active');
+                modalState = null;
+            }
+        });
+
+        init();
+    })();
     </script>
 </body>
 </html>

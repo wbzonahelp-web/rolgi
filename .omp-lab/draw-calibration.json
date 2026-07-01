@@ -1,0 +1,85 @@
+{
+  "leagues": {
+    "39": {
+      "name": "Premier League",
+      "country": "England",
+      "real_draw_pct": 23.0,
+      "predicted_draw_pct": 5.5,
+      "multiplier": 4.18,
+      "recommended_boost": 0.42
+    },
+    "61": {
+      "name": "Ligue 1",
+      "country": "France",
+      "real_draw_pct": 23.5,
+      "predicted_draw_pct": 10.5,
+      "multiplier": 2.24,
+      "recommended_boost": 0.22
+    },
+    "78": {
+      "name": "Bundesliga",
+      "country": "Germany",
+      "real_draw_pct": 26.0,
+      "predicted_draw_pct": 1.5,
+      "multiplier": 17.33,
+      "recommended_boost": 0.50
+    },
+    "88": {
+      "name": "Eredivisie",
+      "country": "Netherlands",
+      "real_draw_pct": 25.2,
+      "predicted_draw_pct": 1.0,
+      "multiplier": 25.20,
+      "recommended_boost": 0.50
+    },
+    "128": {
+      "name": "Liga Profesional Argentina",
+      "country": "Argentina",
+      "real_draw_pct": 33.3,
+      "predicted_draw_pct": 26.0,
+      "multiplier": 1.28,
+      "recommended_boost": 0.13
+    },
+    "135": {
+      "name": "Serie A",
+      "country": "Italy",
+      "real_draw_pct": 28.9,
+      "predicted_draw_pct": 9.0,
+      "multiplier": 3.21,
+      "recommended_boost": 0.32
+    },
+    "140": {
+      "name": "La Liga",
+      "country": "Spain",
+      "real_draw_pct": 26.8,
+      "predicted_draw_pct": 14.0,
+      "multiplier": 1.91,
+      "recommended_boost": 0.19
+    }
+  },
+  "global_avg_multiplier": 3.63,
+  "global_median_multiplier": 3.21,
+  "global_avg_recommended_boost": 0.30,
+  "current_draw_boost_params": {
+    "threshold_lambda_diff": 0.3,
+    "max_boost": 0.10,
+    "formula": "drawBoost = (1 - lambdaDiff / 0.3) * 0.10",
+    "draw_boost_eligible_matches": "only matches where |lambda_home - lambda_away| < 0.3"
+  },
+  "analysis_period": "2023-2024 seasons",
+  "data_sources": {
+    "real_draw_stats": "games table (2023-2024, is_finished=true, 333341 matches across all leagues)",
+    "model_predictions": "baseline backtest (100 matches per league/season, 7 leagues x 2 seasons = 1400 matches)",
+    "analyzer_config": "poisson weight=0.6, markov_outcome=0.15, form_inertia=0.1, hmm used via python_client"
+  },
+  "recommendations": {
+    "immediate": "Increase draw boost cap from 0.10 to 0.25-0.30 globally, add per-league multipliers via league_calibration table",
+    "per_league": {
+      "high_boost": ["Bundesliga", "Eredivisie", "Premier League"],
+      "medium_boost": ["Serie A", "Ligue 1", "La Liga"],
+      "low_boost": ["Liga Profesional Argentina"]
+    }
+  },
+  "generated_at": "2026-06-30T05:28:49.940Z",
+  "note": "Global avg multiplier excludes extreme outliers (Bundesliga 17.3, Eredivisie 25.2) as they skew the average. Median better represents typical underprediction."
+}

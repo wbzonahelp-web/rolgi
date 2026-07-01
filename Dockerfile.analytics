@@ -1,0 +1,53 @@
+# Dockerfile.analytics — rolgi-analytics Python service
+# Multi-stage build для минимального размера итогового образа.
+
+# ──────── Stage 1: builder ────────
+FROM python:3.11-slim AS builder
+
+# Системные зависимости для сборки numpy/scipy/hmmlearn колёс
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        gfortran \
+        libopenblas-dev \
+        liblapack-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY src/analytics-python/requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip wheel setuptools \
+    && pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ──────── Stage 2: runtime ────────
+FROM python:3.11-slim
+
+# Runtime-зависимости (без build-essential, без -dev)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libopenblas0 \
+        liblapack3 \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копируем уже собранные wheels из builder
+COPY --from=builder /install /usr/local
+
+# Непривилегированный пользователь
+RUN groupadd -r app && useradd -r -g app -d /app -s /sbin/nologin app
+WORKDIR /app
+
+# Код монтируется томом в compose, но для прод-сборки кладём fallback:
+COPY src/analytics-python /app/analytics_python
+ENV PYTHONPATH=/app
+
+USER app
+
+# Healthcheck через curl на /health
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=20s \
+    CMD curl -fsS http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+
+# uvicorn с access_log в JSON-форме через стандартный logging
+CMD ["uvicorn", "analytics_python.app:app", \
+     "--host", "0.0.0.0", "--port", "8000", \
+     "--workers", "1", \
+     "--no-access-log"]

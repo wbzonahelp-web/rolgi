@@ -937,6 +937,8 @@
                 <a href="/teams.html"><i class="fas fa-users"></i> Команды</a>
                 <a href="/players.html"><i class="fas fa-user"></i> Игроки</a>
                 <a href="/scout.html"><i class="fas fa-binoculars"></i> Скаут</a>
+                <a href="/strategies.html"><i class="fas fa-chess"></i> Стратегии</a>
+                <a href="/predictions-history.html"><i class="fas fa-chart-line"></i> Прогнозы</a>
             </nav>
         </div>
     </header>
@@ -1256,7 +1258,7 @@
 
     <script>
         // API Configuration - using local cached proxy for better performance
-        const API_BASE = '/api/cached';  // Local proxy with caching
+        const API_BASE = '/api/db';  // Direct DB API (sstats_id contract)
         const API_DIRECT = 'https://api.sstats.net';  // Direct API (fallback)
         const API_KEY = 'fl3qjc4crvx8cppm';
         
@@ -1295,6 +1297,7 @@
             }
         };
         
+        // INDEX1-PART5b: legacy field names + new sstats contract fields for graceful field migration
         // Cached fetch wrapper
         async function cachedFetch(url, cacheType = 'default') {
             const cacheKey = url;
@@ -1469,12 +1472,12 @@
 
         function formatDisplayDate(dateStr) {
             const date = new Date(dateStr);
-            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Moscow' });
         }
 
         function formatTime(dateStr) {
             const date = new Date(dateStr);
-            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
         }
 
         // Load all leagues from API (using local proxy with caching)
@@ -1562,6 +1565,12 @@
             document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
             document.querySelectorAll(`.sidebar-item[data-league="${leagueId}"]`).forEach(i => i.classList.add('active'));
             currentPage = 1;
+            // When league selected, switch to showing recent finished games
+            // (today's date rarely has matches for a specific league)
+            const periodSel = document.getElementById('periodSelect');
+            if (periodSel && periodSel.value !== 'ended' && periodSel.value !== 'range') {
+                periodSel.value = 'ended';
+            }
             loadGames();
         }
 
@@ -1637,66 +1646,85 @@
                 // Build API URL based on filters - using local proxy
                 let url = `${API_BASE}/games/list?`;
                 let params = [];
-
-                // Period/date filters
+                // Period/date filters → statusGroup + date (INDEX1-FIX1)
+                const todayStr = new Date().toISOString().split('T')[0];
+                const safeDate = dateStr || todayStr;
                 switch (periodSelect) {
                     case 'today':
-                        params.push('today=true');
+                        params.push(`date=${todayStr}`);
                         break;
                     case 'live':
-                        params.push('Live=true');
+                        // statusGroup=live works without date filter (backend allows it)
+                        params.push('statusGroup=live');
                         break;
-                    case 'upcoming':
-                        params.push('Upcoming=true');
+                    case 'upcoming': {
+                        // Show upcoming games from selected date (or today) for next 14 days
+                        params.push('statusGroup=upcoming');
+                        const upTo = new Date(safeDate);
+                        upTo.setDate(upTo.getDate() + 14);
+                        params.push(`dateFrom=${safeDate}`);
+                        params.push(`dateTo=${upTo.toISOString().split('T')[0]}`);
                         break;
-                    case 'ended':
-                        // Get ended games without date filter (use Year filter instead)
-                        params.push('Ended=true');
-                        params.push('Order=-1');
+                    }
+                    case 'ended': {
+                        // Show finished games from last 30 days (or season if provided)
+                        params.push('statusGroup=finished');
+                        const yearEnded = document.getElementById('yearSelect').value;
+                        if (yearEnded) {
+                            params.push(`season=${yearEnded}`);
+                            params.push(`dateFrom=${yearEnded}-01-01`);
+                            params.push(`dateTo=${yearEnded}-12-31`);
+                        } else {
+                            const from = new Date(todayStr);
+                            from.setDate(from.getDate() - 30);
+                            params.push(`dateFrom=${from.toISOString().split('T')[0]}`);
+                            params.push(`dateTo=${todayStr}`);
+                        }
                         break;
-                    case 'range':
+                    }
+                    case 'range': {
                         const dateFrom = document.getElementById('dateFromInput').value;
                         const dateTo = document.getElementById('dateToInput').value;
                         if (dateFrom && dateTo) {
-                            params.push(`From=${dateFrom}T00:00:00`);
-                            params.push(`To=${dateTo}T23:59:59`);
+                            params.push(`dateFrom=${dateFrom}`);
+                            params.push(`dateTo=${dateTo}`);
                         } else {
-                            params.push(`Date=${dateStr}`);
+                            params.push(`date=${safeDate}`);
                         }
                         break;
+                    }
                     default:
-                        params.push(`Date=${dateStr}`);
+                        params.push(`date=${safeDate}`);
                 }
 
-                // TimeZone
-                params.push('TimeZone=3');
-
-                // League filter
+                // League filter (leagueId is now sstats_id)
                 if (currentLeague) {
-                    params.push(`LeagueId=${currentLeague}`);
+                    params.push(`leagueId=${currentLeague}`);
                 }
 
-                // Team search filter
+                // Team search filter (now team name, not id)
                 if (currentFilters.team) {
-                    params.push(`Team=${currentFilters.team}`);
+                    params.push(`team=${encodeURIComponent(currentFilters.team)}`);
                 }
 
-                // Always include odds for all games
-                params.push('IncludeOdds=true');
-
-                // Year filter
+                // Year/season filter: if season selected but not 'ended' mode,
+                // override to show all finished games for that season
                 const yearFilter = document.getElementById('yearSelect').value;
-                if (yearFilter) {
-                    params.push(`Year=${yearFilter}`);
+                if (yearFilter && periodSelect !== 'ended') {
+                    // Clear date-based params, use season-based instead
+                    params.length = 0;
+                    params.push('statusGroup=finished');
+                    params.push(`season=${yearFilter}`);
+                    params.push(`dateFrom=${yearFilter}-01-01`);
+                    params.push(`dateTo=${yearFilter}-12-31`);
                 }
 
                 // Pagination
-                params.push(`Limit=${pageSize}`);
+                params.push(`limit=${pageSize}`);
                 const offset = (currentPage - 1) * pageSize;
                 if (offset > 0) {
-                    params.push(`Offset=${offset}`);
+                    params.push(`offset=${offset}`);
                 }
-
                 url += params.join('&');
 
                 console.log('Loading games from:', url);
@@ -1714,7 +1742,8 @@
                     updatePagination();
                     
                     // Load odds for games that don't have them (async, non-blocking)
-                    loadMissingOdds(games);
+                    // INDEX1-PART5a: odds endpoint not implemented in /api/db/* yet
+                    // loadMissingOdds(games);
                 } else {
                     throw new Error('No data received');
                 }
@@ -1795,7 +1824,7 @@
                 // Or use the Team ID if we can find it
                 
                 const dateStr = document.getElementById('dateInput').value;
-                const url = `${API_BASE}/games/list?Date=${dateStr}&TimeZone=3&Limit=1000`;
+                const url = `${API_BASE}/games/list?date=${dateStr}&limit=1000`;
                 
                 const result = await cachedFetch(url, 'games-list');
                 const games = result.data || result;
@@ -1804,8 +1833,8 @@
                     // Filter by team name on client side
                     const searchLower = searchInput.toLowerCase();
                     allGames = games.filter(game => {
-                        const homeTeam = (game.homeTeam?.name || game.HomeTeamName || '').toLowerCase();
-                        const awayTeam = (game.awayTeam?.name || game.AwayTeamName || '').toLowerCase();
+                        const homeTeam = (game.home_name || game.homeTeam?.name || game.HomeTeamName || '').toLowerCase();
+                        const awayTeam = (game.away_name || game.awayTeam?.name || game.AwayTeamName || '').toLowerCase();
                         return homeTeam.includes(searchLower) || awayTeam.includes(searchLower);
                     });
                     
@@ -1943,20 +1972,30 @@
 
         // Filter games by status
         function filterByStatus(games) {
+            // INDEX1-FIX2: support new string statuses + boolean flags
             if (currentStatus === 'all') return games;
-            
+
             return games.filter(game => {
-                const status = game.Status || game.status;
-                switch (currentStatus) {
-                    case 'live':
-                        return [3, 4, 5, 6, 7, 11, 18, 19].includes(status);
-                    case 'finished':
-                        return [8, 9, 10, 17, 18].includes(status);
-                    case 'upcoming':
-                        return [1, 2].includes(status);
-                    default:
-                        return true;
+                const s = game.status || game.Status;
+                if (currentStatus === 'live') {
+                    if (game.is_live === true) return true;
+                    if (s === 'live') return true;
+                    if (typeof s === 'number') return [3, 4, 5, 6, 7, 11, 18, 19].includes(s);
+                    return false;
                 }
+                if (currentStatus === 'finished') {
+                    if (game.is_finished === true) return true;
+                    if (s === 'finished') return true;
+                    if (typeof s === 'number') return [8, 9, 10, 17, 18].includes(s);
+                    return false;
+                }
+                if (currentStatus === 'upcoming') {
+                    if (s === 'scheduled' || s === 'upcoming') return true;
+                    if (game.is_live === false && game.is_finished === false) return true;
+                    if (typeof s === 'number') return [1, 2].includes(s);
+                    return false;
+                }
+                return true;
             });
         }
 
@@ -1989,8 +2028,8 @@
             // Group by league
             const leagueGroups = {};
             games.forEach(game => {
-                const leagueName = game.season?.league?.name || game.LeagueName || game.Season?.League?.Name || 'Unknown League';
-                const countryName = game.season?.league?.country?.name || game.CountryName || game.Season?.League?.Country?.Name || '';
+                const leagueName = game.league_name || game.season?.league?.name || game.LeagueName || game.Season?.League?.Name || 'Unknown League';
+                const countryName = game.league_country || game.season?.league?.country?.name || game.CountryName || game.Season?.League?.Country?.Name || '';
                 const key = `${countryName}|${leagueName}`;
                 
                 if (!leagueGroups[key]) {
@@ -2158,12 +2197,12 @@
         // Render single game row
         function renderGameRow(game, showLeague = false) {
             const gameId = game.id || game.Id;
-            const homeTeam = game.homeTeam?.name || game.HomeTeamName || game.HomeTeam?.Name || 'Home';
-            const awayTeam = game.awayTeam?.name || game.AwayTeamName || game.AwayTeam?.Name || 'Away';
-            const homeScore = game.homeFTResult ?? game.homeResult ?? game.ScoreHomeFT ?? '-';
-            const awayScore = game.awayFTResult ?? game.awayResult ?? game.ScoreAwayFT ?? '-';
-            const homeScoreHT = game.homeHTResult ?? game.ScoreHomeHT;
-            const awayScoreHT = game.awayHTResult ?? game.ScoreAwayHT;
+            const homeTeam = game.home_name || game.homeTeam?.name || game.HomeTeamName || game.HomeTeam?.Name || 'Home';
+            const awayTeam = game.away_name || game.awayTeam?.name || game.AwayTeamName || game.AwayTeam?.Name || 'Away';
+            const homeScore = game.home_score ?? game.homeFTResult ?? game.homeResult ?? game.ScoreHomeFT ?? '-';
+            const awayScore = game.away_score ?? game.awayFTResult ?? game.awayResult ?? game.ScoreAwayFT ?? '-';
+            const homeScoreHT = game.home_score_ht ?? game.homeHTResult ?? game.ScoreHomeHT;
+            const awayScoreHT = game.away_score_ht ?? game.awayHTResult ?? game.ScoreAwayHT;
             const date = game.date || game.Date;
             const status = game.status || game.Status;
             const odds = parseOdds(game.odds);
@@ -2175,7 +2214,7 @@
 
             const leagueInfo = showLeague ? `
                 <div style="font-size: 0.8em; color: var(--text-muted); margin-bottom: 5px;">
-                    ${game.season?.league?.country?.name || game.CountryName || ''} - ${game.season?.league?.name || game.LeagueName || ''}
+                    ${game.league_country || game.season?.league?.country?.name || game.CountryName || ''} - ${game.league_name || game.season?.league?.name || game.LeagueName || ''}
                 </div>
             ` : '';
 
@@ -2183,8 +2222,8 @@
                 <div class="game-row" onclick="openGameModal(${gameId})">
                     <div class="game-time">
                         <div class="time">${time}</div>
-                        ${statusInfo.isLive ? `<span class="game-status status-live">${statusInfo.text}</span>` : ''}
-                        ${status >= 8 && status <= 18 ? `<span class="game-status status-finished">FT</span>` : ''}
+                        ${(game.is_live === true || statusInfo.isLive) ? `<span class="game-status status-live">${typeof game.elapsed === 'number' && game.elapsed > 0 ? game.elapsed + "'" : statusInfo.text}</span>` : ''}
+                        ${(game.is_finished === true || (typeof status === 'number' && status >= 8 && status <= 18)) ? `<span class="game-status status-finished">FT</span>` : ''}
                     </div>
                     <div class="team home">
                         <span class="team-name">${homeTeam}</span>
@@ -2218,6 +2257,24 @@
 
         // Get status info
         function getStatusInfo(status) {
+            // INDEX1-FIX3: поддержка строковых статусов от /api/db
+            if (typeof status === 'string') {
+                const s = status.toLowerCase();
+                if (s === 'live' || s === '1h' || s === '2h' || s === 'ht' || s === 'et' || s === 'pen') {
+                    return { text: 'LIVE', isLive: true };
+                }
+                if (s === 'finished' || s === 'ft' || s === 'aet' || s === 'ap') {
+                    return { text: 'FT', isLive: false };
+                }
+                if (s === 'scheduled' || s === 'upcoming' || s === 'ns' || s === 'tbd') {
+                    return { text: 'NS', isLive: false };
+                }
+                if (s === 'cancelled' || s === 'canceled' || s === 'cancel' || s === 'postponed' || s === 'suspended' || s === 'interrupted' || s === 'abandoned') {
+                    return { text: s.slice(0,4).toUpperCase(), isLive: false };
+                }
+                // Неизвестная строка
+                return { text: 'NS', isLive: false };
+            }
             const statuses = {
                 1: { text: 'NS', isLive: false },
                 2: { text: 'NS', isLive: false },
@@ -2293,17 +2350,17 @@
             const game = allGames.find(g => (g.Id || g.id) == gameId);
             
             if (game) {
-                const homeTeam = game.HomeTeamName || game.HomeTeam?.Name || 'Home';
-                const awayTeam = game.AwayTeamName || game.AwayTeam?.Name || 'Away';
-                const homeScore = game.ScoreHomeFT ?? game.HomeResult ?? '-';
-                const awayScore = game.ScoreAwayFT ?? game.AwayResult ?? '-';
-                const homeScoreHT = game.ScoreHomeHT ?? game.HomeResultHT;
-                const awayScoreHT = game.ScoreAwayHT ?? game.AwayResultHT;
+                const homeTeam = game.home_name || game.HomeTeamName || game.HomeTeam?.Name || 'Home';
+                const awayTeam = game.away_name || game.AwayTeamName || game.AwayTeam?.Name || 'Away';
+                const homeScore = game.home_score ?? game.ScoreHomeFT ?? game.HomeResult ?? '-';
+                const awayScore = game.away_score ?? game.ScoreAwayFT ?? game.AwayResult ?? '-';
+                const homeScoreHT = game.home_score_ht ?? game.ScoreHomeHT ?? game.HomeResultHT;
+                const awayScoreHT = game.away_score_ht ?? game.ScoreAwayHT ?? game.AwayResultHT;
                 const status = getStatusInfo(game.Status || game.status);
                 
                 // Update modal header
                 document.getElementById('modalLeagueInfo').textContent = 
-                    `${game.CountryName || ''} - ${game.LeagueName || ''}`;
+                    `${game.league_country || game.CountryName || ''} - ${game.league_name || game.LeagueName || ''}`;
                 document.getElementById('modalHomeTeamName').textContent = homeTeam;
                 document.getElementById('modalAwayTeamName').textContent = awayTeam;
                 document.getElementById('modalScore').textContent = `${homeScore} - ${awayScore}`;
@@ -2344,7 +2401,8 @@
 
             try {
                 // Try to get text summary from API using local proxy
-                const summaryData = await cachedFetch(`${API_BASE}/games/text-summary?id=${gameId}&limit=10&sameLeague=true`, 'text-summary');
+                // INDEX1-PART5a: text-summary endpoint not implemented in /api/db/* yet
+                const summaryData = { data: null };  // await cachedFetch(...)
 
                 if (summaryData.data) {
                     renderSummaryData(summaryData.data, homeTeam, awayTeam);
@@ -2485,20 +2543,20 @@
             resultsContainer.innerHTML = '<div class="loading" style="padding:20px;"><i class="fas fa-spinner spinner"></i> Поиск команд...</div>';
 
             try {
-                const result = await cachedFetch(`${API_BASE}/teams/list?Name=${encodeURIComponent(searchInput)}&Limit=20`, 'teams');
+                const result = await cachedFetch(`${API_BASE}/teams/search?q=${encodeURIComponent(searchInput)}&limit=20`, 'teams');
                 const teams = result.data || result;
 
                 if (Array.isArray(teams) && teams.length > 0) {
                     resultsContainer.innerHTML = teams.map(team => `
                         <div class="sidebar-item" onclick="selectTeamForSearch(${team.id}, '${team.name?.replace(/'/g, "\\'")}')">
-                            <img src="${getCountryFlag(team.country?.name || '')}" alt="" style="width:20px;height:15px;">
+                            <img src="${getCountryFlag(team.country_name || '')}" alt="" style="width:20px;height:15px;">
                             <div style="flex:1;min-width:0;">
                                 <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">${team.name || 'Unknown'}</div>
-                                <div style="font-size:0.75em;color:var(--text-muted);">${team.country?.name || ''}</div>
+                                <div style="font-size:0.75em;color:var(--text-muted);">${team.country_name || ''}</div>
                             </div>
                         </div>
                     `).join('') + `<div style="padding:10px;font-size:0.8em;color:var(--text-muted);text-align:center;">
-                        <strong>API:</strong> /Teams/list?Name=${searchInput}
+                        <strong>API:</strong> /api/db/teams/search?q=${searchInput}
                     </div>`;
                 } else {
                     resultsContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-search"></i> Команды не найдены</div>';
@@ -2511,13 +2569,13 @@
 
         function selectTeamForSearch(teamId, teamName) {
             document.getElementById('teamSearchInput').value = teamName;
-            currentFilters.team = teamId;
+            currentFilters.team = teamName;  // sstats contract: backend ILIKE by name
             currentPage = 1;
             loadGames();
             updateActiveFiltersDisplay();
         }
 
-        // Players Search from /Players/find API
+        // Players Search from /api/db/players/search (sstats contract)
         function handlePlayersSearchInput(event) {
             if (event.key === 'Enter') {
                 searchPlayers();
@@ -2536,7 +2594,7 @@
             resultsContainer.innerHTML = '<div class="loading" style="padding:20px;"><i class="fas fa-spinner spinner"></i> Поиск игроков...</div>';
 
             try {
-                const result = await cachedFetch(`${API_BASE}/players/find?name=${encodeURIComponent(searchInput)}`, 'players');
+                const result = await cachedFetch(`${API_BASE}/players/search?q=${encodeURIComponent(searchInput)}&limit=20`, 'players');
                 const players = result.data || result;
 
                 if (Array.isArray(players) && players.length > 0) {
@@ -2548,7 +2606,7 @@
                             <div style="flex:1;min-width:0;">
                                 <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">${player.name || 'Unknown'}</div>
                                 <div style="font-size:0.75em;color:var(--text-muted);">
-                                    ${player.team?.name || player.currentTeam?.name || 'Нет команды'}
+                                    ${player.country_name || 'Без страны'}
                                     ${player.position ? ` • ${player.position}` : ''}
                                 </div>
                             </div>
@@ -2556,7 +2614,7 @@
                     `).join('') + `
                     ${players.length > 15 ? `<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.85em;">Показано 15 из ${players.length}</div>` : ''}
                     <div style="padding:10px;font-size:0.8em;color:var(--text-muted);text-align:center;">
-                        <strong>API:</strong> /Players/find?name=${searchInput}
+                        <strong>API:</strong> /api/db/players/search?q=${searchInput}
                     </div>`;
                 } else {
                     resultsContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-search"></i> Игроки не найдены</div>';

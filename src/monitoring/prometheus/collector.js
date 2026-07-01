@@ -10,10 +10,18 @@ const metrics = require('./metrics-registry');
 const logger = require('../logger');
 
 class PrometheusCollector {
-  constructor(db) {
+  constructor(db, wsServer = null) {
     this.db = db;
+    this.wsServer = wsServer;
     this.interval = null;
     this.collectionInterval = 30000; // 30 seconds
+  }
+
+  /**
+   * Inject WebSocket server reference (если он создаётся после collector)
+   */
+  setWsServer(wsServer) {
+    this.wsServer = wsServer;
   }
 
   /**
@@ -58,6 +66,8 @@ class PrometheusCollector {
         this.collectDatabaseMetrics(),
         this.collectBusinessMetrics(),
         this.collectCacheMetrics(),
+        this.collectWebSocketMetrics(),
+        this.collectAuthMetrics(),
       ]);
     } catch (error) {
       logger.error('Failed to collect Prometheus metrics', {
@@ -76,21 +86,17 @@ class PrometheusCollector {
       const poolStats = this.db.getPoolStats();
 
       if (poolStats) {
-        metrics.dbPoolConnections.set({ state: 'total' }, poolStats.total || 0);
-        metrics.dbPoolConnections.set({ state: 'idle' }, poolStats.idle || 0);
-        metrics.dbPoolConnections.set(
-          { state: 'active' },
-          (poolStats.total || 0) - (poolStats.idle || 0)
-        );
-        metrics.dbPoolConnections.set(
-          { state: 'waiting' },
-          poolStats.waiting || 0
-        );
+        // Поддерживаем оба формата ключей (total/totalCount, idle/idleCount, waiting/waitingCount)
+        const total   = poolStats.totalCount   ?? poolStats.total   ?? 0;
+        const idle    = poolStats.idleCount    ?? poolStats.idle    ?? 0;
+        const waiting = poolStats.waitingCount ?? poolStats.waiting ?? 0;
+        metrics.dbPoolConnections.set({ state: 'total' },   total);
+        metrics.dbPoolConnections.set({ state: 'idle' },    idle);
+        metrics.dbPoolConnections.set({ state: 'active' },  Math.max(0, total - idle));
+        metrics.dbPoolConnections.set({ state: 'waiting' }, waiting);
       }
     } catch (error) {
-      logger.error('Failed to collect database metrics', {
-        error: error.message,
-      });
+      logger.error({ err: error.message, stack: error.stack }, 'Failed to collect database metrics');
     }
   }
 
@@ -101,37 +107,33 @@ class PrometheusCollector {
     try {
       if (!this.db) return;
 
-      // Count games by status
-      const gamesQuery = `
-        SELECT 
-          status,
-          COUNT(*) as count
-        FROM games
-        GROUP BY status
-      `;
-      const gamesResult = await this.db.query(gamesQuery);
-      
-      gamesResult.rows.forEach((row) => {
-        metrics.gamesTotal.set({ status: row.status || 'unknown' }, row.count);
-      });
-
-      // Count total teams
-      const teamsQuery = 'SELECT COUNT(*) as count FROM teams';
-      const teamsResult = await this.db.query(teamsQuery);
-      if (teamsResult.rows[0]) {
-        metrics.teamsTotal.set(teamsResult.rows[0].count);
+      // Games by status (status is varchar)
+      const gamesResult = await this.db.query(
+        "SELECT status, COUNT(*)::bigint AS count FROM games GROUP BY status"
+      );
+      for (const row of gamesResult.rows) {
+        const status = String(row.status || 'unknown');
+        const count = parseInt(row.count, 10) || 0;
+        try {
+          metrics.gamesTotal.set({ status }, count);
+        } catch (e) {
+          logger.error({ err: e.message, status, count }, 'gamesTotal.set failed');
+        }
       }
 
-      // Count total players
-      const playersQuery = 'SELECT COUNT(*) as count FROM players';
-      const playersResult = await this.db.query(playersQuery);
-      if (playersResult.rows[0]) {
-        metrics.playersTotal.set(playersResult.rows[0].count);
-      }
+      // Total teams
+      const teamsResult = await this.db.query('SELECT COUNT(*)::bigint AS count FROM teams');
+      const teamsCount = parseInt(teamsResult.rows[0]?.count, 10) || 0;
+      metrics.teamsTotal.set(teamsCount);
+
+      // Total players
+      const playersResult = await this.db.query('SELECT COUNT(*)::bigint AS count FROM players');
+      const playersCount = parseInt(playersResult.rows[0]?.count, 10) || 0;
+      metrics.playersTotal.set(playersCount);
+
+      logger.info({ teamsCount, playersCount, gameStatuses: gamesResult.rows.length }, 'Business metrics collected');
     } catch (error) {
-      logger.error('Failed to collect business metrics', {
-        error: error.message,
-      });
+      logger.error({ err: error.message, stack: error.stack }, 'Failed to collect business metrics');
     }
   }
 
@@ -147,6 +149,58 @@ class PrometheusCollector {
       logger.error('Failed to collect cache metrics', {
         error: error.message,
       });
+    }
+  }
+
+  /**
+   * Collect WebSocket metrics (active connections, channels)
+   */
+  async collectWebSocketMetrics() {
+    try {
+      if (!this.wsServer) return;
+      const stats = this.wsServer.stats || {};
+      const channelsSize = this.wsServer.channels ? this.wsServer.channels.size : 0;
+      // Активные соединения (общая метка)
+      metrics.wsConnections.set({ channel: '_all' }, stats.connectionsActive || 0);
+      // Каналы (количество подписок-наборов)
+      if (metrics.wsConnections) {
+        metrics.wsConnections.set({ channel: '_channels' }, channelsSize);
+      }
+    } catch (error) {
+      logger.error('Failed to collect websocket metrics', { error: error.message });
+    }
+  }
+
+  /**
+   * Collect auth metrics (active sessions, recent logins)
+   */
+  async collectAuthMetrics() {
+    try {
+      if (!this.db) return;
+      const result = await this.db.query(`
+        SELECT COALESCE(role::text, 'unknown') AS role, COUNT(*)::bigint AS cnt
+        FROM users
+        WHERE last_login_at > NOW() - INTERVAL '24 hours'
+        GROUP BY role
+      `);
+      let total = 0;
+      for (const row of result.rows) {
+        const role = String(row.role || 'unknown');
+        const cnt = parseInt(row.cnt, 10) || 0;
+        total += cnt;
+        try {
+          metrics.authActiveSessions.set({ role }, cnt);
+        } catch (e) {
+          logger.error({ err: e.message, role, cnt }, 'authActiveSessions.set failed');
+        }
+      }
+      // Если ни одного активного — выставим 0 для роли 'none', чтобы метрика появилась
+      if (result.rows.length === 0) {
+        try { metrics.authActiveSessions.set({ role: 'none' }, 0); } catch (_) {}
+      }
+      logger.info({ totalActive: total, roles: result.rows.length }, 'Auth metrics collected');
+    } catch (error) {
+      logger.error({ err: error.message, stack: error.stack }, 'Failed to collect auth metrics');
     }
   }
 

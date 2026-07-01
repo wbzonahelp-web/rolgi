@@ -1,0 +1,200 @@
+{
+  "run_type": "baseline",
+  "strategy": {
+    "n_window": 20,
+    "venue_filter": true,
+    "league_filter": true,
+    "analyzers": [
+      {
+        "name": "poisson",
+        "weight": 0.6,
+        "enabled": true
+      },
+      {
+        "name": "markov_outcome",
+        "weight": 0.15,
+        "enabled": true
+      },
+      {
+        "name": "form_inertia",
+        "weight": 0.1,
+        "enabled": true
+      }
+    ]
+  },
+  "timestamp": "2026-06-30T04-46-09-082Z",
+  "results": [
+    {
+      "league_id": 39,
+      "league_name": "Premier League",
+      "season": 2023,
+      "accuracy": 56,
+      "hits": 56,
+      "misses": 44,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 68,
+          "actual": 68,
+          "hits": 38
+        },
+        "DRAW": {
+          "predicted": 6,
+          "actual": 6,
+          "hits": 1
+        },
+        "AWAY": {
+          "predicted": 26,
+          "actual": 26,
+          "hits": 17
+        }
+      },
+      "timestamp": "2026-06-30T04-46-09-082Z"
+    },
+    {
+      "league_id": 39,
+      "league_name": "Premier League",
+      "season": 2024,
+      "accuracy": 55,
+      "hits": 55,
+      "misses": 45,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 67,
+          "actual": 67,
+          "hits": 38
+        },
+        "DRAW": {
+          "predicted": 5,
+          "actual": 5,
+          "hits": 2
+        },
+        "AWAY": {
+          "predicted": 28,
+          "actual": 28,
+          "hits": 15
+        }
+      },
+      "timestamp": "2026-06-30T04-46-09-082Z"
+    },
+    {
+      "league_id": 140,
+      "league_name": "La Liga",
+      "season": 2023,
+      "accuracy": 45,
+      "hits": 45,
+      "misses": 55,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 73,
+          "actual": 73,
+          "hits": 37
+        },
+        "DRAW": {
+          "predicted": 10,
+          "actual": 10,
+          "hits": 3
+        },
+        "AWAY": {
+          "predicted": 17,
+          "actual": 17,
+          "hits": 5
+        }
+      },
+      "timestamp": "2026-06-30T04-46-09-082Z"
+    },
+    {
+      "league_id": 140,
+      "league_name": "La Liga",
+      "season": 2024,
+      "accuracy": 55,
+      "hits": 55,
+      "misses": 45,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 64,
+          "actual": 64,
+          "hits": 37
+        },
+        "DRAW": {
+          "predicted": 18,
+          "actual": 18,
+          "hits": 9
+        },
+        "AWAY": {
+          "predicted": 18,
+          "actual": 18,
+          "hits": 9
+        }
+      },
+      "timestamp": "2026-06-30T04-46-09-082Z"
+    },
+    {
+      "league_id": 135,
+      "league_name": "Serie A",
+      "season": 2023,
+      "accuracy": 53,
+      "hits": 53,
+      "misses": 47,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 61,
+          "actual": 61,
+          "hits": 31
+        },
+        "DRAW": {
+          "predicted": 12,
+          "actual": 12,
+          "hits": 6
+        },
+        "AWAY": {
+          "predicted": 27,
+          "actual": 27,
+          "hits": 16
+        }
+      },
+      "timestamp": "2026-06-30T04-46-09-082Z"
+    },
+    {
+      "league_id": 135,
+      "league_name": "Serie A",
+      "season": 2024,
+      "accuracy": 46,
+      "hits": 46,
+      "misses": 54,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 63,
+          "actual": 63,
+          "hits": 32
+        },
+        "DRAW": {
+          "predicted": 6,
+          "actual": 6,
+          "hits": 2
+        },
+        "AWAY": {
+          "predicted": 31,
+          "actual": 31,
+          "hits": 12
+        }
+      },
+      "timestamp": "2026-06-30T04-46-09-082Z"
+    },
+    {
+      "league_id": 78,
+      "league_name": "Bundesliga",
+      "season": 2023,
+      "accuracy": 53,
+      "hits": 53,
+      "misses": 47,
+      "by_outcome": {
+        "HOME": {
+          "predicted": 79,
+          "actual": 79,
+          "hits": 42
+        },
+        "DRAW": {
+          "predicted": 1,
+          "actual": 1,
+          "hits": 0
+        },

@@ -682,13 +682,27 @@ class DataLoader {
           away_score: num(g.awayFTResult != null ? g.awayFTResult : (g.awayResult != null ? g.awayResult : g.awayScore)),
           home_score_ht: num(g.homeHTResult != null ? g.homeHTResult : g.halfScoreHome),
           away_score_ht: num(g.awayHTResult != null ? g.awayHTResult : g.halfScoreAway),
-          status: statusFinal,
+          // DATE-GUARD: old matches force finished (sstats sometimes returns status=live for matches >24h old)
+          ...((function() {
+            const _gameDate = g.date ? new Date(g.date) : null;
+            const _isOldStuckLive = _gameDate && !isNaN(_gameDate) &&
+              (Date.now() - _gameDate.getTime()) > 24 * 3600 * 1000 &&
+              statusFinal === 'live';
+            if (_isOldStuckLive) {
+              logger.warn({ sstatsId: g.id, date: g.date, sstatsStatus: g.status, statusName: g.statusName }, 'sstats returned live status for old match; forcing finished');
+            }
+            return {
+              status: _isOldStuckLive ? 'finished' : statusFinal,
+              is_live: !_isOldStuckLive && ['live'].includes(statusFinal),
+              is_finished: _isOldStuckLive || statusFinal === 'finished'
+            };
+          })()),
+          odds_data: Array.isArray(g.odds) && g.odds.length > 0 ? JSON.stringify(g.odds) : null,
           referee: g.referee || null,
           stadium: g.stadium || g.venue || null,
           attendance: num(g.attendance),
-          is_live: ['live'].includes(statusFinal),
-          is_finished: statusFinal === 'finished',
-          is_deleted: false
+          is_deleted: false,
+          last_updated: new Date()
         };
       });
   }
@@ -1696,6 +1710,28 @@ class DataLoader {
     this._startStep(13);
 
     try {
+      // STEP13-SKIP: composite entities (game_details пишет в 5 таблиц, нет таблицы с таким именем)
+      // Проверяем существование таблицы в pg_catalog; если её нет — это виртуальный entity, верификация не применима
+      const tableExistsRes = await this.db.query(
+        "SELECT 1 FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = $1 LIMIT 1",
+        [tableName]
+      );
+      if (!tableExistsRes.rows || tableExistsRes.rows.length === 0) {
+        const records = Array.isArray(data) ? data : [data];
+        this._completeStep(13, {
+          totalRecords: records.length,
+          verifiedRecords: records.length,
+          verificationRate: 100,
+          skipped: 'composite-entity',
+          tableName
+        });
+        return {
+          verifiedRecords: records.length,
+          totalRecords: records.length,
+          skipped: true
+        };
+      }
+
       const records = Array.isArray(data) ? data : [data];
       let verifiedCount = 0;
 

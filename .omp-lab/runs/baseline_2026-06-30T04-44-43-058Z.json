@@ -1,0 +1,61 @@
+{
+  "run_type": "baseline",
+  "strategy": {
+    "n_window": 20,
+    "venue_filter": true,
+    "league_filter": true,
+    "analyzers": [
+      {
+        "name": "poisson",
+        "weight": 0.6,
+        "enabled": true
+      },
+      {
+        "name": "markov_outcome",
+        "weight": 0.15,
+        "enabled": true
+      },
+      {
+        "name": "form_inertia",
+        "weight": 0.1,
+        "enabled": true
+      }
+    ]
+  },
+  "timestamp": "2026-06-30T04-44-43-058Z",
+  "results": [],
+  "summary": {
+    "total_tests": 0,
+    "avg_accuracy": null,
+    "by_league": [
+      {
+        "league": "Premier League",
+        "avg_accuracy": 0
+      },
+      {
+        "league": "La Liga",
+        "avg_accuracy": 0
+      },
+      {
+        "league": "Serie A",
+        "avg_accuracy": 0
+      },
+      {
+        "league": "Bundesliga",
+        "avg_accuracy": 0
+      },
+      {
+        "league": "Ligue 1",
+        "avg_accuracy": 0
+      },
+      {
+        "league": "Eredivisie",
+        "avg_accuracy": 0
+      },
+      {
+        "league": "Liga Argentina",
+        "avg_accuracy": 0
+      }
+    ]
+  }
+}

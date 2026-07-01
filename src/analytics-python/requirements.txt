@@ -1,0 +1,9 @@
+# rolgi-analytics: pinned versions for reproducible builds
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+asyncpg==0.29.0
+redis==5.0.8
+hmmlearn==0.3.3
+numpy==1.26.4
+scipy==1.13.1
+scikit-learn==1.5.1

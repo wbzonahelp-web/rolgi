@@ -1,0 +1,50 @@
+{
+  "leagues": {
+    "39": {
+      "name": "Premier League",
+      "avg_home_goals": 1.55,
+      "avg_away_goals": 1.33,
+      "seasons": [2020, 2021, 2022, 2023, 2024, 2025]
+    },
+    "140": {
+      "name": "La Liga",
+      "avg_home_goals": 1.45,
+      "avg_away_goals": 1.12,
+      "seasons": [2020, 2021, 2022, 2023, 2024, 2025]
+    },
+    "135": {
+      "name": "Serie A",
+      "avg_home_goals": 1.43,
+      "avg_away_goals": 1.25,
+      "seasons": [2020, 2021, 2022, 2023, 2024, 2025]
+    },
+    "78": {
+      "name": "Bundesliga",
+      "avg_home_goals": 1.75,
+      "avg_away_goals": 1.40,
+      "seasons": [2020, 2021, 2022, 2023, 2024, 2025]
+    },
+    "61": {
+      "name": "Ligue 1",
+      "avg_home_goals": 1.52,
+      "avg_away_goals": 1.29,
+      "seasons": [2020, 2021, 2022, 2023, 2024, 2025]
+    },
+    "88": {
+      "name": "Eredivisie",
+      "avg_home_goals": 1.70,
+      "avg_away_goals": 1.36,
+      "seasons": [2020, 2021, 2022, 2023, 2024, 2025]
+    },
+    "128": {
+      "name": "Liga Profesional Argentina",
+      "avg_home_goals": 1.23,
+      "avg_away_goals": 0.94,
+      "seasons": [2020, 2021, 2022, 2023, 2024, 2025]
+    }
+  },
+  "metadata": {
+    "created": "2026-06-30",
+    "note": "Averaged from seasons 2020-2025, calculated from actual match data"
+  }
+}

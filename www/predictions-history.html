@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История прогнозов — Rolgi SStats</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1a5f7a;
+            --primary-dark: #134b5f;
+            --secondary-color: #57c5b6;
+            --accent-color: #159895;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --text-muted: #6c757d;
+            --border-color: #e0e0e0;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+
+        /* Header (копия из index.html для консистентности) */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 15px 20px;
+            position: sticky; top: 0; z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.5em; font-weight: bold; text-decoration: none; color: white; }
+        .logo i { color: var(--secondary-color); }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; transition: background 0.2s; opacity: 0.85; }
+        .nav-links a:hover, .nav-links a.active { background: rgba(255,255,255,0.15); opacity: 1; }
+
+        /* Основной контент */
+        .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+        h1 { font-size: 1.6em; margin-bottom: 16px; color: var(--primary-dark); display: flex; align-items: center; gap: 10px; }
+        h1 .subtitle { font-weight: normal; font-size: 0.6em; color: var(--text-muted); }
+
+        /* Фильтры */
+        .filters {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+        }
+        .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85em; color: var(--text-muted); }
+        .filters select { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95em; background: white; }
+
+        /* Stats-блок */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; margin-bottom: 18px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .stat-card .label { font-size: 0.82em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 1.7em; font-weight: bold; color: var(--primary-dark); margin-top: 4px; }
+        .stat-card .sub   { font-size: 0.78em; color: var(--text-muted); margin-top: 3px; }
+        .stat-card.good .value { color: var(--success-color); }
+        .stat-card.bad  .value { color: var(--danger-color); }
+        .stat-card .baseline { font-size: 0.7em; color: var(--text-muted); margin-top: 3px; }
+
+        /* By-outcome панель */
+        .by-outcome {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 18px;
+        }
+        .by-outcome h3 { font-size: 1em; color: var(--text-muted); margin-bottom: 10px; }
+        .outcomes-row { display: flex; gap: 14px; flex-wrap: wrap; }
+        .outcome-cell {
+            flex: 1; min-width: 180px;
+            border-left: 4px solid var(--border-color);
+            padding: 8px 12px;
+            background: var(--bg-color);
+            border-radius: 0 6px 6px 0;
+        }
+        .outcome-cell.home { border-left-color: #3498db; }
+        .outcome-cell.draw { border-left-color: #95a5a6; }
+        .outcome-cell.away { border-left-color: #e74c3c; }
+        .outcome-cell .o-name { font-weight: 600; font-size: 0.9em; }
+        .outcome-cell .o-stats { font-size: 0.85em; color: var(--text-muted); margin-top: 4px; }
+
+        /* Таблица */
+        .predictions-table {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.92em; }
+        thead th {
+            background: var(--bg-color);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 0.82em;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tbody tr:hover { background: rgba(0,0,0,0.02); }
+        tbody tr:last-child td { border-bottom: none; }
+        td.date { white-space: nowrap; font-size: 0.85em; color: var(--text-muted); }
+        td.teams { font-weight: 500; }
+        td.teams a { color: var(--primary-color); text-decoration: none; }
+        td.teams a:hover { text-decoration: underline; }
+        td.league { font-size: 0.85em; color: var(--text-muted); }
+
+        /* Пилюли исходов */
+        .pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.82em;
+            font-weight: 600;
+        }
+        .pill-home { background: #d6eaf8; color: #1f618d; }
+        .pill-draw { background: #e5e7e9; color: #555; }
+        .pill-away { background: #f5b7b1; color: #922b21; }
+
+        .pill-over { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .pill-under { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
+        /* Результат: попали или нет */
+        .verdict { font-weight: 600; font-size: 0.9em; }
+        .verdict.hit  { color: var(--success-color); }
+        .verdict.miss { color: var(--danger-color); }
+        .verdict.pending { color: var(--text-muted); font-style: italic; }
+
+        /* Confidence-bar */
+        .conf-bar {
+            display: inline-block;
+            width: 60px;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .conf-bar > div {
+            height: 100%;
+            background: linear-gradient(90deg, var(--info-color), var(--success-color));
+        }
+
+        /* Пагинация */
+        .pagination {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            margin-top: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .pagination button {
+            padding: 6px 14px;
+            border: 1px solid var(--border-color);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.92em;
+        }
+        .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pagination button:hover:not(:disabled) { background: var(--bg-color); }
+        .pagination .info { font-size: 0.88em; color: var(--text-muted); }
+
+        /* Empty / loading */
+        .empty, .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 0.95em;
+        }
+        .empty i, .loading i { font-size: 2em; opacity: 0.5; display: block; margin-bottom: 10px; }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            table { font-size: 0.85em; }
+            td.league { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <i class="fas fa-futbol"></i>
+                <span>Rolgi SStats</span>
+            </a>
+            <nav class="nav-links">
+                <a href="/"><i class="fas fa-home"></i> Главная</a>
+                <a href="/leagues.html"><i class="fas fa-trophy"></i> Лиги</a>
+                <a href="/teams.html"><i class="fas fa-users"></i> Команды</a>
+                <a href="/players.html"><i class="fas fa-user"></i> Игроки</a>
+                <a href="/scout.html"><i class="fas fa-binoculars"></i> Скаут</a>
+                <a href="/strategies.html"><i class="fas fa-chess"></i> Стратегии</a>
+                <a href="/predictions-history.html" class="active"><i class="fas fa-chart-line"></i> Прогнозы</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>
+            <i class="fas fa-chart-line"></i>
+            История прогнозов модели
+            <span class="subtitle">Точность, Brier-score, верификация по факту</span>
+        </h1>
+
+        <div class="filters">
+            <label>Период
+                <select id="fRange">
+                    <option value="7d">7 дней</option>
+                    <option value="30d" selected>30 дней</option>
+                    <option value="90d">90 дней</option>
+                    <option value="all">Всё время</option>
+                </select>
+            </label>
+            <label>Статус
+                <select id="fStatus">
+                    <option value="all">Все</option>
+                    <option value="verified">Только сверённые</option>
+                    <option value="pending">Только ожидающие</option>
+                </select>
+            </label>
+            <label>Прогноз
+                <select id="fOutcome">
+                    <option value="">Любой</option>
+                    <option value="HOME">HOME</option>
+                    <option value="DRAW">DRAW</option>
+                    <option value="AWAY">AWAY</option>
+                </select>
+            </label>
+            <label>Результат
+                <select id="fHit">
+                    <option value="">Любой</option>
+                    <option value="true">Только попадания</option>
+                    <option value="false">Только промахи</option>
+                </select>
+            </label>
+            <label>Стратегия
+                <select id="fStrategy">
+                    <option value="">Все стратегии</option>
+                    <!-- Загружается динамически -->
+                </select>
+            </label>
+        </div>
+
+        <div class="actions" style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+            <button id="btnGenerate" class="btn btn-primary" style="padding: 8px 18px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 0.95em; cursor: pointer; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fas fa-magic"></i> Сгенерировать прогнозы
+            </button>
+            <span class="text-muted" style="font-size: 0.85em; color: var(--text-muted);">Для выбранной стратегии на 48 часов</span>
+        </div>
+
+
+        <div id="statsBlock" class="stats-grid">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка статистики…</div>
+        </div>
+
+        <div id="byOutcomeBlock"></div>
+
+        <div class="predictions-table">
+            <div id="tableBody">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка прогнозов…</div>
+            </div>
+        </div>
+
+        <div class="pagination">
+            <button id="prevBtn" disabled><i class="fas fa-chevron-left"></i> Назад</button>
+            <span class="info" id="pageInfo">—</span>
+            <button id="nextBtn" disabled>Вперёд <i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+
+    <script src="/assets/app.js"></script>
+    <script>
+    (function () {
+        const esc = Rolgi.fmt.escapeHtml;
+        const PAGE_SIZE = 50;
+        const state = {
+            range: '30d', status: 'all', outcome: '', hit: '',
+            strategy: '',
+            offset: 0, total: 0,
+        };
+
+        function fmtDate(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+        function fmtPct(x, digits) {
+            if (x == null || !Number.isFinite(x)) return '—';
+            return (x * 100).toFixed(digits != null ? digits : 1) + '%';
+        }
+        function fmtNum(x, digits) {
+            if (x == null || !Number.isFinite(Number(x))) return '—';
+            return Number(x).toFixed(digits != null ? digits : 3);
+        }
+        function pill(outcome) {
+            if (outcome === 'HOME') return '<span class="pill pill-home">П1</span>';
+            if (outcome === 'AWAY') return '<span class="pill pill-away">П2</span>';
+            if (outcome === 'DRAW') return '<span class="pill pill-draw">X</span>';
+            return '<span class="pill pill-draw">' + esc(outcome || '?') + '</span>';
+        }
+        function confBar(c) {
+            const pct = Math.max(0, Math.min(100, Math.round((c || 0) * 100)));
+            return '<span class="conf-bar"><div style="width:' + pct + '%"></div></span>' + fmtPct(c, 1);
+        }
+
+        async function loadStats() {
+            const params = {
+                range: state.range,
+                only_verified: state.status === 'verified' ? 'true' : 'false',
+            };
+            if (state.strategy) params.strategyId = state.strategy;
+            const r = await Rolgi.api.get('/api/db/predictions/stats', params, { noCache: true });
+            if (!r || !r.success) { document.getElementById('statsBlock').innerHTML = '<div class="empty">Ошибка загрузки статистики</div>'; return; }
+            const d = r.data;
+            const accClass = d.accuracy != null && d.accuracy > 0.46 ? 'good' : (d.accuracy != null && d.accuracy < 0.40 ? 'bad' : '');
+            const brierClass = d.brier_score != null && d.brier_score < 0.6 ? 'good' : (d.brier_score != null && d.brier_score > 0.7 ? 'bad' : '');
+
+            document.getElementById('statsBlock').innerHTML = [
+                '<div class="stat-card">',
+                '  <div class="label">Всего прогнозов</div>',
+                '  <div class="value">' + d.total + '</div>',
+                '  <div class="sub">сверено: ' + d.verified + ' · ожидает: ' + d.pending + '</div>',
+                '</div>',
+                '<div class="stat-card ' + accClass + '">',
+                '  <div class="label">Accuracy</div>',
+                '  <div class="value">' + fmtPct(d.accuracy, 1) + '</div>',
+                '  <div class="baseline">baseline: ' + fmtPct(d.baselines.always_home, 0) + ' (always HOME)</div>',
+                '</div>',
+                '<div class="stat-card">',
+                '  <div class="label">Попаданий</div>',
+                '  <div class="value">' + d.hits + '</div>',
+                '  <div class="sub">из ' + d.verified + ' сверённых</div>',
+                '</div>',
+                '<div class="stat-card ' + brierClass + '">',
+                '  <div class="label">Brier score</div>',
+                '  <div class="value">' + fmtNum(d.brier_score, 3) + '</div>',
+                '  <div class="baseline">baseline: ' + fmtNum(d.baselines.brier_random, 3) + ' (random)</div>',
+                '</div>',
+                '<div class="stat-card">',
+                '  <div class="label">Avg confidence</div>',
+                '  <div class="value">' + fmtPct(d.avg_confidence, 1) + '</div>',
+                '  <div class="sub">средняя уверенность модели</div>',
+                '</div>',
+            ].join('');
+
+            // by_outcome
+            const bo = d.by_outcome || {};
+            const cell = (key, label, cls) => {
+                const c = bo[key] || { predicted: 0, hits: 0, actual: 0 };
+                const acc = c.predicted > 0 ? (c.hits / c.predicted) : null;
+                return [
+                    '<div class="outcome-cell ' + cls + '">',
+                    '  <div class="o-name">' + label + '</div>',
+                    '  <div class="o-stats">Прогнозов: ' + c.predicted + ' · попаданий: ' + c.hits + ' (' + fmtPct(acc, 0) + ')</div>',
+                    '  <div class="o-stats">Реальных исходов: ' + c.actual + '</div>',
+                    '</div>',
+                ].join('');
+            };
+            document.getElementById('byOutcomeBlock').innerHTML = [
+                '<div class="by-outcome">',
+                '  <h3><i class="fas fa-chart-pie"></i> Разбивка по исходам</h3>',
+                '  <div class="outcomes-row">',
+                    cell('HOME', '🏠 Победа дома (П1)', 'home'),
+                    cell('DRAW', '🤝 Ничья (X)', 'draw'),
+                    cell('AWAY', '✈️ Победа гостей (П2)', 'away'),
+                '  </div>',
+                '</div>',
+            ].join('');
+        }
+
+        async function loadList() {
+            const params = {
+                range: state.range,
+                status: state.status,
+                limit: PAGE_SIZE,
+                offset: state.offset,
+            };
+            if (state.outcome) params.outcome = state.outcome;
+            if (state.hit) params.hit = state.hit;
+            if (state.strategy) params.strategyId = state.strategy;
+
+            const r = await Rolgi.api.get('/api/db/predictions/list', params, { noCache: true });
+            if (!r || !r.success) {
+                document.getElementById('tableBody').innerHTML = '<div class="empty">Ошибка загрузки</div>';
+                return;
+            }
+            const d = r.data;
+            state.total = d.total;
+
+            if (!d.items.length) {
+                document.getElementById('tableBody').innerHTML = '<div class="empty"><i class="fas fa-inbox"></i>Нет прогнозов под указанные фильтры</div>';
+                renderPagination();
+                return;
+            }
+
+            const rows = d.items.map(it => {
+                const g = it.game;
+                const a = it.actual;
+                let verdict = '<span class="verdict pending">ожидает</span>';
+                if (a) {
+                    if (a.is_hit === true)  verdict = '<span class="verdict hit"><i class="fas fa-check"></i> попал</span>';
+                    else if (a.is_hit === false) verdict = '<span class="verdict miss"><i class="fas fa-times"></i> промах</span>';
+                }
+                const score = a ? (a.home_score + ':' + a.away_score + ' → ' + pill(a.outcome)) : '—';
+
+                // Over/Under колонки
+                let totalCell = '<span class="text-muted">—</span>';
+                if (it.predicted_total) {
+                    const cls = it.predicted_total === 'OVER' ? 'pill-over' : 'pill-under';
+                    totalCell = '<span class="pill ' + cls + '">' + esc(it.predicted_total) + ' ' + (it.total_line || '') + '</span>';
+                }
+                const totalProbs = it.total_over_prob != null
+                    ? 'O: ' + fmtPct(it.total_over_prob, 1) + ' / U: ' + fmtPct(it.total_under_prob, 1)
+                    : '<span class="text-muted">—</span>';
+
+                return [
+                    '<tr>',
+                    '  <td class="date">' + fmtDate(g.date) + '</td>',
+                    '  <td class="league">' + esc(g.league.name || '—') + '</td>',
+                    '  <td class="teams">',
+                    '    <a href="/game.html?id=' + g.id + '">' + esc(g.home.name) + ' vs ' + esc(g.away.name) + '</a>',
+                    '  </td>',
+                    '  <td>' + pill(it.predicted_outcome) + '</td>',
+                    '  <td>' + confBar(it.confidence) + '</td>',
+                    '  <td>' + totalCell + '</td>',
+                    '  <td style="font-size:0.85em">' + totalProbs + '</td>',
+                    '  <td>' + score + '</td>',
+                    '  <td>' + verdict + '</td>',
+                    '  <td>' + (a && a.brier_component != null ? fmtNum(a.brier_component, 3) : '—') + '</td>',
+                    '</tr>',
+                ].join('');
+            }).join('');
+
+            document.getElementById('tableBody').innerHTML = [
+                '<table>',
+                '<thead><tr>',
+                '  <th>Дата матча</th>',
+                '  <th>Лига</th>',
+                '  <th>Матч</th>',
+                '  <th>Прогноз</th>',
+                '  <th>Уверенность</th>',
+                '  <th>Тотал</th>',
+                '  <th>Вероятности O/U</th>',
+                '  <th>Факт</th>',
+                '  <th>Результат</th>',
+                '  <th>Brier</th>',
+                '</tr></thead>',
+                '<tbody>', rows, '</tbody>',
+                '</table>',
+            ].join('');
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const from = state.total === 0 ? 0 : state.offset + 1;
+            const to = Math.min(state.offset + PAGE_SIZE, state.total);
+            document.getElementById('pageInfo').textContent = state.total === 0
+                ? '0 записей'
+                : (from + '–' + to + ' из ' + state.total);
+            document.getElementById('prevBtn').disabled = state.offset <= 0;
+            document.getElementById('nextBtn').disabled = state.offset + PAGE_SIZE >= state.total;
+        }
+
+        function reloadAll() {
+            state.offset = 0;
+            loadStats();
+            loadList();
+        }
+
+        // ─── Стратегии ───
+        async function loadStrategies() {
+            try {
+                const res = await fetch('/api/strategies');
+                const data = await res.json();
+                const strategies = data.data || data;
+                if (!Array.isArray(strategies)) return;
+
+                const sel = document.getElementById('fStrategy');
+                strategies.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    const acc = s.accuracy != null ? ' (' + fmtPct(s.accuracy, 1) + ')' : '';
+                    opt.textContent = s.name + acc;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Load strategies failed:', e);
+            }
+        }
+
+        document.getElementById('fStrategy').addEventListener('change', e => {
+            state.strategy = e.target.value;
+            reloadAll();
+        });
+
+        document.getElementById('btnGenerate').addEventListener('click', async () => {
+            if (!state.strategy) {
+                alert('Выберите стратегию');
+                return;
+            }
+
+            const btn = document.getElementById('btnGenerate');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Генерация...';
+
+            try {
+                const res = await fetch('/api/strategies/' + state.strategy + '/generate-predictions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hours: 48, limit: 50 })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    const d = result.data;
+                    alert('Готово! Создано: ' + d.created + ', уже существует: ' + d.exists + ', ошибок: ' + d.failed);
+                    reloadAll();
+                } else {
+                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка запроса: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> Сгенерировать прогнозы';
+            }
+        });
+
+        document.getElementById('fRange').addEventListener('change', e => { state.range = e.target.value; reloadAll(); });
+        document.getElementById('fStatus').addEventListener('change', e => { state.status = e.target.value; reloadAll(); });
+        document.getElementById('fOutcome').addEventListener('change', e => { state.outcome = e.target.value; reloadAll(); });
+        document.getElementById('fHit').addEventListener('change', e => { state.hit = e.target.value; reloadAll(); });
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            state.offset = Math.max(0, state.offset - PAGE_SIZE);
+            loadList();
+        });
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            state.offset += PAGE_SIZE;
+            loadList();
+        });
+
+        reloadAll();
+        loadStrategies();
+    </script>
+</body>
+</html>

@@ -84,6 +84,45 @@ services:
       timeout: 5s
       retries: 5
 
+  # Rolgi Analytics (Python: HMM and future ML analyzers)
+  analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile.analytics
+    container_name: rolgi-analytics
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: rolgi_v6
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_POOL_MIN: "1"
+      DB_POOL_MAX: "8"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ANALYZER_CACHE_TTL_SEC: ${ANALYZER_CACHE_TTL_SEC:-3600}
+    # Порт 8000 — только внутри Docker network; снаружи доступа нет.
+    # Если нужно открыть для отладки — раскомментировать ports ниже.
+    # ports:
+    #   - "${ANALYTICS_PORT:-8000}:8000"
+    volumes:
+      - ./src/analytics-python:/app/analytics_python:ro
+    networks:
+      - rolgi-network
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # Nginx Reverse Proxy (optional)
   nginx:
     image: nginx:alpine

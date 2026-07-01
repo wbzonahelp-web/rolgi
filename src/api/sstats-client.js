@@ -806,6 +806,8 @@ class SStatsClient {
   }
 
   /**
+   * Additional endpoints
+   */
 
   // ============================================================
   // ADDITIONAL ENDPOINTS  
@@ -858,6 +860,8 @@ class SStatsClient {
   async queryGamesAdvanced(queryData) {
     return this.post('/Games/query', queryData);
   }
+
+  /**
    * Очистить кэш
    */
   clearCache() {

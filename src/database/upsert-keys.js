@@ -73,7 +73,7 @@ const UPSERT_KEYS_MANIFEST = {
       'home_team_id', 'away_team_id', 'home_score', 'away_score',
       'home_score_ht', 'away_score_ht', 'status', 'referee', 'stadium',
       'attendance', 'is_live', 'is_finished', 'is_deleted', 'deleted_at',
-      'last_updated'
+      'last_updated', 'odds_data'
     ],
     idColumn: 'id',
     partitioned: true
