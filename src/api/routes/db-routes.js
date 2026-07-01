@@ -2296,7 +2296,8 @@ async function dbRoutes(fastify) {
 
                 const countParams = params.slice(0, params.length - 2);
                 const countRes = await db.query(`
-                    SELECT count(*) AS total FROM strategy_predictions sp ${whereSql}
+                    SELECT count(*) AS total FROM strategy_predictions sp
+                    LEFT JOIN games g ON g.id = sp.game_id ${whereSql}
                 `, countParams);
 
                 return {
