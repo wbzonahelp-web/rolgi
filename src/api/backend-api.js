@@ -48,6 +48,7 @@ const cachedProxyRoutes = require('./routes/cached-proxy');
 const dbRoutes          = require('./routes/db-routes');
 const strategiesRoutes = require('./routes/strategies-routes');
 const scoutRoutes = require('./routes/scout-routes');
+const modelPredictionsRoutes = require('./routes/model-predictions-routes');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
 const { setupPrometheusMiddleware } = require('../monitoring/prometheus/middleware');
@@ -291,6 +292,7 @@ class BackendApi {
     this.app.register(cachedProxyRoutes, { prefix: '/api/cached' });
     this.app.register(dbRoutes,          { prefix: '/api/db' });
     this.app.register(strategiesRoutes, { prefix: '/api/strategies' });
+    this.app.register(modelPredictionsRoutes, { prefix: '/api/model-predictions' });
 
     // Scout routes (uses full /api/scout/* paths internally)
     this.app.register(scoutRoutes);
