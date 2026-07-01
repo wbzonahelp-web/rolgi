@@ -402,6 +402,9 @@ function analyze(homeGames, awayGames, options = {}) {
     const dataConfidence = Math.min(1, Math.min(homeGames.length, awayGames.length) / 20);
     const combinedConfidence = dataConfidence * 0.5 + confidenceLevel * 0.5;
 
+    // 9. Calculate Over/Under totals
+    const totals = calculateTotals(scoreMatrix, [1.5, 2.5, 3.5, 4.5]);
+
     return {
         value: Math.round(confidence * 10000) / 10000,
         confidence: Math.round(combinedConfidence * 10000) / 10000,
@@ -432,6 +435,7 @@ function analyze(homeGames, awayGames, options = {}) {
                 home: homeGames.length,
                 away: awayGames.length,
             },
+            totals,
         },
     };
 }
@@ -478,11 +482,54 @@ function analyzeTeam(games) {
     };
 }
 
+/**
+ * Calculates Over/Under probabilities for given total goals lines
+ * based on the score matrix from the Valenzetti model.
+ *
+ * @param {number[][]} scoreMatrix - [h][a] probability matrix
+ * @param {number[]} [lines=[1.5, 2.5, 3.5, 4.5]] - total goals lines to evaluate
+ * @returns {object} totals by line: { line: { over, under, predicted, confidence } }
+ */
+function calculateTotals(scoreMatrix, lines = [1.5, 2.5, 3.5, 4.5]) {
+    const totals = {};
+
+    for (const line of lines) {
+        let overProb = 0;
+        let underProb = 0;
+
+        for (let h = 0; h < scoreMatrix.length; h++) {
+            for (let a = 0; a < scoreMatrix[h].length; a++) {
+                const prob = scoreMatrix[h][a];
+                const total = h + a;
+
+                if (total > line) {
+                    overProb += prob;
+                } else if (total < line) {
+                    underProb += prob;
+                }
+                // total === line: push (not counted in OVER/UNDER)
+            }
+        }
+
+        const predicted = overProb > underProb ? 'OVER' : 'UNDER';
+        const confidence = Math.max(overProb, underProb);
+
+        totals[line] = {
+            over: Math.round(overProb * 10000) / 10000,
+            under: Math.round(underProb * 10000) / 10000,
+            predicted,
+            confidence: Math.round(confidence * 10000) / 10000,
+        };
+    }
+
+    return totals;
+}
 module.exports = {
     name: 'valenzetti',
     minGames: MIN_GAMES,
     analyze,
     analyzeTeam,
+    calculateTotals,
     // Exposed for testing
     getSixFactors,
     getTeamFactorBaseStrength,
