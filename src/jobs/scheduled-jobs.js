@@ -398,6 +398,26 @@ class ScheduledJobsManager {
       }
     );
 
+    // Job: Генерация прогнозов моделей каждые 2 часа
+    this.registerJob(
+      'generate_model_predictions',
+      '0 */2 * * *', // Каждые 2 часа
+      async () => {
+        const { generateModelPredictionsJob } = require('./generate-model-predictions');
+        await generateModelPredictionsJob(this.db);
+      }
+    );
+
+    // Job: Верификация прогнозов моделей каждый час
+    this.registerJob(
+      'verify_model_predictions',
+      '30 * * * *', // Каждый час в :30 UTC
+      async () => {
+        const { verifyModelPredictionsJob } = require('./generate-model-predictions');
+        await verifyModelPredictionsJob(this.db);
+      }
+    );
+
     // Job 8: Очистка старых логов каждое воскресенье в 02:00
     this.registerJob(
       'cleanup_old_logs',
