@@ -9,6 +9,8 @@
 
 const { authenticate } = require('../../auth/fastify-auth');
 const { getLeagueParams } = require('../../analytics/utils/league-params');
+const { computePrediction } = require('../../analytics/compute-prediction.js');
+
 
 async function strategiesRoutes(fastify) {
     const db = fastify.db || require('../../database/db-pool').getDatabase();
@@ -466,6 +468,139 @@ async function strategiesRoutes(fastify) {
             };
         } catch (err) {
             request.log.error({ err }, 'POST /strategies/games/:gameId/predict failed');
+            return reply.code(500).send({ success: false, error: err.message });
+        }
+    });
+
+    // ─── Генерация прогнозов для выбранных стратегий ───
+
+    // POST /api/strategies/:strategyId/generate-predictions
+    // Генерирует прогнозы для всех предстоящих матчей по стратегии
+    // Body: { hours?: 48, limit?: 50 }
+    fastify.post('/:strategyId/generate-predictions', async (request, reply) => {
+        try {
+            const { strategyId } = request.params;
+            const { hours = 48, limit = 50 } = request.body || {};
+
+            // Получить стратегию с config
+            const stratRes = await db.query(
+                'SELECT id, config FROM user_strategies WHERE id = $1',
+                [strategyId]
+            );
+
+            if (!stratRes.rows[0]) {
+                return reply.code(404).send({ success: false, error: 'Strategy not found' });
+            }
+
+            const config = stratRes.rows[0].config;
+
+            // Найти предстоящие матчи
+            const upcomingGames = await db.query(`
+                SELECT g.id, g.sstats_id, g.league_id, g.date,
+                       g.home_team_id, g.away_team_id
+                FROM games g
+                WHERE g.status = 'scheduled'
+                  AND g.is_deleted = false
+                  AND g.date >= NOW()
+                  AND g.date <= NOW() + $1::INTERVAL
+                  AND g.home_team_id IS NOT NULL
+                  AND g.away_team_id IS NOT NULL
+                ORDER BY g.date ASC
+                LIMIT $2
+            `, [`${hours} hours`, Math.min(limit, 200)]);
+
+            const results = [];
+
+            for (const game of upcomingGames.rows) {
+                // Проверить, есть ли уже прогноз для этой стратегии и матча
+                const existing = await db.query(
+                    'SELECT id FROM strategy_predictions WHERE strategy_id = $1 AND game_id = $2',
+                    [strategyId, game.id]
+                );
+
+                if (existing.rows.length > 0) {
+                    results.push({ gameId: game.sstats_id, status: 'exists', id: existing.rows[0].id });
+                    continue;
+                }
+
+                // Сгенерировать прогноз через computePrediction
+                const prediction = await computePrediction({
+                    db,
+                    gameId: game.id,
+                    n: config.n_window || 20,
+                    leagueFilterFlag: config.league_filter !== false,
+                    venueFilter: config.venue_filter !== false
+                });
+
+                if (prediction.error || !prediction.data) {
+                    results.push({ gameId: game.sstats_id, status: 'failed', reason: prediction.error || 'no_data' });
+                    continue;
+                }
+
+                const d = prediction.data;
+                const f = d.integrated_forecast;
+
+                if (!f || !f.predicted_outcome) {
+                    results.push({ gameId: game.sstats_id, status: 'no_forecast' });
+                    continue;
+                }
+
+                // Получить totals из Valenzetti (из computePrediction)
+                const valP = d.home_analyzers?.valenzetti?.details;
+                const totals = valP?.totals || {};
+                const mainLine = totals['2.5'] || {};
+
+                // Сохранить в strategy_predictions
+                const inserted = await db.query(`
+                    INSERT INTO strategy_predictions (
+                        strategy_id, game_id, predicted_outcome, confidence,
+                        analyzer_snapshot,
+                        predicted_total, total_line, total_confidence,
+                        total_over_prob, total_under_prob
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    ON CONFLICT (strategy_id, game_id) DO NOTHING
+                    RETURNING id
+                `, [
+                    strategyId,
+                    game.id,
+                    f.predicted_outcome,
+                    f.confidence,
+                    JSON.stringify({
+                        home: d.home_analyzers ? Object.fromEntries(
+                            Object.entries(d.home_analyzers).map(([k, v]) => [k, v?.value])
+                        ) : {},
+                        away: d.away_analyzers ? Object.fromEntries(
+                            Object.entries(d.away_analyzers).map(([k, v]) => [k, v?.value])
+                        ) : {},
+                        config: d.config,
+                    }),
+                    mainLine.predicted || null,
+                    2.5,
+                    mainLine.confidence || null,
+                    mainLine.over || null,
+                    mainLine.under || null,
+                ]);
+
+                if (inserted.rows[0]) {
+                    results.push({ gameId: game.sstats_id, status: 'created', id: inserted.rows[0].id });
+                } else {
+                    results.push({ gameId: game.sstats_id, status: 'conflict' });
+                }
+            }
+
+            return {
+                success: true,
+                data: {
+                    strategyId,
+                    processed: results.length,
+                    created: results.filter(r => r.status === 'created').length,
+                    exists: results.filter(r => r.status === 'exists').length,
+                    failed: results.filter(r => r.status === 'failed' || r.status === 'no_forecast').length,
+                    results,
+                },
+            };
+        } catch (err) {
+            request.log.error({ err }, 'POST /:strategyId/generate-predictions failed');
             return reply.code(500).send({ success: false, error: err.message });
         }
     });

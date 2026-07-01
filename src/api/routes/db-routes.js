@@ -2017,6 +2017,7 @@ async function dbRoutes(fastify) {
             const range = String(request.query.range || '30d');
             const leagueIdQ = request.query.league_id ? parseInt(request.query.league_id, 10) : null;
             const onlyVerified = request.query.only_verified !== 'false';
+            const strategyId = request.query.strategyId || null;
 
             // Резолв интервала
             let intervalSql = "INTERVAL '30 days'";
@@ -2036,11 +2037,93 @@ async function dbRoutes(fastify) {
                 if (lr.rows.length) leagueInternal = lr.rows[0].id;
             }
 
-            // WHERE-условия
-            const where = [
-                "predicted_outcome IN ('HOME','DRAW','AWAY')",
-            ];
             const params = [];
+            const where = [];
+
+            if (strategyId) {
+                // ─── Режим: стратегия ─── Query strategy_predictions
+                where.push("sp.predicted_outcome IN ('HOME','DRAW','AWAY')");
+                where.push('sp.strategy_id = $' + (params.length + 1));
+                params.push(strategyId);
+
+                if (intervalSql) where.push(`g.date >= now() - ${intervalSql}`);
+                if (leagueInternal) {
+                    params.push(leagueInternal);
+                    where.push(`g.league_id = $${params.length}`);
+                }
+                if (onlyVerified) where.push('sp.actual_outcome IS NOT NULL');
+
+                const whereSql = 'WHERE ' + where.join(' AND ');
+                const joinSql = 'FROM strategy_predictions sp JOIN games g ON g.id = sp.game_id';
+
+                const agg = await db.query(`
+                    SELECT
+                        count(*) AS total,
+                        count(*) FILTER (WHERE sp.is_hit IS TRUE) AS hits,
+                        count(*) FILTER (WHERE sp.actual_outcome IS NOT NULL) AS verified,
+                        count(*) FILTER (WHERE sp.actual_outcome IS NULL) AS pending,
+                        avg(sp.confidence) FILTER (WHERE sp.actual_outcome IS NOT NULL) AS avg_confidence,
+                        null::numeric AS brier_mean
+                    ${joinSql}
+                    ${whereSql}
+                `, params);
+
+                const byPred = await db.query(`
+                    SELECT sp.predicted_outcome, count(*) AS n,
+                           count(*) FILTER (WHERE sp.is_hit IS TRUE) AS hits
+                    ${joinSql}
+                    ${whereSql}
+                    GROUP BY sp.predicted_outcome
+                `, params);
+
+                const byActual = await db.query(`
+                    SELECT sp.actual_outcome, count(*) AS n
+                    ${joinSql}
+                    ${whereSql} AND sp.actual_outcome IS NOT NULL
+                    GROUP BY sp.actual_outcome
+                `, params);
+
+                const a = agg.rows[0];
+                const total    = Number(a.total) || 0;
+                const hits     = Number(a.hits) || 0;
+                const verified = Number(a.verified) || 0;
+                const pending  = Number(a.pending) || 0;
+                const accuracy = verified > 0 ? hits / verified : null;
+                const avgConf  = a.avg_confidence != null ? Number(a.avg_confidence) : null;
+
+                const outcomes = ['HOME', 'DRAW', 'AWAY'];
+                const byOutcome = {};
+                outcomes.forEach(o => {
+                    const p = byPred.rows.find(r => r.predicted_outcome === o);
+                    const ac = byActual.rows.find(r => r.actual_outcome === o);
+                    byOutcome[o] = {
+                        predicted: p ? Number(p.n) : 0,
+                        hits:      p ? Number(p.hits) : 0,
+                        actual:    ac ? Number(ac.n) : 0,
+                    };
+                });
+
+                return {
+                    success: true,
+                    data: {
+                        range, strategy_id: strategyId, league_id: leagueInternal,
+                        only_verified: onlyVerified,
+                        total, verified, pending, hits, accuracy,
+                        avg_confidence: avgConf,
+                        brier_score: null,
+                        by_outcome: byOutcome,
+                        baselines: {
+                            random: 1 / 3,
+                            always_home: 0.46,
+                            brier_random: 2 / 3,
+                        },
+                    },
+                    source: 'strategy',
+                };
+            }
+
+            // ─── Режим: глобальные прогнозы (predictions_log) ───
+            where.push("predicted_outcome IN ('HOME','DRAW','AWAY')");
             if (intervalSql) where.push(`game_date >= now() - ${intervalSql}`);
             if (leagueInternal) {
                 params.push(leagueInternal);
@@ -2050,7 +2133,6 @@ async function dbRoutes(fastify) {
 
             const whereSql = 'WHERE ' + where.join(' AND ');
 
-            // Главный агрегат
             const agg = await db.query(`
                 SELECT
                     count(*) AS total,
@@ -2063,7 +2145,6 @@ async function dbRoutes(fastify) {
                 ${whereSql}
             `, params);
 
-            // По исходам: предсказанные vs фактические
             const byPred = await db.query(`
                 SELECT predicted_outcome, count(*) AS n,
                        count(*) FILTER (WHERE is_hit IS TRUE) AS hits
@@ -2087,7 +2168,6 @@ async function dbRoutes(fastify) {
             const avgConf  = a.avg_confidence != null ? Number(a.avg_confidence) : null;
             const brier    = a.brier_mean != null ? Number(a.brier_mean) : null;
 
-            // Подготовка by_outcome: для каждого исхода — predicted/hits/actual
             const outcomes = ['HOME', 'DRAW', 'AWAY'];
             const byOutcome = {};
             outcomes.forEach(o => {
@@ -2103,20 +2183,14 @@ async function dbRoutes(fastify) {
             return {
                 success: true,
                 data: {
-                    range,
-                    league_id: leagueInternal,
+                    range, league_id: leagueInternal,
                     only_verified: onlyVerified,
-                    total,
-                    verified,
-                    pending,
-                    hits,
-                    accuracy,
+                    total, verified, pending, hits, accuracy,
                     avg_confidence: avgConf,
                     brier_score: brier,
                     by_outcome: byOutcome,
-                    // Baseline для сравнения: random = 1/3, всегда HOME ~ 0.46
                     baselines: {
-                        random:      1 / 3,
+                        random: 1 / 3,
                         always_home: 0.46,
                         brier_random: 2 / 3,
                     },
@@ -2148,6 +2222,7 @@ async function dbRoutes(fastify) {
             const status   = String(request.query.status || 'all');
             const outcome  = request.query.outcome ? String(request.query.outcome).toUpperCase() : null;
             const hitFilter = request.query.hit;
+            const strategyId = request.query.strategyId || null;
             let limit  = parseInt(request.query.limit || '50', 10);
             if (!Number.isFinite(limit)) limit = 50;
             limit = Math.min(Math.max(limit, 1), 500);
@@ -2170,6 +2245,95 @@ async function dbRoutes(fastify) {
                 if (lr.rows.length) leagueInternal = lr.rows[0].id;
             }
 
+            if (strategyId) {
+                // ─── Режим: стратегия ───
+                const where = ["sp.predicted_outcome IN ('HOME','DRAW','AWAY')"];
+                const params = [strategyId];
+                where.push(`sp.strategy_id = $1`);
+
+                if (intervalSql) where.push(`g.date >= now() - ${intervalSql}`);
+                if (leagueInternal) {
+                    params.push(leagueInternal);
+                    where.push(`g.league_id = $${params.length}`);
+                }
+                if (status === 'verified') where.push('sp.actual_outcome IS NOT NULL');
+                else if (status === 'pending') where.push('sp.actual_outcome IS NULL');
+                if (outcome && ['HOME', 'DRAW', 'AWAY'].includes(outcome)) {
+                    params.push(outcome);
+                    where.push(`sp.predicted_outcome = $${params.length}`);
+                }
+                if (hitFilter === 'true')  where.push('sp.is_hit IS TRUE');
+                if (hitFilter === 'false') where.push('sp.is_hit IS FALSE');
+
+                const whereSql = 'WHERE ' + where.join(' AND ');
+
+                params.push(limit, offset);
+                const lidx = params.length - 1; // offset
+                const lidx2 = params.length;     // limit
+
+                const sql = `
+                    SELECT sp.id,
+                           g.id AS game_id, g.sstats_id AS game_sstats_id, g.date AS game_date,
+                           g.league_id, l.sstats_id AS league_sstats_id, l.name AS league_name,
+                           g.home_team_id, g.away_team_id,
+                           ht.sstats_id AS home_sstats_id, ht.name AS home_name, ht.logo AS home_logo,
+                           at.sstats_id AS away_sstats_id, at.name AS away_name, at.logo AS away_logo,
+                           sp.predicted_outcome, sp.confidence,
+                           sp.analyzer_snapshot,
+                           sp.predicted_total, sp.total_line, sp.total_confidence,
+                           sp.total_over_prob, sp.total_under_prob,
+                           sp.actual_outcome, sp.is_hit, sp.verified_at
+                    FROM strategy_predictions sp
+                    LEFT JOIN games g   ON g.id  = sp.game_id
+                    LEFT JOIN leagues l ON l.id  = g.league_id
+                    LEFT JOIN teams ht  ON ht.id = g.home_team_id
+                    LEFT JOIN teams at  ON at.id = g.away_team_id
+                    ${whereSql}
+                    ORDER BY g.date DESC
+                    LIMIT $${params.length - 1} OFFSET $${params.length}
+                `;
+                const { rows } = await db.query(sql, params);
+
+                const countParams = params.slice(0, params.length - 2);
+                const countRes = await db.query(`
+                    SELECT count(*) AS total FROM strategy_predictions sp ${whereSql}
+                `, countParams);
+
+                return {
+                    success: true,
+                    data: {
+                        range, strategy_id: strategyId, league_id: leagueInternal,
+                        status, outcome, hit: hitFilter,
+                        total: Number(countRes.rows[0].total) || 0,
+                        limit, offset,
+                        items: rows.map(r => ({
+                            id: r.id,
+                            game: {
+                                id: r.game_sstats_id, internal_id: r.game_id,
+                                date: r.game_date,
+                                league: { id: r.league_sstats_id, internal_id: r.league_id, name: r.league_name },
+                                home: { id: r.home_sstats_id, name: r.home_name, logo: r.home_logo },
+                                away: { id: r.away_sstats_id, name: r.away_name, logo: r.away_logo },
+                            },
+                            predicted_outcome: r.predicted_outcome,
+                            confidence: r.confidence != null ? Number(r.confidence) : null,
+                            predicted_total: r.predicted_total,
+                            total_line: r.total_line != null ? Number(r.total_line) : null,
+                            total_confidence: r.total_confidence != null ? Number(r.total_confidence) : null,
+                            total_over_prob: r.total_over_prob != null ? Number(r.total_over_prob) : null,
+                            total_under_prob: r.total_under_prob != null ? Number(r.total_under_prob) : null,
+                            actual: r.actual_outcome ? {
+                                outcome: r.actual_outcome,
+                                is_hit: r.is_hit,
+                                verified_at: r.verified_at,
+                            } : null,
+                        })),
+                    },
+                    source: 'strategy',
+                };
+            }
+
+            // ─── Режим: глобальные прогнозы (predictions_log) ───
             const where = [
                 "pl.predicted_outcome IN ('HOME','DRAW','AWAY')",
             ];
@@ -2191,7 +2355,6 @@ async function dbRoutes(fastify) {
             const whereSql = 'WHERE ' + where.join(' AND ');
 
             params.push(limit, offset);
-            const limitOffsetSql = `LIMIT $${params.length - 1} OFFSET $${params.length}`;
 
             const sql = `
                 SELECT pl.id,
@@ -2214,7 +2377,7 @@ async function dbRoutes(fastify) {
                 LEFT JOIN teams at  ON at.id = g.away_team_id
                 ${whereSql}
                 ORDER BY pl.game_date DESC, pl.id DESC
-                ${limitOffsetSql}
+                LIMIT $${params.length - 1} OFFSET $${params.length}
             `;
             const { rows } = await db.query(sql, params);
 
@@ -2277,8 +2440,6 @@ async function dbRoutes(fastify) {
             return reply.code(500).send({ success: false, error: err.message });
         }
     });
-
-    fastify.get('/status-map', async () => ({ success: true, data: STATUS_MAP, source: 'db' }));
 }
 
 module.exports = dbRoutes;
