@@ -1410,6 +1410,7 @@
             return (rec || '').toLowerCase().replace('_', '-');
         }
         function renderTeamCard(teamName, teamLogo, analyzers) {
+            const rows = [];
             for (const key of ['markov_outcome', 'markov_state', 'shannon_entropy', 'form_inertia', 'multipeak', 'hmm', 'valenzetti']) {
                 const a = analyzers[key] || {};
                 const d = a.details || {};
