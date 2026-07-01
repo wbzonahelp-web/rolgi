@@ -72,9 +72,44 @@ async function runModel(modelName, gameData) {
         result = await monteCarlo.analyze({ games: homeGames, odds: 2.0, target: 'W' });
         break;
       case 'hmm':
-        // Вызов Python API
-        const hmmResult = await axios.get(`http://localhost:8000/api/db/teams/${game.home_team_id}/analyzers/hmm`);
-        result = hmmResult.data;
+        // Вызов Python API для обеих команд
+        try {
+          const pythonBaseUrl = process.env.PYTHON_API_URL || 'http://rolgi-analytics:8000';
+
+          // Получаем HMM для home и away
+          const [homeHmm, awayHmm] = await Promise.all([
+            axios.get(`${pythonBaseUrl}/analyzers/hmm/team/${game.home_team_id}`, {
+              params: { league_id: game.league_id, n_window: 20 }
+            }),
+            axios.get(`${pythonBaseUrl}/analyzers/hmm/team/${game.away_team_id}`, {
+              params: { league_id: game.league_id, n_window: 20 }
+            })
+          ]);
+
+          // Извлекаем данные из обёртки {success, source, data}
+          const homeData = homeHmm.data && homeHmm.data.data ? homeHmm.data.data : homeHmm.data;
+          const awayData = awayHmm.data && awayHmm.data.data ? awayHmm.data.data : awayHmm.data;
+
+          // Комбинируем результаты
+          const homeValue = homeData.value || 0.5;
+          const awayValue = awayData.value || 0.5;
+
+          // Конвертируем в вероятности
+          const totalValue = homeValue + awayValue;
+          result = {
+            value: homeValue,
+            confidence: (homeData.confidence + awayData.confidence) / 2 || 0.5,
+            probabilities: {
+              home: totalValue > 0 ? homeValue / totalValue : 0.4,
+              draw: 0.2,
+              away: totalValue > 0 ? awayValue / totalValue : 0.4
+            },
+            details: { home: homeData, away: awayData }
+          };
+        } catch (error) {
+          console.error('HMM API call failed:', error.message);
+          return null;
+        }
         break;
       default:
         throw new Error(`Unknown model: ${modelName}`);
