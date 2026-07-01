@@ -516,8 +516,7 @@
         // ─── Стратегии ───
         async function loadStrategies() {
             try {
-                const res = await fetch('/api/strategies');
-                const data = await res.json();
+                const data = await Rolgi.api.get('/api/strategies');
                 const strategies = data.data || data;
                 if (!Array.isArray(strategies)) return;
 
