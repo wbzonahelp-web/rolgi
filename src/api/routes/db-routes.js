@@ -4,6 +4,7 @@
  * Все данные читаются ИСКЛЮЧИТЕЛЬНО из PostgreSQL.
  */
 
+const { computePrediction } = require('../../analytics/compute-prediction.js');
 const STATUS_MAP = {
     scheduled:        { kind: 'scheduled', label: 'Запланирован' },
     live:             { kind: 'live',      label: 'Live' },
@@ -2470,6 +2471,241 @@ async function dbRoutes(fastify) {
             return reply.code(500).send({ success: false, error: err.message });
         }
     });
+    // ─── Ручная генерация прогнозов модели на предстоящие матчи ───
+
+    // POST /api/db/predictions/generate-upcoming
+    // Body: { hours?: 48, limit?: 50, max_games?: 50 }
+    // Генерирует системные прогнозы для scheduled матчей в окне [now, now+hours].
+    // Пишет в predictions_log (модельные/system прогнозы, не strategy_predictions).
+    // Использует ту же логику, что cron record_predictions, но с настраиваемыми параметрами.
+    fastify.post('/predictions/generate-upcoming', async (request, reply) => {
+        try {
+            const body = request.body || {};
+            const hours = Math.min(parseInt(body.hours) || 48, 168); // макс 7 дней
+            let limit = Math.min(parseInt(body.limit) || 50, 200);
+            const maxGames = Math.min(parseInt(body.max_games) || limit, 200);
+            limit = Math.min(limit, maxGames);
+
+            const N_WINDOW = 20;
+            const LEAGUE_FILTER = true;
+            const VENUE_FILTER = true;
+
+            // 1) Найти предстоящие scheduled матчи в окне
+            const candidatesRes = await db.query(`
+                SELECT g.id, g.sstats_id, g.league_id, g.date,
+                       g.home_team_id, g.away_team_id
+                FROM games g
+                WHERE g.status = 'scheduled'
+                  AND g.is_deleted = false
+                  AND g.date >= now()
+                  AND g.date <= now() + ($1 || ' hours')::INTERVAL
+                  AND g.home_team_id IS NOT NULL
+                  AND g.away_team_id IS NOT NULL
+                ORDER BY g.date ASC
+                LIMIT $2
+            `, [String(hours), limit]);
+
+            const candidates = candidatesRes.rows;
+
+            if (!candidates.length) {
+                return {
+                    success: true,
+                    data: {
+                        total_available: 0,
+                        processed: 0,
+                        created: 0,
+                        skipped: 0,
+                        failed: 0,
+                        already_exists: 0,
+                        no_forecast: 0,
+                        hours,
+                        limit,
+                        message: 'Нет предстоящих матчей в указанном окне',
+                    },
+                };
+            }
+
+            const totalAvailable = candidates.length;
+            let created = 0;
+            let alreadyExists = 0;
+            let predicted = 0;
+            let noForecast = 0;
+            let errors = 0;
+            const details = [];
+
+            for (const game of candidates) {
+                try {
+                    // UPSERT: бронируем слот
+                    const insRes = await db.query(`
+                        INSERT INTO predictions_log
+                            (game_id, game_sstats_id, league_id, game_date,
+                             n_window, league_filter, venue_filter,
+                             predicted_outcome, confidence)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', 0)
+                        ON CONFLICT (game_id, n_window, league_filter, venue_filter)
+                        DO NOTHING
+                        RETURNING id
+                    `, [
+                        game.id, game.sstats_id, game.league_id, game.date,
+                        N_WINDOW, LEAGUE_FILTER, VENUE_FILTER,
+                    ]);
+
+                    if (!insRes.rows.length) {
+                        alreadyExists++;
+                        details.push({ gameId: game.sstats_id, status: 'exists' });
+                        continue;
+                    }
+
+                    const predictionId = insRes.rows[0].id;
+                    created++;
+
+                    // Вычисляем прогноз
+                    const result = await computePrediction({
+                        db,
+                        gameId: game.id,
+                        n: N_WINDOW,
+                        leagueFilterFlag: LEAGUE_FILTER,
+                        venueFilter: VENUE_FILTER,
+                    });
+
+                    if (result.error) {
+                        await db.query(`
+                            UPDATE predictions_log
+                            SET predicted_outcome = 'FAILED',
+                                confidence = 0,
+                                analyzer_snapshot = $2
+                            WHERE id = $1
+                        `, [predictionId, JSON.stringify({ error: result.error, code: result.code })]);
+                        errors++;
+                        details.push({ gameId: game.sstats_id, status: 'failed', reason: result.error });
+                        continue;
+                    }
+
+                    const d = result.data;
+                    const f = d.integrated_forecast;
+                    const ha = d.home_analyzers;
+                    const aa = d.away_analyzers;
+
+                    const hasForecast = ha.markov_outcome.details && ha.markov_outcome.details.next_outcome
+                                     && aa.markov_outcome.details && aa.markov_outcome.details.next_outcome;
+                    if (!hasForecast) {
+                        await db.query(`
+                            UPDATE predictions_log
+                            SET predicted_outcome = 'NO_DATA',
+                                confidence = 0,
+                                odds_snapshot = $2
+                            WHERE id = $1
+                        `, [predictionId, JSON.stringify(d.game.odds)]);
+                        noForecast++;
+                        details.push({ gameId: game.sstats_id, status: 'no_forecast' });
+                        continue;
+                    }
+
+                    // Edges и recommendations
+                    const edges = {
+                        home: d.betting.home ? d.betting.home.details.edge_per_bet : null,
+                        draw: d.betting.draw ? d.betting.draw.details.edge_per_bet : null,
+                        away: d.betting.away ? d.betting.away.details.edge_per_bet : null,
+                    };
+                    const recs = {
+                        home: d.betting.home ? d.betting.home.details.recommendation : null,
+                        draw: d.betting.draw ? d.betting.draw.details.recommendation : null,
+                        away: d.betting.away ? d.betting.away.details.recommendation : null,
+                    };
+
+                    // Snapshot
+                    const snapshot = {
+                        home: {
+                            markov_outcome:  { value: ha.markov_outcome.value,  confidence: ha.markov_outcome.confidence,
+                                               next: ha.markov_outcome.details && ha.markov_outcome.details.next_outcome },
+                            markov_state:    { value: ha.markov_state.value,    confidence: ha.markov_state.confidence },
+                            shannon_entropy: { value: ha.shannon_entropy.value, confidence: ha.shannon_entropy.confidence },
+                            form_inertia:    { value: ha.form_inertia.value,    confidence: ha.form_inertia.confidence,
+                                               trend: ha.form_inertia.details && ha.form_inertia.details.trend },
+                            multipeak:       { value: ha.multipeak.value,       confidence: ha.multipeak.confidence,
+                                               interpretation: ha.multipeak.details && ha.multipeak.details.interpretation },
+                        },
+                        away: {
+                            markov_outcome:  { value: aa.markov_outcome.value,  confidence: aa.markov_outcome.confidence,
+                                               next: aa.markov_outcome.details && aa.markov_outcome.details.next_outcome },
+                            markov_state:    { value: aa.markov_state.value,    confidence: aa.markov_state.confidence },
+                            shannon_entropy: { value: aa.shannon_entropy.value, confidence: aa.shannon_entropy.confidence },
+                            form_inertia:    { value: aa.form_inertia.value,    confidence: aa.form_inertia.confidence,
+                                               trend: aa.form_inertia.details && aa.form_inertia.details.trend },
+                            multipeak:       { value: aa.multipeak.value,       confidence: aa.multipeak.confidence,
+                                               interpretation: aa.multipeak.details && aa.multipeak.details.interpretation },
+                        },
+                        integrated: {
+                            outcome: f.predicted_outcome,
+                            confidence: f.confidence,
+                            scores: f._scores,
+                            reasons: f.reasons,
+                        },
+                        history_sizes: d.history_sizes,
+                    };
+
+                    const homeNext = ha.markov_outcome.details.next_outcome;
+                    const awayNext = aa.markov_outcome.details.next_outcome;
+
+                    await db.query(`
+                        UPDATE predictions_log
+                        SET predicted_outcome  = $2,
+                            confidence         = $3,
+                            home_score_pred    = $4,
+                            draw_score_pred    = $5,
+                            away_score_pred    = $6,
+                            home_markov_pred   = $7,
+                            home_markov_prob   = $8,
+                            away_markov_pred   = $9,
+                            away_markov_prob   = $10,
+                            betting_edges      = $11,
+                            betting_recs       = $12,
+                            odds_snapshot      = $13,
+                            analyzer_snapshot  = $14
+                        WHERE id = $1
+                    `, [
+                        predictionId,
+                        f.predicted_outcome,
+                        f.confidence,
+                        f._scores.home, f._scores.draw, f._scores.away,
+                        homeNext.prediction, homeNext.probability,
+                        awayNext.prediction, awayNext.probability,
+                        JSON.stringify(edges),
+                        JSON.stringify(recs),
+                        JSON.stringify(d.game.odds),
+                        JSON.stringify(snapshot),
+                    ]);
+
+                    predicted++;
+                    details.push({ gameId: game.sstats_id, status: 'predicted', outcome: f.predicted_outcome, confidence: f.confidence });
+                } catch (err) {
+                    errors++;
+                    request.log.warn({ err: err.message, game_id: game.id }, 'Upcoming prediction generation failed for game');
+                    details.push({ gameId: game.sstats_id, status: 'error', reason: err.message });
+                }
+            }
+
+            return {
+                success: true,
+                data: {
+                    total_available: totalAvailable,
+                    processed: created + alreadyExists,
+                    created,
+                    predicted,
+                    already_exists: alreadyExists,
+                    no_forecast: noForecast,
+                    failed: errors,
+                    hours,
+                    limit,
+                    details,
+                },
+            };
+        } catch (err) {
+            request.log.error({ err }, '/predictions/generate-upcoming failed');
+            return reply.code(500).send({ success: false, error: err.message });
+        }
+    });
+
 }
 
 module.exports = dbRoutes;

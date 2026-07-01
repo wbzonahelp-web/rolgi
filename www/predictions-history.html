@@ -278,10 +278,10 @@
         </div>
 
         <div class="actions" style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
-            <button id="btnGenerate" class="btn btn-primary" style="padding: 8px 18px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 0.95em; cursor: pointer; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 6px;">
-                <i class="fas fa-magic"></i> Сгенерировать прогнозы
-            </button>
-            <span class="text-muted" style="font-size: 0.85em; color: var(--text-muted);">Для выбранной стратегии на 48 часов</span>
+        <button id="btnGenerate" class="btn btn-primary" style="padding: 8px 18px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 0.95em; cursor: pointer; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fas fa-magic"></i> Сгенерировать прогнозы модели на 48ч
+        </button>
+        <span id="generateStatus" class="text-muted" style="font-size: 0.85em; color: var(--text-muted);">Для предстоящих матчей</span>
         </div>
 
 
@@ -429,7 +429,7 @@
             state.total = d.total;
 
             if (!d.items.length) {
-                document.getElementById('tableBody').innerHTML = '<div class="empty"><i class="fas fa-inbox"></i>Нет прогнозов под указанные фильтры</div>';
+                document.getElementById('tableBody').innerHTML = '<div class="empty"><i class="fas fa-inbox"></i> Нет прогнозов под указанные фильтры<br><small style="margin-top:8px;display:inline-block;">Вы можете сгенерировать прогнозы для предстоящих матчей, нажав кнопку «Сгенерировать прогнозы модели» выше</small></div>';
                 renderPagination();
                 return;
             }
@@ -539,17 +539,15 @@
         });
 
         document.getElementById('btnGenerate').addEventListener('click', async () => {
-            if (!state.strategy) {
-                alert('Выберите стратегию');
-                return;
-            }
-
             const btn = document.getElementById('btnGenerate');
+            const statusEl = document.getElementById('generateStatus');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Генерация...';
+            statusEl.innerHTML = 'Вычисление прогнозов для предстоящих матчей...';
+            statusEl.style.color = 'var(--text-muted)';
 
             try {
-                const res = await fetch('/api/strategies/' + state.strategy + '/generate-predictions', {
+                const res = await fetch('/api/db/predictions/generate-upcoming', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ hours: 48, limit: 50 })
@@ -558,16 +556,21 @@
                 const result = await res.json();
                 if (result.success) {
                     const d = result.data;
-                    alert('Готово! Создано: ' + d.created + ', уже существует: ' + d.exists + ', ошибок: ' + d.failed);
+                    const msg = 'Готово! Создано: ' + d.created + ' прогнозов, пропущено (уже есть): ' + d.already_exists + (d.failed > 0 ? ', ошибок: ' + d.failed : '') + (d.no_forecast > 0 ? ', нет данных: ' + d.no_forecast : '');
+                    statusEl.innerHTML = msg;
+                    statusEl.style.color = d.failed > 0 ? 'var(--warning-color)' : 'var(--success-color)';
+                    // Обновить статистику и таблицу
                     reloadAll();
                 } else {
-                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                    statusEl.innerHTML = 'Ошибка: ' + (result.error || 'Неизвестная ошибка');
+                    statusEl.style.color = 'var(--danger-color)';
                 }
             } catch (e) {
-                alert('Ошибка запроса: ' + e.message);
+                statusEl.innerHTML = 'Ошибка запроса: ' + e.message;
+                statusEl.style.color = 'var(--danger-color)';
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-magic"></i> Сгенерировать прогнозы';
+                btn.innerHTML = '<i class="fas fa-magic"></i> Сгенерировать прогнозы модели на 48ч';
             }
         });
 
