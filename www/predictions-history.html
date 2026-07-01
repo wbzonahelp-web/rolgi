@@ -339,7 +339,7 @@
             return '<span class="conf-bar"><div style="width:' + pct + '%"></div></span>' + fmtPct(c, 1);
         }
 
-        async function loadStats() {
+        async function loadStats() { try {
             const params = {
                 range: state.range,
                 only_verified: state.status === 'verified' ? 'true' : 'false',
@@ -402,9 +402,14 @@
                 '  </div>',
                 '</div>',
             ].join('');
+    } catch (e) {
+        console.error('loadStats error:', e);
+        document.getElementById('statsBlock').innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки статистики</div>';
+        document.getElementById('byOutcomeBlock').innerHTML = '';
+    }
         }
 
-        async function loadList() {
+        async function loadList() { try {
             const params = {
                 range: state.range,
                 status: state.status,
@@ -486,6 +491,10 @@
             ].join('');
 
             renderPagination();
+    } catch (e) {
+        console.error('loadList error:', e);
+        document.getElementById('tableBody').innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки прогнозов</div>';
+    }
         }
 
         function renderPagination() {
@@ -578,6 +587,7 @@
 
         reloadAll();
         loadStrategies();
+        })();
     </script>
 </body>
 </html>
