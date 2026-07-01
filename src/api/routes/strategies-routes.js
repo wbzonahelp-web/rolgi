@@ -293,27 +293,39 @@ async function strategiesRoutes(fastify) {
             if (request.user && request.user.userId) {
                 // Авторизованный пользователь - его стратегии
                 const userId = request.user.userId;
-                const result = await db.query(
-                    `SELECT id, name, description, config, is_public,
-                            predictions_count, hits_count, accuracy, roi,
-                            created_at, updated_at
-                     FROM user_strategies
-                     WHERE user_id = $1
-                     ORDER BY updated_at DESC`, [userId]
-                );
+                const result = await db.query(`
+                    SELECT us.id, us.name, us.description, us.config, us.is_public,
+                           COALESCE(sp_cnt.total, 0) AS predictions_count,
+                           us.hits_count, us.accuracy, us.roi,
+                           us.created_at, us.updated_at
+                    FROM user_strategies us
+                    LEFT JOIN LATERAL (
+                        SELECT count(*) AS total
+                        FROM strategy_predictions
+                        WHERE strategy_id = us.id
+                    ) sp_cnt ON true
+                    WHERE us.user_id = $1
+                    ORDER BY us.updated_at DESC
+                `, [userId]);
                 return { success: true, data: result.rows };
             } else {
                 // Неавторизованный - публичные стратегии
                 const limit = Math.min(parseInt(request.query.limit || '20', 10), 100);
-                const result = await db.query(
-                    `SELECT s.id, s.name, s.description, s.config, s.is_public,
-                            s.predictions_count, s.hits_count, s.accuracy, s.roi,
-                            s.created_at, s.updated_at
-                     FROM user_strategies s
-                     WHERE s.is_public = true
-                     ORDER BY s.accuracy DESC NULLS LAST
-                     LIMIT $1`, [limit]
-                );
+                const result = await db.query(`
+                    SELECT s.id, s.name, s.description, s.config, s.is_public,
+                           COALESCE(sp_cnt.total, 0) AS predictions_count,
+                           s.hits_count, s.accuracy, s.roi,
+                           s.created_at, s.updated_at
+                    FROM user_strategies s
+                    LEFT JOIN LATERAL (
+                        SELECT count(*) AS total
+                        FROM strategy_predictions
+                        WHERE strategy_id = s.id
+                    ) sp_cnt ON true
+                    WHERE s.is_public = true
+                    ORDER BY s.accuracy DESC NULLS LAST
+                    LIMIT $1
+                `, [limit]);
                 return { success: true, data: result.rows };
             }
         } catch (err) {
@@ -490,44 +502,145 @@ async function strategiesRoutes(fastify) {
 
     // ─── Генерация прогнозов для выбранных стратегий ───
 
-    // POST /api/strategies/:strategyId/generate-predictions
-    // Генерирует прогнозы для всех предстоящих матчей по стратегии
-    // Body: { hours?: 48, limit?: 50 }
-    fastify.post('/:strategyId/generate-predictions', async (request, reply) => {
+    // POST /api/strategies/:strategyId/predictions
+    // Get predictions for a strategy with pagination/filtering
+    fastify.get('/:strategyId/predictions', { preHandler: [authenticate] }, async (request, reply) => {
         try {
             const { strategyId } = request.params;
-            const { hours = 48, limit = 50 } = request.body || {};
-
-            // Получить стратегию с config
+            const { limit = 20, offset = 0, status, is_hit } = request.query;
+            
+            // Verify ownership
             const stratRes = await db.query(
-                'SELECT id, config FROM user_strategies WHERE id = $1',
+                'SELECT id, user_id FROM user_strategies WHERE id = $1',
                 [strategyId]
             );
-
             if (!stratRes.rows[0]) {
                 return reply.code(404).send({ success: false, error: 'Strategy not found' });
             }
+            if (stratRes.rows[0].user_id !== request.user.userId) {
+                return reply.code(403).send({ success: false, error: 'Not your strategy' });
+            }
+            
+            const conditions = ['sp.strategy_id = $1'];
+            const params = [strategyId];
+            let paramIdx = 2;
+            
+            if (status === 'pending') {
+                conditions.push(`sp.actual_outcome IS NULL`);
+            } else if (status === 'verified') {
+                conditions.push(`sp.actual_outcome IS NOT NULL`);
+            }
+            
+            if (is_hit === 'true') {
+                conditions.push('sp.is_hit = true');
+            } else if (is_hit === 'false') {
+                conditions.push('sp.is_hit = false');
+            }
+            
+            const countRes = await db.query(
+                `SELECT count(*) as total FROM strategy_predictions sp WHERE ${conditions.join(' AND ')}`,
+                params
+            );
+            
+            const rowsRes = await db.query(`
+                SELECT sp.*, g.sstats_id as game_sstats_id, g.date as game_date,
+                       g.home_score, g.away_score,
+                       ht.name as home_name, at.name as away_name,
+                       g.status as game_status
+                FROM strategy_predictions sp
+                JOIN games g ON g.id = sp.game_id
+                LEFT JOIN teams ht ON ht.id = g.home_team_id
+                LEFT JOIN teams at ON at.id = g.away_team_id
+                WHERE ${conditions.join(' AND ')}
+                ORDER BY sp.predicted_at DESC
+                LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
+            `, [...params, Math.min(parseInt(limit) || 20, 100), parseInt(offset) || 0]);
+            
+            return {
+                success: true,
+                data: rowsRes.rows,
+                total: parseInt(countRes.rows[0].total),
+                limit: Math.min(parseInt(limit) || 20, 100),
+                offset: parseInt(offset) || 0,
+            };
+        } catch (err) {
+            request.log.error({ err }, 'GET /:strategyId/predictions failed');
+            return reply.code(500).send({ success: false, error: err.message });
+        }
+    });
 
+    // POST /api/strategies/:strategyId/generate-predictions
+    // Генерирует прогнозы для стратегии по выбранному scope.
+    // Body: { scope?: 'upcoming'|'finished', hours?: 48, limit?: 50, max_games?: 50 }
+    //   scope='upcoming' (default) — предстоящие матчи (исходное поведение)
+    //   scope='finished' — завершённые матчи (сразу проставляет actual_outcome/is_hit)
+    fastify.post('/:strategyId/generate-predictions', { preHandler: [authenticate] }, async (request, reply) => {
+        try {
+            const { strategyId } = request.params;
+            const { hours = 48, limit = 50, max_games = 50, scope = 'upcoming' } = request.body || {};
+
+            if (scope !== 'upcoming' && scope !== 'finished') {
+                return reply.code(400).send({ success: false, error: 'scope must be "upcoming" or "finished"' });
+            }
+
+            // Получить стратегию с config
+            const stratRes = await db.query(
+                'SELECT id, user_id, config FROM user_strategies WHERE id = $1',
+                [strategyId]
+            );
+            if (!stratRes.rows[0]) {
+                return reply.code(404).send({ success: false, error: 'Strategy not found' });
+            }
+            if (stratRes.rows[0].user_id !== request.user.userId) {
+                return reply.code(403).send({ success: false, error: 'Not your strategy' });
+            }
             const config = stratRes.rows[0].config;
 
-            // Найти предстоящие матчи
-            const upcomingGames = await db.query(`
-                SELECT g.id, g.sstats_id, g.league_id, g.date,
-                       g.home_team_id, g.away_team_id
-                FROM games g
-                WHERE g.status = 'scheduled'
-                  AND g.is_deleted = false
-                  AND g.date >= NOW()
-                  AND g.date <= NOW() + $1::INTERVAL
-                  AND g.home_team_id IS NOT NULL
-                  AND g.away_team_id IS NOT NULL
-                ORDER BY g.date ASC
-                LIMIT $2
-            `, [`${hours} hours`, Math.min(limit, 200)]);
-
+            let games;
             const results = [];
 
-            for (const game of upcomingGames.rows) {
+            if (scope === 'upcoming') {
+                // Найти предстоящие матчи — оригинальная логика
+                const upcomingRes = await db.query(`
+                    SELECT g.id, g.sstats_id, g.league_id, g.date,
+                           g.home_team_id, g.away_team_id,
+                           g.home_score, g.away_score
+                    FROM games g
+                    WHERE g.status = 'scheduled'
+                      AND g.is_deleted = false
+                      AND g.date >= NOW()
+                      AND g.date <= NOW() + $1::INTERVAL
+                      AND g.home_team_id IS NOT NULL
+                      AND g.away_team_id IS NOT NULL
+                    ORDER BY g.date ASC
+                    LIMIT $2
+                `, [`${hours} hours`, Math.min(limit, 200)]);
+                games = upcomingRes.rows;
+            } else {
+                // scope === 'finished' — завершённые матчи
+                const finishedRes = await db.query(`
+                    SELECT g.id, g.sstats_id, g.league_id, g.date,
+                           g.home_team_id, g.away_team_id,
+                           g.home_score, g.away_score
+                    FROM games g
+                    WHERE g.status = 'finished'
+                      AND g.is_deleted = false
+                      AND g.home_score IS NOT NULL
+                      AND g.away_score IS NOT NULL
+                      AND g.home_team_id IS NOT NULL
+                      AND g.away_team_id IS NOT NULL
+                    ORDER BY g.date DESC
+                    LIMIT $1
+                `, [Math.min(parseInt(max_games) || 50, 200)]);
+                games = finishedRes.rows;
+            }
+
+            let created = 0;
+            let existsCount = 0;
+            let failed = 0;
+            let skipped = 0;
+
+            for (const game of games) {
                 // Проверить, есть ли уже прогноз для этой стратегии и матча
                 const existing = await db.query(
                     'SELECT id FROM strategy_predictions WHERE strategy_id = $1 AND game_id = $2',
@@ -536,71 +649,96 @@ async function strategiesRoutes(fastify) {
 
                 if (existing.rows.length > 0) {
                     results.push({ gameId: game.sstats_id, status: 'exists', id: existing.rows[0].id });
+                    existsCount++;
                     continue;
                 }
 
-                // Сгенерировать прогноз через computePrediction
-                const prediction = await computePrediction({
-                    db,
-                    gameId: game.id,
-                    n: config.n_window || 20,
-                    leagueFilterFlag: config.league_filter !== false,
-                    venueFilter: config.venue_filter !== false
+                // Сгенерировать прогноз с использованием конфига стратегии
+                const prediction = await computeStrategyPrediction(db, game.id, config).catch(err => {
+                    return { error: err.message };
                 });
 
-                if (prediction.error || !prediction.data) {
-                    results.push({ gameId: game.sstats_id, status: 'failed', reason: prediction.error || 'no_data' });
+                if (prediction.error || !prediction.predicted_outcome) {
+                    results.push({ gameId: game.sstats_id, status: 'failed', reason: prediction.error || 'no_forecast' });
+                    failed++;
                     continue;
                 }
 
-                const d = prediction.data;
-                const f = d.integrated_forecast;
+                const predictedOutcome = prediction.predicted_outcome;
+                const confidence = prediction.confidence;
 
-                if (!f || !f.predicted_outcome) {
-                    results.push({ gameId: game.sstats_id, status: 'no_forecast' });
-                    continue;
+                // Если матч завершён — вычислить actual_outcome
+                let actualOutcome = null;
+                let isHit = null;
+                if (scope === 'finished' && game.home_score != null && game.away_score != null) {
+                    if (game.home_score > game.away_score) actualOutcome = 'HOME';
+                    else if (game.home_score < game.away_score) actualOutcome = 'AWAY';
+                    else actualOutcome = 'DRAW';
+                    isHit = predictedOutcome === actualOutcome;
                 }
 
-                // Получить totals из Valenzetti (из computePrediction)
-                const valP = d.home_analyzers?.valenzetti?.details;
-                const totals = valP?.totals || {};
-                const mainLine = totals['2.5'] || {};
+                // Собрать analyzer_snapshot
+                const snapshot = {
+                    version: '1.0',
+                    generated_at: new Date().toISOString(),
+                    scope,
+                    strategy_config: {
+                        n_window: config.n_window,
+                        league_filter: config.league_filter,
+                        venue_filter: config.venue_filter,
+                        analyzers: config.analyzers,
+                    },
+                    home_analyzers: prediction.home_analyzers || {},
+                    away_analyzers: prediction.away_analyzers || {},
+                };
 
                 // Сохранить в strategy_predictions
                 const inserted = await db.query(`
                     INSERT INTO strategy_predictions (
                         strategy_id, game_id, predicted_outcome, confidence,
                         analyzer_snapshot,
+                        actual_outcome, is_hit, verified_at,
                         predicted_total, total_line, total_confidence,
                         total_over_prob, total_under_prob
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                     ON CONFLICT (strategy_id, game_id) DO NOTHING
                     RETURNING id
                 `, [
                     strategyId,
                     game.id,
-                    f.predicted_outcome,
-                    f.confidence,
-                    JSON.stringify({
-                        home: d.home_analyzers ? Object.fromEntries(
-                            Object.entries(d.home_analyzers).map(([k, v]) => [k, v?.value])
-                        ) : {},
-                        away: d.away_analyzers ? Object.fromEntries(
-                            Object.entries(d.away_analyzers).map(([k, v]) => [k, v?.value])
-                        ) : {},
-                        config: d.config,
-                    }),
-                    mainLine.predicted || null,
-                    2.5,
-                    mainLine.confidence || null,
-                    mainLine.over || null,
-                    mainLine.under || null,
+                    predictedOutcome,
+                    confidence,
+                    JSON.stringify(snapshot),
+                    actualOutcome,
+                    isHit,
+                    actualOutcome ? new Date().toISOString() : null,
+                    null, null, null, null, null,
                 ]);
 
                 if (inserted.rows[0]) {
                     results.push({ gameId: game.sstats_id, status: 'created', id: inserted.rows[0].id });
+                    created++;
                 } else {
                     results.push({ gameId: game.sstats_id, status: 'conflict' });
+                    existsCount++;
+                }
+            }
+
+            // Обновить predictions_count в user_strategies
+            if (created > 0 || existsCount > 0) {
+                try {
+                    await db.query(`
+                        UPDATE user_strategies
+                        SET predictions_count = sub.total
+                        FROM (
+                            SELECT count(*) AS total
+                            FROM strategy_predictions
+                            WHERE strategy_id = $1
+                        ) sub
+                        WHERE id = $1
+                    `, [strategyId]);
+                } catch (aggErr) {
+                    request.log.warn({ err: aggErr, strategyId }, 'Predictions count update failed');
                 }
             }
 
@@ -608,10 +746,13 @@ async function strategiesRoutes(fastify) {
                 success: true,
                 data: {
                     strategyId,
+                    scope,
                     processed: results.length,
-                    created: results.filter(r => r.status === 'created').length,
-                    exists: results.filter(r => r.status === 'exists').length,
-                    failed: results.filter(r => r.status === 'failed' || r.status === 'no_forecast').length,
+                    created,
+                    exists: existsCount,
+                    failed,
+                    skipped,
+                    total_predictions: created + existsCount,
                     results,
                 },
             };

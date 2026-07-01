@@ -725,7 +725,10 @@
                         '<td>' + (s.predictions_count || 0) + '</td>' +
                         '<td><div class="accuracy-bar" style="width:' + accW + 'px"></div> ' + acc + '</td>' +
                         '<td>' + (s.is_public ? '<span class="badge badge-green">Да</span>' : '<span class="badge badge-red">Нет</span>') + '</td>' +
-                        '<td><button class="btn btn-danger btn-sm" data-delete="' + s.id + '"><i class="fas fa-trash"></i></button></td>' +
+                        '<td style="white-space:nowrap">' +
+                            '<button class="btn btn-primary btn-sm" data-generate="' + s.id + '" style="margin-right:4px"><i class="fas fa-robot"></i> Прогнозы</button>' +
+                            '<button class="btn btn-danger btn-sm" data-delete="' + s.id + '"><i class="fas fa-trash"></i></button>' +
+                        '</td>' +
                     '</tr>';
                 }).join('') + '</tbody></table>';
 
@@ -734,6 +737,36 @@
                     if (!confirm('Удалить стратегию?')) return;
                     await api.delete('/api/strategies/' + btn.dataset.delete);
                     loadMyStrategies();
+                };
+            });
+
+            el.querySelectorAll('[data-generate]').forEach(btn => {
+                btn.onclick = async () => {
+                    const sid = btn.dataset.generate;
+                    const label = btn.closest('tr')?.querySelector('strong')?.textContent || sid;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Генерация...';
+                    try {
+                        const r = await api.post('/api/strategies/' + sid + '/generate-predictions', {
+                            scope: 'finished',
+                            max_games: 50,
+                        });
+                        if (r.success) {
+                            const d = r.data;
+                            const msg = 'Создано ' + d.created + ' прогнозов для "' + label + '"'
+                                + (d.failed > 0 ? ', ' + d.failed + ' ошибок' : '')
+                                + (d.exists > 0 ? ', ' + d.exists + ' уже существовало' : '');
+                            alert(msg);
+                            loadMyStrategies();
+                        } else {
+                            alert('Ошибка: ' + (r.error || 'неизвестная'));
+                        }
+                    } catch (e) {
+                        alert('Ошибка: ' + e.message);
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-robot"></i> Прогнозы';
+                    }
                 };
             });
         } catch (e) {
