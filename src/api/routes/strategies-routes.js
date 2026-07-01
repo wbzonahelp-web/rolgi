@@ -7,7 +7,7 @@
  * Все endpoints кроме POST /games/:id/custom-strategy требуют авторизации.
  */
 
-const { authenticate } = require('../../auth/fastify-auth');
+const { authenticate, optionalAuthenticate } = require('../../auth/fastify-auth');
 const { getLeagueParams } = require('../../analytics/utils/league-params');
 const { computePrediction } = require('../../analytics/compute-prediction.js');
 
@@ -288,18 +288,34 @@ async function strategiesRoutes(fastify) {
     });
 
     // GET /api/strategies — мои стратегии
-    fastify.get('/', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.get('/', { preHandler: [optionalAuthenticate] }, async (request, reply) => {
         try {
-            const userId = request.user.userId;
-            const result = await db.query(
-                `SELECT id, name, description, config, is_public,
-                        predictions_count, hits_count, accuracy, roi,
-                        created_at, updated_at
-                 FROM user_strategies
-                 WHERE user_id = $1
-                 ORDER BY updated_at DESC`, [userId]
-            );
-            return { success: true, data: result.rows };
+            if (request.user && request.user.userId) {
+                // Авторизованный пользователь - его стратегии
+                const userId = request.user.userId;
+                const result = await db.query(
+                    `SELECT id, name, description, config, is_public,
+                            predictions_count, hits_count, accuracy, roi,
+                            created_at, updated_at
+                     FROM user_strategies
+                     WHERE user_id = $1
+                     ORDER BY updated_at DESC`, [userId]
+                );
+                return { success: true, data: result.rows };
+            } else {
+                // Неавторизованный - публичные стратегии
+                const limit = Math.min(parseInt(request.query.limit || '20', 10), 100);
+                const result = await db.query(
+                    `SELECT s.id, s.name, s.description, s.config, s.is_public,
+                            s.predictions_count, s.hits_count, s.accuracy, s.roi,
+                            s.created_at, s.updated_at
+                     FROM user_strategies s
+                     WHERE s.is_public = true
+                     ORDER BY s.accuracy DESC NULLS LAST
+                     LIMIT $1`, [limit]
+                );
+                return { success: true, data: result.rows };
+            }
         } catch (err) {
             request.log.error({ err }, 'GET /strategies failed');
             return reply.code(500).send({ success: false, error: err.message });
