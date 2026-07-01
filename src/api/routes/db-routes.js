@@ -2268,10 +2268,11 @@ async function dbRoutes(fastify) {
                 const whereSql = 'WHERE ' + where.join(' AND ');
 
                 params.push(limit, offset);
-                const lidx = params.length - 1; // offset
-                const lidx2 = params.length;     // limit
 
-                const sql = `
+                // Пытаемся сначала с колонками тотала, если миграция не выполнена -
+                // падаем до базового SQL без них
+                let rows, totalsOk = true;
+                const sqlFull = `
                     SELECT sp.id,
                            g.id AS game_id, g.sstats_id AS game_sstats_id, g.date AS game_date,
                            g.league_id, l.sstats_id AS league_sstats_id, l.name AS league_name,
@@ -2292,7 +2293,35 @@ async function dbRoutes(fastify) {
                     ORDER BY g.date DESC
                     LIMIT $${params.length - 1} OFFSET $${params.length}
                 `;
-                const { rows } = await db.query(sql, params);
+                try {
+                    const result = await db.query(sqlFull, params);
+                    rows = result.rows;
+                } catch (firstErr) {
+                    // Возможно колонки тотала ещё не добавлены миграцией
+                    request.log.warn({ err: firstErr.message }, 'Full strategy list query failed, retrying without totals columns');
+                    totalsOk = false;
+                    const sqlBase = `
+                        SELECT sp.id,
+                               g.id AS game_id, g.sstats_id AS game_sstats_id, g.date AS game_date,
+                               g.league_id, l.sstats_id AS league_sstats_id, l.name AS league_name,
+                               g.home_team_id, g.away_team_id,
+                               ht.sstats_id AS home_sstats_id, ht.name AS home_name, ht.logo AS home_logo,
+                               at.sstats_id AS away_sstats_id, at.name AS away_name, at.logo AS away_logo,
+                               sp.predicted_outcome, sp.confidence,
+                               sp.analyzer_snapshot,
+                               sp.actual_outcome, sp.is_hit, sp.verified_at
+                        FROM strategy_predictions sp
+                        LEFT JOIN games g   ON g.id  = sp.game_id
+                        LEFT JOIN leagues l ON l.id  = g.league_id
+                        LEFT JOIN teams ht  ON ht.id = g.home_team_id
+                        LEFT JOIN teams at  ON at.id = g.away_team_id
+                        ${whereSql}
+                        ORDER BY g.date DESC
+                        LIMIT $${params.length - 1} OFFSET $${params.length}
+                    `;
+                    const result = await db.query(sqlBase, params);
+                    rows = result.rows;
+                }
 
                 const countParams = params.slice(0, params.length - 2);
                 const countRes = await db.query(`
