@@ -199,13 +199,24 @@ class ModelPredictionsService {
   }
 
   async savePrediction(db, data) {
+    const predictionDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     await db.query(
       `INSERT INTO model_predictions
-       (model_name, game_id, predicted_outcome, home_prob, draw_prob, away_prob, confidence, details)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+       (model_name, game_id, prediction_date, predicted_outcome, home_prob, draw_prob, away_prob, confidence, details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (model_name, game_id, prediction_date)
+       DO UPDATE SET
+         predicted_outcome = EXCLUDED.predicted_outcome,
+         home_prob = EXCLUDED.home_prob,
+         draw_prob = EXCLUDED.draw_prob,
+         away_prob = EXCLUDED.away_prob,
+         confidence = EXCLUDED.confidence,
+         details = EXCLUDED.details,
+         predicted_at = NOW()`,
       [
         data.model_name,
         data.game_id,
+        predictionDate,
         data.predicted_outcome,
         data.home_prob,
         data.draw_prob,
