@@ -143,6 +143,15 @@
         .pill-draw { background: #e5e7e9; color: #555; }
         .pill-away { background: #f5b7b1; color: #922b21; }
 
+        .pill-over { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .pill-under { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
         /* Результат: попали или нет */
         .verdict { font-weight: 600; font-size: 0.9em; }
         .verdict.hit  { color: var(--success-color); }
@@ -260,7 +269,21 @@
                     <option value="false">Только промахи</option>
                 </select>
             </label>
+            <label>Стратегия
+                <select id="fStrategy">
+                    <option value="">Все стратегии</option>
+                    <!-- Загружается динамически -->
+                </select>
+            </label>
         </div>
+
+        <div class="actions" style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+            <button id="btnGenerate" class="btn btn-primary" style="padding: 8px 18px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 0.95em; cursor: pointer; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fas fa-magic"></i> Сгенерировать прогнозы
+            </button>
+            <span class="text-muted" style="font-size: 0.85em; color: var(--text-muted);">Для выбранной стратегии на 48 часов</span>
+        </div>
+
 
         <div id="statsBlock" class="stats-grid">
             <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка статистики…</div>
@@ -288,6 +311,7 @@
         const PAGE_SIZE = 50;
         const state = {
             range: '30d', status: 'all', outcome: '', hit: '',
+            strategy: '',
             offset: 0, total: 0,
         };
 
@@ -320,6 +344,7 @@
                 range: state.range,
                 only_verified: state.status === 'verified' ? 'true' : 'false',
             };
+            if (state.strategy) params.strategyId = state.strategy;
             const r = await Rolgi.api.get('/api/db/predictions/stats', params, { noCache: true });
             if (!r || !r.success) { document.getElementById('statsBlock').innerHTML = '<div class="empty">Ошибка загрузки статистики</div>'; return; }
             const d = r.data;
@@ -388,6 +413,7 @@
             };
             if (state.outcome) params.outcome = state.outcome;
             if (state.hit) params.hit = state.hit;
+            if (state.strategy) params.strategyId = state.strategy;
 
             const r = await Rolgi.api.get('/api/db/predictions/list', params, { noCache: true });
             if (!r || !r.success) {
@@ -412,6 +438,17 @@
                     else if (a.is_hit === false) verdict = '<span class="verdict miss"><i class="fas fa-times"></i> промах</span>';
                 }
                 const score = a ? (a.home_score + ':' + a.away_score + ' → ' + pill(a.outcome)) : '—';
+
+                // Over/Under колонки
+                let totalCell = '<span class="text-muted">—</span>';
+                if (it.predicted_total) {
+                    const cls = it.predicted_total === 'OVER' ? 'pill-over' : 'pill-under';
+                    totalCell = '<span class="pill ' + cls + '">' + esc(it.predicted_total) + ' ' + (it.total_line || '') + '</span>';
+                }
+                const totalProbs = it.total_over_prob != null
+                    ? 'O: ' + fmtPct(it.total_over_prob, 1) + ' / U: ' + fmtPct(it.total_under_prob, 1)
+                    : '<span class="text-muted">—</span>';
+
                 return [
                     '<tr>',
                     '  <td class="date">' + fmtDate(g.date) + '</td>',
@@ -421,6 +458,8 @@
                     '  </td>',
                     '  <td>' + pill(it.predicted_outcome) + '</td>',
                     '  <td>' + confBar(it.confidence) + '</td>',
+                    '  <td>' + totalCell + '</td>',
+                    '  <td style="font-size:0.85em">' + totalProbs + '</td>',
                     '  <td>' + score + '</td>',
                     '  <td>' + verdict + '</td>',
                     '  <td>' + (a && a.brier_component != null ? fmtNum(a.brier_component, 3) : '—') + '</td>',
@@ -436,6 +475,8 @@
                 '  <th>Матч</th>',
                 '  <th>Прогноз</th>',
                 '  <th>Уверенность</th>',
+                '  <th>Тотал</th>',
+                '  <th>Вероятности O/U</th>',
                 '  <th>Факт</th>',
                 '  <th>Результат</th>',
                 '  <th>Brier</th>',
@@ -463,6 +504,65 @@
             loadList();
         }
 
+        // ─── Стратегии ───
+        async function loadStrategies() {
+            try {
+                const res = await fetch('/api/strategies');
+                const data = await res.json();
+                const strategies = data.data || data;
+                if (!Array.isArray(strategies)) return;
+
+                const sel = document.getElementById('fStrategy');
+                strategies.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    const acc = s.accuracy != null ? ' (' + fmtPct(s.accuracy, 1) + ')' : '';
+                    opt.textContent = s.name + acc;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Load strategies failed:', e);
+            }
+        }
+
+        document.getElementById('fStrategy').addEventListener('change', e => {
+            state.strategy = e.target.value;
+            reloadAll();
+        });
+
+        document.getElementById('btnGenerate').addEventListener('click', async () => {
+            if (!state.strategy) {
+                alert('Выберите стратегию');
+                return;
+            }
+
+            const btn = document.getElementById('btnGenerate');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Генерация...';
+
+            try {
+                const res = await fetch('/api/strategies/' + state.strategy + '/generate-predictions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hours: 48, limit: 50 })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    const d = result.data;
+                    alert('Готово! Создано: ' + d.created + ', уже существует: ' + d.exists + ', ошибок: ' + d.failed);
+                    reloadAll();
+                } else {
+                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка запроса: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> Сгенерировать прогнозы';
+            }
+        });
+
         document.getElementById('fRange').addEventListener('change', e => { state.range = e.target.value; reloadAll(); });
         document.getElementById('fStatus').addEventListener('change', e => { state.status = e.target.value; reloadAll(); });
         document.getElementById('fOutcome').addEventListener('change', e => { state.outcome = e.target.value; reloadAll(); });
@@ -477,7 +577,7 @@
         });
 
         reloadAll();
-    })();
+        loadStrategies();
     </script>
 </body>
 </html>
