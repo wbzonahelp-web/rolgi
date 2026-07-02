@@ -11,6 +11,8 @@ const { authenticate, optionalAuthenticate } = require('../../auth/fastify-auth'
 const { getLeagueParams } = require('../../analytics/utils/league-params');
 const { computePrediction } = require('../../analytics/compute-prediction.js');
 const { computeStrategyPrediction, predictFromAnalyzers } = require('../../services/strategy-prediction-service');
+const ANALYZERS = require('../../analytics/analyzers-list');
+
 
 
 async function strategiesRoutes(fastify) {
@@ -806,6 +808,15 @@ async function strategiesRoutes(fastify) {
                 LIMIT 100
             `);
             return { success: true, data: result.rows };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    // GET /api/strategies/analyzers — список доступных анализаторов
+    fastify.get('/analyzers', async () => {
+        try {
+            return { success: true, data: ANALYZERS };
         } catch (err) {
             return { success: false, error: err.message };
         }

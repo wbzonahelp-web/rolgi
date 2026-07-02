@@ -292,6 +292,11 @@ class BackendApi {
     this.app.register(dbRoutes,          { prefix: '/api/db' });
     this.app.register(strategiesRoutes, { prefix: '/api/strategies' });
 
+    // GET /api/analyzers — список анализаторов
+    this.app.get('/api/analyzers', async () => {
+        return { success: true, data: require('../analytics/analyzers-list') };
+    });
+
     // Scout routes (uses full /api/scout/* paths internally)
     this.app.register(scoutRoutes);
 
