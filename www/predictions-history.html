@@ -210,7 +210,14 @@
             table { font-size: 0.85em; }
             td.league { display: none; }
         }
+        .filter-panel { display: flex; flex-wrap: wrap; gap: 8px; }
+        .predictions-table { display: block; overflow-x: auto; }
+        .by-outcome { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        select, input { font-size: 16px; }
+        @media (min-width: 641px) { .by-outcome { grid-template-columns: repeat(3, 1fr); } }
+
     </style>
+    <link rel="stylesheet" href="/assets/app-mobile.css">
 </head>
 <body>
     <header class="header">
@@ -275,6 +282,12 @@
                     <!-- Загружается динамически -->
                 </select>
             </label>
+            <label>Анализатор
+                <select id="fAnalyzer">
+                    <option value="">Все анализаторы</option>
+                    <!-- Загружается динамически -->
+                </select>
+            </label>
         </div>
 
         <div class="actions" style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
@@ -292,8 +305,10 @@
         <div id="byOutcomeBlock"></div>
 
         <div class="predictions-table">
-            <div id="tableBody">
-                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка прогнозов…</div>
+            <div class="table-wrap">
+                <div id="tableBody">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка прогнозов…</div>
+                </div>
             </div>
         </div>
 
@@ -310,8 +325,7 @@
         const esc = Rolgi.fmt.escapeHtml;
         const PAGE_SIZE = 50;
         const state = {
-            range: '30d', status: 'all', outcome: '', hit: '',
-            strategy: '',
+            strategy: '', analyzer: '',
             offset: 0, total: 0,
         };
 
@@ -344,7 +358,7 @@
                 range: state.range,
                 only_verified: state.status === 'verified' ? 'true' : 'false',
             };
-            if (state.strategy) params.strategyId = state.strategy;
+            if (state.analyzer) params.analyzer = state.analyzer;
             const r = await Rolgi.api.get('/api/db/predictions/stats', params, { noCache: true });
             if (!r || !r.success) { document.getElementById('statsBlock').innerHTML = '<div class="empty">Ошибка загрузки статистики</div>'; return; }
             const d = r.data;
@@ -418,7 +432,7 @@
             };
             if (state.outcome) params.outcome = state.outcome;
             if (state.hit) params.hit = state.hit;
-            if (state.strategy) params.strategyId = state.strategy;
+            if (state.analyzer) params.analyzer = state.analyzer;
 
             const r = await Rolgi.api.get('/api/db/predictions/list', params, { noCache: true });
             if (!r || !r.success) {
@@ -525,18 +539,37 @@
                     const opt = document.createElement('option');
                     opt.value = s.id;
                     const acc = s.accuracy != null ? ' (' + fmtPct(s.accuracy, 1) + ')' : '';
-                    opt.textContent = s.name + acc;
+                    opt.textContent = (s.name || ('Стратегия #' + s.id)) + acc;
                     sel.appendChild(opt);
                 });
             } catch (e) {
                 console.error('Load strategies failed:', e);
             }
         }
+        // ─── Анализаторы ───
+        async function loadAnalyzers() {
+            try {
+                const data = await Rolgi.api.get('/api/analyzers');
+                const analyzers = data.data || data;
+                if (!Array.isArray(analyzers)) return;
 
-        document.getElementById('fStrategy').addEventListener('change', e => {
-            state.strategy = e.target.value;
+                const sel = document.getElementById('fAnalyzer');
+                analyzers.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.textContent = a.name || a.id;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Load analyzers failed:', e);
+            }
+        }
+
+        document.getElementById('fAnalyzer').addEventListener('change', e => {
+            state.analyzer = e.target.value;
             reloadAll();
         });
+
 
         document.getElementById('btnGenerate').addEventListener('click', async () => {
             const btn = document.getElementById('btnGenerate');
@@ -589,7 +622,7 @@
 
         reloadAll();
         loadStrategies();
+        loadAnalyzers();
         })();
-    </script>
 </body>
 </html>
