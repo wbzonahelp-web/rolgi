@@ -1,0 +1,54 @@
+services:
+  postgres:
+    ports: !reset []
+    networks:
+      - rolgi-network
+
+  redis:
+    ports: !reset []
+    networks:
+      - rolgi-network
+
+  api:
+    ports: !reset []
+    networks:
+      - rolgi-network
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@postgres:5432/rolgi_v6
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+    labels: !reset []
+
+  nginx:
+    profiles: !reset []
+    ports: !reset []
+    image: nginx:alpine
+    container_name: rolgi-nginx
+    restart: unless-stopped
+    depends_on:
+      - api
+    volumes:
+      - /srv/projects/rolgi/www:/srv/projects/rolgi/www:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - rolgi-network
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.rolgi.rule=Host(`rolgi.com`)"
+      - "traefik.http.routers.rolgi.entrypoints=websecure"
+      - "traefik.http.routers.rolgi.tls=true"
+      - "traefik.http.routers.rolgi.tls.certresolver=letsencrypt"
+      - "traefik.http.services.rolgi.loadbalancer.server.port=80"
+
+networks:
+  web:
+    external: true
+  rolgi-network:
+    name: rolgi-network
