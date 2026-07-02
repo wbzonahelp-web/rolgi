@@ -356,6 +356,20 @@ class ScheduledJobsManager {
       }
     );
 
+    // Job 13b: Стратегические прогнозы (каждые 2 часа в :45)
+    this.registerJob(
+      'record_strategy_predictions',
+      '45 */2 * * *', // Каждые 2 часа в :45 UTC
+      async () => {
+        const { recordStrategyPredictions } = require('./record-strategy-predictions');
+        const stats = await recordStrategyPredictions(this.db);
+        logger.info({
+          job: 'record_strategy_predictions',
+          ...stats,
+        }, 'Strategy predictions recorded');
+      }
+    );
+
     // Job 14: Этап 12 — сверка прогнозов с фактом для finished матчей (каждый час в :25)
     this.registerJob(
       'verify_predictions',
