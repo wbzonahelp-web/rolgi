@@ -121,39 +121,39 @@
         .anz-card { background: #1a1d24; border: 1px solid #2a2d36; border-radius: 8px; padding: 12px; }
         .anz-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 600; }
         .anz-card-header img { width: 20px; height: 20px; border-radius: 50%; }
-        .anz-metric-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #23262e; font-size: 13px; }
+        .anz-metric-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #23262e; font-size: 0.9rem; }
         .anz-metric-row:last-child { border-bottom: none; }
         .anz-metric-name { color: #9aa0aa; }
         .anz-metric-value { font-weight: 600; color: #e4e6ea; }
-        .anz-metric-conf { font-size: 11px; color: #6b7080; margin-left: 4px; }
-        .anz-prediction-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .anz-metric-conf { font-size: 0.85rem; color: #6b7080; margin-left: 4px; }
+        .anz-prediction-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
         .anz-pill-W { background: #1d4d2a; color: #6ddc8a; }
         .anz-pill-D { background: #3a3a1a; color: #d7d472; }
         .anz-pill-L { background: #4d1d1d; color: #dc6d6d; }
-        .anz-section-title { font-weight: 600; color: #c5c8d0; margin: 16px 0 8px 0; font-size: 14px; }
+        .anz-section-title { font-weight: 600; color: #c5c8d0; margin: 16px 0 8px 0; font-size: 0.9rem; }
         .anz-betting { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .anz-bet-card { background: #1a1d24; border: 1px solid #2a2d36; border-radius: 8px; padding: 10px; text-align: center; }
         .anz-bet-card.take { border-color: #2d6b3a; background: #16241a; }
         .anz-bet-card.strong-take { border-color: #3e9c4f; background: #1a3022; box-shadow: 0 0 0 1px #2d6b3a; }
         .anz-bet-card.cautious { border-color: #6b5a2d; background: #241f16; }
         .anz-bet-card.skip { opacity: 0.6; }
-        .anz-bet-side { font-size: 11px; color: #9aa0aa; text-transform: uppercase; }
+        .anz-bet-side { font-size: 0.85rem; color: #9aa0aa; text-transform: uppercase; }
         .anz-bet-odds { font-size: 18px; font-weight: 700; margin: 4px 0; }
-        .anz-bet-edge { font-size: 14px; font-weight: 600; }
+        .anz-bet-edge { font-size: 0.9rem; font-weight: 600; }
         .anz-bet-edge.pos { color: #6ddc8a; }
         .anz-bet-edge.neg { color: #dc6d6d; }
-        .anz-bet-kelly { font-size: 11px; color: #9aa0aa; margin-top: 2px; }
-        .anz-bet-rec { font-size: 11px; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px; }
+        .anz-bet-kelly { font-size: 0.85rem; color: #9aa0aa; margin-top: 2px; }
+        .anz-bet-rec { font-size: 0.85rem; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px; }
         .anz-bet-rec.strong-take { color: #6ddc8a; }
         .anz-bet-rec.take { color: #98c97a; }
         .anz-bet-rec.cautious { color: #d7d472; }
         .anz-bet-rec.skip { color: #6b7080; }
         .anz-forecast { background: linear-gradient(135deg, #1a1d24, #1d2530); border: 1px solid #2a2d36; border-radius: 8px; padding: 14px; margin-top: 12px; text-align: center; }
-        .anz-forecast-outcome { font-size: 22px; font-weight: 700; margin: 4px 0; }
+        .anz-forecast-outcome { font-size: 1.375rem; font-weight: 700; margin: 4px 0; }
         .anz-forecast-conf-bar { height: 6px; background: #2a2d36; border-radius: 3px; overflow: hidden; margin: 8px auto; max-width: 220px; }
         .anz-forecast-conf-fill { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); }
-        .anz-forecast-hint { font-size: 11px; color: #6b7080; margin-top: 4px; }
-        .anz-meta { font-size: 11px; color: #6b7080; margin-top: 8px; text-align: right; }
+        .anz-forecast-hint { font-size: 0.85rem; color: #6b7080; margin-top: 4px; }
+        .anz-meta { font-size: 0.85rem; color: #6b7080; margin-top: 8px; text-align: right; }
         @media (max-width: 720px) { .anz-grid, .anz-betting { grid-template-columns: 1fr; } }
 
         /* Tooltip "?" icons */
@@ -165,7 +165,7 @@
             border-radius: 50%;
             background: #2a2d36;
             color: #9aa0aa;
-            font-size: 10px;
+            font-size: 0.85rem;
             font-weight: 700;
             margin-left: 4px;
             cursor: pointer;
@@ -183,13 +183,13 @@
             padding: 12px 14px;
             max-width: 320px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            font-size: 12px;
+            font-size: 0.85rem;
             line-height: 1.5;
             color: #c8cad0;
             display: none;
         }
         .anz-popover.open { display: block; }
-        .anz-popover-title { font-weight: 700; color: #e4e6ea; margin-bottom: 6px; font-size: 13px; }
+        .anz-popover-title { font-weight: 700; color: #e4e6ea; margin-bottom: 6px; font-size: 0.9rem; }
         .anz-popover-row { margin: 4px 0; }
         .anz-popover-row b { color: #d4d6da; }
         .anz-popover-close {
@@ -197,7 +197,7 @@
             top: 4px; right: 8px;
             cursor: pointer;
             color: #6b7080;
-            font-size: 14px;
+            font-size: 0.9rem;
         }
         .anz-popover-close:hover { color: #c8cad0; }
 
@@ -437,6 +437,7 @@
         .spark { display: block; }
         .profit-table td { vertical-align: middle; }
     </style>
+    <link rel="stylesheet" href="/assets/app-mobile.css">
 </head>
 <body>
     <div id="header-mount"></div>
@@ -852,7 +853,7 @@
             const rows = games.map(g => {
                 const dateStr = formatDateRu(g.date);
                 const score = (g.home_score != null && g.away_score != null) ? `${g.home_score} - ${g.away_score}` : '—';
-                return `<div class="g-h2h-row" style="display:grid;grid-template-columns:90px 1fr 60px 1fr;gap:8px;padding:10px;border-bottom:1px solid var(--border-color);align-items:center;font-size:0.92em;">
+                return `<div class="g-h2h-row" style="display:grid;grid-template-columns:minmax(60px, 1fr) 1fr minmax(40px, auto) 1fr;gap:8px;padding:10px;border-bottom:1px solid var(--border-color);align-items:center;font-size:0.92em;">
                     <div style="color:var(--text-muted);font-size:0.85em;">${fmt.escapeHtml(dateStr)}</div>
                     <div style="text-align:right;">${fmt.escapeHtml(g.home_name||'')}</div>
                     <div style="text-align:center;font-weight:700;font-variant-numeric:tabular-nums;">${score}</div>
@@ -936,7 +937,7 @@
                     '<span class="r-muted">' + (sm.wins||0) + 'W·' + (sm.draws||0) + 'D·' + (sm.losses||0) + 'L · ' +
                         (sm.goals_for||0) + ':' + (sm.goals_against||0) + ' · ' + winPct + '%</span>' +
                 '</div>' +
-                '<div class="form-table-wrap"><table class="form-table">' +
+                '<div class="table-wrap"><table class="form-table">' +
                     '<thead><tr>' +
                         '<th>Дата</th><th>Матч</th><th>Голы</th><th>Исход</th><th>Тотал</th>' +
                     '</tr></thead>' +
@@ -1171,7 +1172,7 @@
                 '<div class="profit-head">' +
                     '<div>ROI ставок по последним ' + n + ' матчам' + onlyLg + '</div>' +
                 '</div>' +
-                '<table class="profit-table">' +
+                '<div class="table-wrap"><table class="profit-table">' +
                     '<thead><tr>' +
                         '<th class="profit-market">Рынок</th>' +
                         '<th>' + homeName + '</th>' +
@@ -1192,7 +1193,7 @@
                 '</tr>';
             }
 
-            html += '</tbody></table>' +
+            html += '</tbody></table></div>' +
                 '<div class="profit-legend">' +
                     '<span class="roi-pos">+X%</span> прибыльная &nbsp;·&nbsp; ' +
                     '<span class="roi-neg">−X%</span> убыточная &nbsp;·&nbsp; ' +
