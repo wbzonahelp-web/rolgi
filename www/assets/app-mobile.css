@@ -56,6 +56,65 @@ textarea {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
+
+/* Base sidebar styles (migrated from index.html inline CSS) */
+.sidebar {
+    background: var(--card-bg, #ffffff);
+    border-radius: var(--radius-md, 10px);
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    height: fit-content;
+}
+
+.sidebar-section {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+}
+
+.sidebar-header {
+    padding: 0 16px 8px;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+}
+
+.sidebar-content {
+    padding: 0 8px;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-color, #1e293b);
+}
+
+.sidebar-item:hover {
+    background: var(--bg-hover, #f1f5f9);
+}
+
+.sidebar-item.active {
+    background: var(--primary-light, #eff6ff);
+    color: var(--primary, #3b82f6);
+}
+
+.sidebar-search {
+    padding: 12px 16px 4px;
+}
+
+.sidebar-search input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color, #e2e8f0);
+
+Outside: 2px 10px rgba(0,0,0,0.05);
+}
 .sidebar.open {
     transform: translateX(0);
 }
