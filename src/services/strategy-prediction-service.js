@@ -253,10 +253,9 @@ async function computeStrategyPrediction(db, gameId, config) {
 function predictFromAnalyzers(homeResults, awayResults, homeGames, awayGames, leagueParams = {}, strategyConfig) {
     // === V4 Forecast: Poisson primary + corrections ===
     // Build weight map from config, fallback to defaults
-    const defaultWeights = { poisson: 0.60, markov_outcome: 0.15, form_inertia: 0.10, hmm: 0.15 };
     const _w = {};
     for (const a of (strategyConfig?.analyzers || [])) { _w[a.name] = a.weight; }
-    const w = (name) => _w[name] ?? defaultWeights[name] ?? 0;
+    const w = (name) => _w[name] ?? 0;
     let homeScore = 0, drawScore = 0, awayScore = 0;
 
     // Poisson base
