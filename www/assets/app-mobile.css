@@ -1,0 +1,204 @@
+/* =============================================================
+   Rolgi SStats — Mobile Optimization Overrides (v1.0)
+   =============================================================
+   Подключать ПОСЛЕ app.css для применения override-правил.
+*/
+
+/* ─── Base: Touch-friendly helpers ─── */
+.r-btn:not(.r-btn-icon),
+button:not(.r-btn-icon),
+input,
+select,
+textarea {
+    min-height: 48px;
+    min-width: 48px;
+    font-size: 16px;           /* предотвращает iOS zoom */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Уменьшаем min-height для small secondary/ghost elements только на десктоп */
+@media (min-width: 769px) {
+    .r-btn.r-btn-sm,
+    button.btn-sm {
+        min-height: 32px;
+        min-width: auto;
+    }
+}
+
+/* ─── Modals: prevent edge-to-edge on mobile ─── */
+.r-modal {
+    padding: 8px;
+    border-radius: var(--radius-md, 10px);
+}
+
+/* ─── Tables: horizontal scroll ─── */
+.table-wrap,
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+/* ─── Sidebar / Drawer: mobile-first collapse ─── */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    background: var(--bg-nav, #1e293b);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.sidebar.open {
+    transform: translateX(0);
+}
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.sidebar-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ─── Tabs: horizontal scroll on narrow screens ─── */
+.r-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;     /* Firefox */
+}
+.r-tabs::-webkit-scrollbar {
+    display: none;             /* Chrome/Safari */
+}
+.r-tabs .r-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ─── Filters: wrap on mobile ─── */
+.filters-bar,
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ─── Stat / Info cards: smaller on mobile ─── */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+/* ─── Analyzer cards: ensure readable font ─── */
+.anz-metric,
+.anz-metric-value,
+.analyzer-card {
+    font-size: inherit;  /* fallback ≥ 16px via base override */
+}
+
+/* =============================================================
+   Breakpoint: 640px (phones / small tablets)
+   ============================================================= */
+@media (max-width: 640px) {
+    /* Touch-friendly row height */
+    .r-match,
+    .r-list-item {
+        min-height: 48px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    /* Tabs become swipeable */
+    .r-tabs {
+        padding-bottom: 4px;
+    }
+
+    /* Search / inputs: full width with comfortable tap */
+    .r-search-row {
+        grid-template-columns: 1fr;
+    }
+    .r-search-row > * {
+        min-height: 44px;
+    }
+
+    /* Stat cards stack vertically */
+    .stat-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Compact padding in cards/lists */
+    .r-card {
+        padding: 12px;
+    }
+
+    /* Sidebar remains hidden (fixed drawer only) */
+    .sidebar {
+        width: 85vw;
+    }
+}
+
+/* =============================================================
+   Breakpoint: 480px (small phones: iPhone SE, etc.)
+   ============================================================= */
+@media (max-width: 480px) {
+    .r-match {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .r-match .r-match-date,
+    .r-match .r-match-league {
+        font-size: 0.8em;
+    }
+
+    .stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Very small screens: hide less-essential icons */
+    .r-match .r-match-odds {
+        display: none;
+    }
+}
+
+/* =============================================================
+   Utility: Reduced motion support
+   ============================================================= */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* =============================================================
+   Utility: Dark mode support (if system prefers)
+   ============================================================= */
+@media (prefers-color-scheme: dark) {
+    /* inherit from project's existing dark theme logic */
+}
+
+
+/* ─── Override для иконочных кнопок ─── */
+.r-btn-icon,
+.r-modal-close,
+.icon-btn {
+    min-height: auto;
+    min-width: auto;
+}
