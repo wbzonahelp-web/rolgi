@@ -606,6 +606,7 @@ async function strategiesRoutes(fastify) {
                 shannon_entropy: require('../../analytics/analyzers/shannon-entropy.js'),
                 form_inertia:    require('../../analytics/analyzers/form-inertia.js'),
                 valenzetti:      require('../../analytics/analyzers/valenzetti.js'),
+                multipeak:       require('../../analytics/analyzers/multipeak-density.js'),
             };
             const aPoisson = require('../../analytics/analyzers/poisson.js');
             const pythonClient = require('../../analytics/python-client.js');
@@ -706,12 +707,12 @@ async function strategiesRoutes(fastify) {
                     const valenzettiConf = strategyConfig.analyzers.find(a => a.name === 'valenzetti' && a.enabled);
                     if (valenzettiConf) {
                         try {
-                            homeResults.valenzetti = aValenzetti.analyze(homeGames, awayGames, {
-                                alpha: leagueParamsV?.avg_home_goals ? Math.log(Number(leagueParamsV.avg_home_goals)) : undefined,
+                            homeResults.valenzetti = modules.valenzetti.analyze(homeGames, awayGames, {
+                                alpha: leagueParams?.avg_home_goals ? Math.log(Number(leagueParams.avg_home_goals)) : undefined,
                                 theta: Array.isArray(valenzettiConf.theta) && valenzettiConf.theta.length === 6
                                     ? valenzettiConf.theta : undefined,
                             });
-                            awayResults.valenzetti = aValenzetti.analyzeTeam(awayGames);
+                            awayResults.valenzetti = modules.valenzetti.analyzeTeam(awayGames);
                         } catch (_) {
                             homeResults.valenzetti = null;
                             awayResults.valenzetti = null;
