@@ -54,7 +54,11 @@
         }
         .r-load-more:hover { background: #f8f9fa; border-color: var(--primary-color); }
         .r-load-more:disabled { color: var(--text-muted); cursor: default; }
+        .league-pills { display:flex; flex-wrap:wrap; gap:6px; }
+        .league-modal { max-width:100%; padding:8px; }
+        @media (max-width: 640px) { .league-list { grid-template-columns: 1fr; } }
     </style>
+    <link rel="stylesheet" href="/assets/app-mobile.css">
 </head>
 <body>
     <div id="header-mount"></div>
