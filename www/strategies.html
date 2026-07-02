@@ -73,7 +73,18 @@
             .analyzer-row { flex-wrap: wrap; }
             .analyzer-row .weight-bar { flex: 1 1 100%; }
         }
+        .builder-slot select, .builder-slot input { font-size:16px; min-height:44px; }
+        #btnSave, #btnTest, .builder-slots button { min-height:48px; }
+        @media (max-width: 720px) {
+            .builder-slots { flex-direction:column; }
+            .analyzer-table-wrap { overflow-x:auto; }
+        }
+        @media (max-width: 640px) {
+            .leaderboard-table { display:block; overflow-x:auto; }
+            .backtest-table { display:block; overflow-x:auto; }
+        }
     </style>
+    <link rel="stylesheet" href="/assets/app-mobile.css">
 </head>
 <body>
 
@@ -104,12 +115,12 @@
     <div class="tab-content active" id="tab-builder">
         <div class="card">
             <div class="card-title">Создать стратегию</div>
-            <div class="form-row">
-                <div class="form-group">
+            <div class="form-row builder-slots">
+                <div class="form-group builder-slot">
                     <label>Название</label>
                     <input type="text" id="stratName" placeholder="Моя стратегия" maxlength="100">
                 </div>
-                <div class="form-group">
+                <div class="form-group builder-slot">
                     <label>Описание</label>
                     <input type="text" id="stratDesc" placeholder="Краткое описание" maxlength="255">
                 </div>
@@ -131,8 +142,8 @@
 
         <div class="card">
             <div class="card-title">Параметры</div>
-            <div class="form-row">
-                <div class="form-group">
+            <div class="form-row builder-slots">
+                <div class="form-group builder-slot">
                     <label>Окно матчей (N)</label>
                     <select id="stratN">
                         <option value="10">10</option>
@@ -142,14 +153,14 @@
                         <option value="50">50</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group builder-slot">
                     <label>Фильтр лиги</label>
                     <select id="stratLeague">
                         <option value="true" selected>Только текущая лига</option>
                         <option value="false">Все турниры</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group builder-slot">
                     <label>Учёт дом/гости</label>
                     <select id="stratVenue">
                         <option value="true" selected>Да</option>
@@ -680,7 +691,7 @@
             html += '</div>';
 
             // Results table
-            html += '<div style="max-height:400px;overflow-y:auto"><table style="font-size:0.8em"><thead><tr><th>Дата</th><th>Матч</th><th>Счёт</th><th>Прогноз</th><th>Факт</th><th>Увер.</th><th></th></tr></thead><tbody>';
+            html += '<div style="max-height:400px;overflow-y:auto"><table class="backtest-table" style="font-size:0.8em"><thead><tr><th>Дата</th><th>Матч</th><th>Счёт</th><th>Прогноз</th><th>Факт</th><th>Увер.</th><th></th></tr></thead><tbody>';
             const outColors = { HOME: 'badge-green', AWAY: 'badge-blue', DRAW: 'badge-yellow' };
             for (const g of d.results) {
                 const hitCls = g.is_hit ? 'badge-green' : 'badge-red';
@@ -784,7 +795,7 @@
                 el.innerHTML = '<div class="empty">Пока нет публичных стратегий с ≥5 прогнозами</div>';
                 return;
             }
-            el.innerHTML = '<table><thead><tr><th>#</th><th>Стратегия</th><th>Автор</th><th>Прогнозов</th><th>Попаданий</th><th>Точность</th></tr></thead><tbody>' +
+            el.innerHTML = '<div class="table-wrap"><table class="leaderboard-table"><thead><tr><th>#</th><th>Стратегия</th><th>Автор</th><th>Прогнозов</th><th>Попаданий</th><th>Точность</th></tr></thead><tbody>' +
                 r.data.map((s, i) => {
                     const accW = s.accuracy != null ? Math.round(s.accuracy * 100) : 0;
                     const acc = s.accuracy != null ? (s.accuracy * 100).toFixed(1) + '%' : '—';
@@ -796,7 +807,7 @@
                         '<td>' + (s.hits_count || 0) + '</td>' +
                         '<td><div class="accuracy-bar" style="width:' + accW + 'px"></div> ' + acc + '</td>' +
                     '</tr>';
-                }).join('') + '</tbody></table>';
+                }).join('') + '</tbody></table></div>';
         } catch (e) {
             el.innerHTML = '<div class="empty">Ошибка загрузки</div>';
         }
@@ -808,7 +819,7 @@
         try {
             const r = await api.get('/api/strategies', {}, { noCache: true });
             if (!r.success || !r.data) return;
-            const opts = r.data.map(s => '<option value="' + s.id + '">' + fmt.escapeHtml(s.name) + '</option>').join('');
+            const opts = r.data.map(s => '<option value="' + s.id + '">' + fmt.escapeHtml(s.name || ('Стратегия #' + s.id)) + '</option>').join('');
             const btSel = document.getElementById('btStrategy');
             if (btSel) btSel.innerHTML = '<option value="">Выберите стратегию</option>' + opts;
             const testSel = document.getElementById('testStrategy');
@@ -907,7 +918,7 @@
             // Games table
             const outColors = { HOME: 'badge-green', AWAY: 'badge-blue', DRAW: 'badge-yellow' };
             html += '<div class="card"><div class="card-title">Матчи (' + d.results.length + ')</div>' +
-                '<div style="max-height:500px;overflow-y:auto"><table><thead><tr><th>Дата</th><th>Матч</th><th>Счёт</th><th>Прогноз</th><th>Факт</th><th>Увер.</th><th></th></tr></thead><tbody>';
+                '<div style="max-height:500px;overflow-y:auto"><table class="backtest-table"><thead><tr><th>Дата</th><th>Матч</th><th>Счёт</th><th>Прогноз</th><th>Факт</th><th>Увер.</th><th></th></tr></thead><tbody>';
             for (const g of d.results) {
                 const hitCls = g.is_hit ? 'badge-green' : 'badge-red';
                 html += '<tr>' +
