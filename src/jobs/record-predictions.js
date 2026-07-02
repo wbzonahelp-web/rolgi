@@ -19,6 +19,15 @@
 
 const logger = require('../monitoring/logger');
 const { computePrediction } = require('../analytics/compute-prediction.js');
+const aMarkovOutcome = require('../analytics/analyzers/markov-outcome.js');
+const aMarkovState   = require('../analytics/analyzers/markov-state.js');
+const aShannonEntropy = require('../analytics/analyzers/shannon-entropy.js');
+const aFormInertia   = require('../analytics/analyzers/form-inertia.js');
+const aMultipeak     = require('../analytics/analyzers/multipeak-density.js');
+const aPoisson       = require('../analytics/analyzers/poisson.js');
+const aValenzetti    = require('../analytics/analyzers/valenzetti.js');
+const pythonClient   = require('../analytics/python-client.js');
+const { getLeagueParams } = require('../analytics/utils/league-params');
 
 const N_WINDOW        = 20;
 const LEAGUE_FILTER   = true;
@@ -218,6 +227,9 @@ async function recordPredictions(db) {
                 ]);
 
                 predicted++;
+
+                // ── Шаг 2c: индивидуальные прогнозы анализаторов в model_predictions ──
+                await saveModelPredictionsForGame(db, game, d);
             } catch (err) {
                 errors++;
                 logger.warn({
@@ -250,6 +262,292 @@ async function recordPredictions(db) {
         errors,
         duration_ms: duration,
     };
+}
+
+/**
+ * Загружает историю команды для индивидуальных анализаторов.
+ * @param {object} db — pg pool
+ * @param {number} teamId — internal team id
+ * @param {number} n — количество матчей
+ * @param {Date} beforeDate —截止 дата (до даты матча)
+ * @param {number|null} leagueInternal — league_id для фильтра
+ * @returns {Promise<Array>} — массив матчей {outcome, gf, ga, ...}
+ */
+async function loadTeamHistory(db, teamId, n, beforeDate, leagueInternal) {
+    const sql = `
+        SELECT g.home_team_id, g.away_team_id, g.home_score, g.away_score,
+               gs.expected_goals_home, gs.expected_goals_away
+        FROM games g
+        LEFT JOIN game_statistics gs ON gs.game_id = g.id
+        WHERE (g.home_team_id = $1 OR g.away_team_id = $1)
+          AND g.is_deleted = false AND g.status = 'finished'
+          AND g.date < $3
+          ${leagueInternal ? 'AND g.league_id = $4' : ''}
+        ORDER BY g.date DESC LIMIT $2`;
+    const params = leagueInternal
+        ? [teamId, n, beforeDate, leagueInternal]
+        : [teamId, n, beforeDate];
+    const { rows } = await db.query(sql, params);
+    return rows.map(r => {
+        const isHome = r.home_team_id === teamId;
+        const gf = isHome ? r.home_score : r.away_score;
+        const ga = isHome ? r.away_score : r.home_score;
+        let outcome = null;
+        if (gf != null && ga != null) {
+            if (gf > ga) outcome = 'W';
+            else if (gf < ga) outcome = 'L';
+            else outcome = 'D';
+        }
+        return { outcome, gf, ga, date: r.date };
+    });
+}
+
+/**
+ * Сохраняет индивидуальные прогнозы анализаторов в model_predictions.
+ * Вызывается после успешной записи integrated прогноза.
+ *
+ * @param {object} db — pg pool
+ * @param {object} game — строка кандидата {id, home_team_id, away_team_id, league_id, date}
+ * @param {object} predictionData — result.data из computePrediction
+ */
+async function saveModelPredictionsForGame(db, game, predictionData) {
+    const gameId = game.id; // internal game id
+    const n = 20;
+    const leagueInternal = game.league_id || null;
+
+    // Загружаем историю для home и away
+    const [homeHistory, awayHistory] = await Promise.all([
+        loadTeamHistory(db, game.home_team_id, n, game.date, leagueInternal),
+        loadTeamHistory(db, game.away_team_id, n, game.date, leagueInternal),
+    ]);
+
+    // Получаем leagueParams для Poisson/Valenzetti
+    let leagueParams = null;
+    try {
+        if (game.league_id) {
+            const leagueRes = await db.query(
+                `SELECT sstats_id FROM leagues WHERE id = $1 LIMIT 1`, [game.league_id]
+            );
+            if (leagueRes.rows.length) {
+                leagueParams = getLeagueParams(leagueRes.rows[0].sstats_id);
+            }
+        }
+    } catch (_) {
+        leagueParams = null;
+    }
+
+    // ─── Определяем список анализаторов и их вызовы ───
+    const modelRuns = [];
+
+    // 1. markov_outcome — per-team, комбинируем next_outcome в HOME/DRAW/AWAY
+    modelRuns.push(() => {
+        const home = aMarkovOutcome.analyze(homeHistory);
+        const away = aMarkovOutcome.analyze(awayHistory);
+        const hNext = home.details && home.details.next_outcome;
+        const aNext = away.details && away.details.next_outcome;
+        let predictedOutcome = 'DRAW';
+        let confidence = 0;
+        let homeScore = 0, drawScore = 0, awayScore = 0;
+        if (hNext && hNext.prediction) {
+            if (hNext.prediction === 'W') { homeScore += hNext.probability; }
+            else if (hNext.prediction === 'D') { drawScore += hNext.probability * 0.5; }
+            else { awayScore += hNext.probability; }
+        }
+        if (aNext && aNext.prediction) {
+            if (aNext.prediction === 'W') { awayScore += aNext.probability; }
+            else if (aNext.prediction === 'D') { drawScore += aNext.probability * 0.5; }
+            else { homeScore += aNext.probability; }
+        }
+        if (homeScore >= drawScore && homeScore >= awayScore) { predictedOutcome = 'HOME'; confidence = homeScore; }
+        else if (awayScore >= drawScore && awayScore >= homeScore) { predictedOutcome = 'AWAY'; confidence = awayScore; }
+        else { predictedOutcome = 'DRAW'; confidence = drawScore; }
+        confidence = Math.max(0, Math.min(1, confidence));
+        return {
+            modelName: 'markov_outcome',
+            predictedOutcome,
+            confidence: Math.round(confidence * 10000) / 10000,
+            details: { home, away },
+        };
+    });
+
+    // 2. markov_state — per-team, метрика
+    modelRuns.push(() => {
+        const home = aMarkovState.analyze(homeHistory);
+        const away = aMarkovState.analyze(awayHistory);
+        return {
+            modelName: 'markov_state',
+            predictedOutcome: 'PENDING',
+            confidence: Math.max(home.confidence, away.confidence),
+            details: { home, away },
+        };
+    });
+
+    // 3. shannon_entropy — per-team, метрика
+    modelRuns.push(() => {
+        const home = aShannonEntropy.analyze(homeHistory);
+        const away = aShannonEntropy.analyze(awayHistory);
+        return {
+            modelName: 'shannon_entropy',
+            predictedOutcome: 'PENDING',
+            confidence: Math.max(home.confidence, away.confidence),
+            details: { home, away },
+        };
+    });
+
+    // 4. form_inertia — per-team, метрика
+    modelRuns.push(() => {
+        const home = aFormInertia.analyze(homeHistory);
+        const away = aFormInertia.analyze(awayHistory);
+        return {
+            modelName: 'form_inertia',
+            predictedOutcome: 'PENDING',
+            confidence: Math.max(home.confidence, away.confidence),
+            details: { home, away },
+        };
+    });
+
+    // 5. multipeak — per-team, метрика
+    modelRuns.push(() => {
+        const home = aMultipeak.analyze(homeHistory);
+        const away = aMultipeak.analyze(awayHistory);
+        return {
+            modelName: 'multipeak',
+            predictedOutcome: 'PENDING',
+            confidence: Math.max(home.confidence, away.confidence),
+            details: { home, away },
+        };
+    });
+
+    // 6. poisson — имеет probs
+    modelRuns.push(() => {
+        const lp = leagueParams || {};
+        const result = aPoisson.analyze(homeHistory, awayHistory, {
+            avgHomeGoals: lp.avg_home_goals,
+            avgAwayGoals: lp.avg_away_goals,
+        });
+        const probs = result.details && result.details.probabilities;
+        const predictedOutcome = result.details && result.details.predicted_outcome
+            ? result.details.predicted_outcome : 'DRAW';
+        const confidence = result.details && result.details.predicted_confidence
+            ? result.details.predicted_confidence : 0;
+        return {
+            modelName: 'poisson',
+            predictedOutcome,
+            confidence: Math.round(confidence * 10000) / 10000,
+            homeProb: probs ? probs.home : null,
+            drawProb: probs ? probs.draw : null,
+            awayProb: probs ? probs.away : null,
+            details: result,
+        };
+    });
+
+    // 7. valenzetti — имеет probs
+    modelRuns.push(() => {
+        const result = aValenzetti.analyze(homeHistory, awayHistory, {});
+        const probs = result.details && result.details.probabilities;
+        const predictedOutcome = result.details && result.details.predicted_outcome
+            ? result.details.predicted_outcome : 'DRAW';
+        const confidence = result.details && result.details.predicted_confidence
+            ? result.details.predicted_confidence : 0;
+        return {
+            modelName: 'valenzetti',
+            predictedOutcome,
+            confidence: Math.round(confidence * 10000) / 10000,
+            homeProb: probs ? probs.home : null,
+            drawProb: probs ? probs.draw : null,
+            awayProb: probs ? probs.away : null,
+            details: result,
+        };
+    });
+
+    // 8. hmm — python client (асинхронный)
+    modelRuns.push(async () => {
+        let hmmHome = null, hmmAway = null;
+        try {
+            const [homeRes, awayRes] = await Promise.allSettled([
+                pythonClient.getTeamAnalyzer('hmm', game.home_team_id, { nWindow: n }),
+                pythonClient.getTeamAnalyzer('hmm', game.away_team_id, { nWindow: n }),
+            ]);
+            hmmHome = homeRes.status === 'fulfilled' ? homeRes.value : null;
+            hmmAway = awayRes.status === 'fulfilled' ? awayRes.value : null;
+        } catch (_) {}
+
+        let predictedOutcome = 'PENDING';
+        let confidence = 0;
+        let homeProb = null, drawProb = null, awayProb = null;
+
+        // Если HMM вернул home/draw/away probs
+        if (hmmHome && hmmHome.probabilities) {
+            const p = hmmHome.probabilities;
+            homeProb = p.home;
+            drawProb = p.draw;
+            awayProb = p.away;
+            if (homeProb >= drawProb && homeProb >= awayProb) { predictedOutcome = 'HOME'; confidence = homeProb; }
+            else if (awayProb >= drawProb && awayProb >= homeProb) { predictedOutcome = 'AWAY'; confidence = awayProb; }
+            else if (drawProb >= homeProb && drawProb >= awayProb) { predictedOutcome = 'DRAW'; confidence = drawProb; }
+        }
+
+        return {
+            modelName: 'hmm',
+            predictedOutcome,
+            confidence: Math.round(confidence * 10000) / 10000,
+            homeProb,
+            drawProb,
+            awayProb,
+            details: { home: hmmHome, away: hmmAway },
+        };
+    });
+
+    // ─── Выполняем и сохраняем ───
+    for (const run of modelRuns) {
+        let modelResult;
+        try {
+            modelResult = await run();
+        } catch (runErr) {
+            logger.warn({
+                job: 'model_predictions',
+                game_id: gameId,
+                model: run.name || 'unknown',
+                err: runErr.message,
+            }, 'Analyzer run failed, skipping');
+            continue;
+        }
+
+        try {
+            await db.query(`
+                INSERT INTO model_predictions
+                    (model_name, game_id, predicted_outcome,
+                     home_prob, draw_prob, away_prob,
+                     confidence, details, prediction_date)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_DATE)
+                ON CONFLICT (game_id, model_name, prediction_date)
+                DO UPDATE SET
+                    predicted_outcome = EXCLUDED.predicted_outcome,
+                    home_prob = EXCLUDED.home_prob,
+                    draw_prob = EXCLUDED.draw_prob,
+                    away_prob = EXCLUDED.away_prob,
+                    confidence = EXCLUDED.confidence,
+                    details = EXCLUDED.details,
+                    predicted_at = NOW()
+            `, [
+                modelResult.modelName,
+                gameId,
+                modelResult.predictedOutcome,
+                modelResult.homeProb != null ? modelResult.homeProb : null,
+                modelResult.drawProb != null ? modelResult.drawProb : null,
+                modelResult.awayProb != null ? modelResult.awayProb : null,
+                modelResult.confidence,
+                JSON.stringify(modelResult.details),
+            ]);
+        } catch (insErr) {
+            logger.warn({
+                job: 'model_predictions',
+                game_id: gameId,
+                model: modelResult.modelName,
+                err: insErr.message,
+            }, 'INSERT into model_predictions failed');
+        }
+    }
 }
 
 module.exports = { recordPredictions };
