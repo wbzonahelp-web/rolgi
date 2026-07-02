@@ -22,7 +22,7 @@
             `<a href="${l.href}"${l.id === active ? ' class="active"' : ''}><i class="fas ${l.icon}"></i> ${l.label}</a>`
         ).join('');
         return `
-<header class="r-header r-header-mobile">
+<header class="r-header">
   <div class="r-header-content">
     <a href="/" class="r-logo"><i class="fas fa-futbol"></i><span>Rolgi SStats</span></a>
     <button class="r-burger" aria-label="Меню" type="button"><i class="fas fa-bars"></i></button>
@@ -133,12 +133,12 @@
         const time = (game.date || '').slice(11,16);
         const dateDisplay = isScheduled ? `${date} ${time}` : date;
 
-        return `<div class="table-wrap"><a href="/game.html?id=${sstatsId}" class="r-match">
+        return `<a href="/game.html?id=${sstatsId}" class="r-match">
             <span class="r-match-date">${esc(dateDisplay)}</span>
             <span class="r-match-team r-match-team-home">${esc(home)}</span>
             <span class="r-match-score ${scoreClass}">${esc(scoreText)}</span>
             <span class="r-match-team r-match-team-away">${esc(away)}</span>
-        </a></div>`;
+        </a>`;
     }
 
     function modal(id, titleHtml = '', bodyHtml = '') {
@@ -230,12 +230,12 @@
         const dateDisplay = st.kind === 'scheduled' ? `${date} ${time}` : date;
         const sid = g.sstats_id || g.id;
 
-        return `<div class="table-wrap"><a href="/game.html?id=${sid}" class="r-match">
+        return `<a href="/game.html?id=${sid}" class="r-match">
             <span class="r-match-date">${esc(dateDisplay)}</span>
             <span class="r-match-team r-match-team-home">${esc(home)}</span>
             <span class="r-match-score ${scoreClass}">${esc(scoreText)}</span>
             <span class="r-match-team r-match-team-away">${esc(away)}</span>
-        </a></div>`;
+        </a>`;
     }
 
     // Универсальный statMini — теперь принимает rawHtml как опцию
