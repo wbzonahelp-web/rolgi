@@ -33,7 +33,7 @@ services:
     depends_on:
       - api
     volumes:
-      - /srv/projects/rolgi/www:/srv/projects/rolgi/www:ro
+      - ./www:/usr/share/nginx/html:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     networks:
       - rolgi-network
