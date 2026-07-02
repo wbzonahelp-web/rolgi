@@ -921,7 +921,47 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a1a1a1;
         }
+        /* Mobile optimizations */
+        .games-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filters-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sidebar { display: none; }
+
+        .sidebar.show {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 85vw;
+            height: 100vh;
+            height: 100dvh;
+            z-index: 1000;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.show.open {
+            transform: translateX(0);
+        }
+
+        @media (min-width: 769px) {
+            .sidebar {
+                display: block !important;
+                position: static;
+                width: 280px;
+                transform: none;
+            }
+        }
     </style>
+    <link rel="stylesheet" href="/assets/app-mobile.css">
 </head>
 <body>
     <!-- Header -->
@@ -2056,8 +2096,9 @@
                         <span class="league-name">${group.league}</span>
                         <span class="league-count">${group.games.length}</span>
                     </div>
-                    <div class="games-table">
+                    <div class="games-table-wrapper"><div class="games-table">
                         ${group.games.map(game => renderGameRow(game)).join('')}
+                    </div>
                     </div>
                 </div>
             `).join('');
@@ -2076,9 +2117,9 @@
 
             gamesList.innerHTML = `
                 <div class="games-section">
-                    <div class="games-table">
+                    <div class="games-table-wrapper"><div class="games-table">
                         ${sortedGames.map(game => renderGameRow(game, true)).join('')}
-                    </div>
+                </div>
                 </div>
             `;
         }
