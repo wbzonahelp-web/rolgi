@@ -41,6 +41,7 @@ textarea {
 }
 
 /* ─── Sidebar / Drawer: mobile-first collapse ─── */
+/* Base sidebar styles (migrated from index.html inline CSS) */
 .sidebar {
     position: fixed;
     top: 0;
@@ -55,10 +56,21 @@ textarea {
     background: var(--bg-nav, #1e293b);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md, 10px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-/* Base sidebar styles (migrated from index.html inline CSS) */
-.sidebar {
+/* Desktop: sidebar in normal flow */
+@media (min-width: 769px) {
+    .sidebar {
+        position: static;
+        transform: none;
+        height: auto;
+        width: 280px;
+        max-width: none;
+        z-index: auto;
+    }
+}
     background: var(--card-bg, #ffffff);
     border-radius: var(--radius-md, 10px);
     overflow: hidden;
@@ -113,7 +125,7 @@ textarea {
     padding: 8px 12px;
     border: 1px solid var(--border-color, #e2e8f0);
 
-Outside: 2px 10px rgba(0,0,0,0.05);
+box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 .sidebar.open {
     transform: translateX(0);
