@@ -1952,6 +1952,10 @@
         // Render games grouped by leagues
         function renderByLeagues(games) {
             const gamesList = document.getElementById('gamesList');
+            if (!games || games.length === 0) {
+                gamesList.innerHTML = '<div class="r-empty">Нет матчей</div>';
+                return;
+            }
             
             // Group by league
             const leagueGroups = {};
@@ -1995,6 +1999,10 @@
         // Render games by time
         function renderByTime(games) {
             const gamesList = document.getElementById('gamesList');
+            if (!games || games.length === 0) {
+                gamesList.innerHTML = '<div class="r-empty">Нет матчей</div>';
+                return;
+            }
             
             // Sort by time
             const sortedGames = [...games].sort((a, b) => {
