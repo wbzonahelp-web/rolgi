@@ -362,6 +362,11 @@
             const r = await Rolgi.api.get('/api/db/predictions/stats', params, { noCache: true });
             if (!r || !r.success) { document.getElementById('statsBlock').innerHTML = '<div class="empty">Ошибка загрузки статистики</div>'; return; }
             const d = r.data;
+            if (!d || d.total == null) {
+                document.getElementById('statsBlock').innerHTML = '<div class="empty"><i class="fas fa-inbox"></i> Нет данных</div>';
+                document.getElementById('byOutcomeBlock').innerHTML = '';
+                return;
+            }
             const accClass = d.accuracy != null && d.accuracy > 0.46 ? 'good' : (d.accuracy != null && d.accuracy < 0.40 ? 'bad' : '');
             const brierClass = d.brier_score != null && d.brier_score < 0.6 ? 'good' : (d.brier_score != null && d.brier_score > 0.7 ? 'bad' : '');
 
@@ -440,6 +445,11 @@
                 return;
             }
             const d = r.data;
+            if (!d || !d.items) {
+                document.getElementById('tableBody').innerHTML = '<div class="empty"><i class="fas fa-inbox"></i> Нет данных</div>';
+                renderPagination();
+                return;
+            }
             state.total = d.total;
 
             if (!d.items.length) {
