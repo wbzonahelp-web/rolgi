@@ -325,7 +325,10 @@
         const esc = Rolgi.fmt.escapeHtml;
         const PAGE_SIZE = 50;
         const state = {
-            range: '30d',
+            range: document.getElementById('fRange').value || '30d',
+            status: document.getElementById('fStatus').value || 'all',
+            outcome: document.getElementById('fOutcome').value || '',
+            hit: document.getElementById('fHit').value || '',
             strategy: '', analyzer: '',
             offset: 0, total: 0,
         };

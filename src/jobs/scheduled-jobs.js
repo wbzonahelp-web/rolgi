@@ -134,7 +134,7 @@ class ScheduledJobsManager {
         const byVariant = {};
         for (const params of variants) {
           try {
-            const session = await (new DataLoader({ apiClient: getLiveClient() }))
+            const session = await (new DataLoader())
               .load('games', params, 'games');
             const cnt = session && session.stats ? (session.stats.totalRecords || 0) : 0;
             const key = params.live ? 'live=true' : ('status=' + params.status);
