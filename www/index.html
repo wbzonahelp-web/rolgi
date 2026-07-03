@@ -1623,6 +1623,8 @@
                     }
                     default:
                         params.push(`date=${safeDate}`);
+                        // Include live games when in default 'all' view
+                        params.push('includeLive=true');
                 }
 
                 // League filter (leagueId is now sstats_id)
@@ -1906,20 +1908,20 @@
             return games.filter(game => {
                 const s = game.status || game.Status;
                 if (currentStatus === 'live') {
-                    if (game.is_live === true) return true;
+                    if (!!game.is_live) return true;
                     if (s === 'live') return true;
                     if (typeof s === 'number') return [3, 4, 5, 6, 7, 11, 18, 19].includes(s);
                     return false;
                 }
                 if (currentStatus === 'finished') {
-                    if (game.is_finished === true) return true;
+                    if (!!game.is_finished) return true;
                     if (s === 'finished') return true;
                     if (typeof s === 'number') return [8, 9, 10, 17, 18].includes(s);
                     return false;
                 }
                 if (currentStatus === 'upcoming') {
                     if (s === 'scheduled' || s === 'upcoming') return true;
-                    if (game.is_live === false && game.is_finished === false) return true;
+                    if (!game.is_live && !game.is_finished) return true;
                     if (typeof s === 'number') return [1, 2].includes(s);
                     return false;
                 }
@@ -2159,8 +2161,8 @@
                 <div class="game-row" onclick="openGameModal(${gameId})">
                     <div class="game-time">
                         <div class="time">${time}</div>
-                        ${(game.is_live === true || statusInfo.isLive) ? `<span class="game-status status-live">${typeof game.elapsed === 'number' && game.elapsed > 0 ? game.elapsed + "'" : statusInfo.text}</span>` : ''}
-                        ${(game.is_finished === true || (typeof status === 'number' && status >= 8 && status <= 18)) ? `<span class="game-status status-finished">FT</span>` : ''}
+                        ${(!!game.is_live || statusInfo.isLive) ? `<span class="game-status status-live">${typeof game.elapsed === 'number' && game.elapsed > 0 ? game.elapsed + "'" : statusInfo.text}</span>` : ''}
+                        ${(!!game.is_finished || (typeof status === 'number' && status >= 8 && status <= 18)) ? `<span class="game-status status-finished">FT</span>` : ''}
                     </div>
                     <div class="team home">
                         <span class="team-name">${homeTeam}</span>

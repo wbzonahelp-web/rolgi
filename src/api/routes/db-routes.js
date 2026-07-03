@@ -132,15 +132,14 @@ async function dbRoutes(fastify) {
         const leagueId    = request.query.leagueId ? parseInt(request.query.leagueId, 10) : null;
         const season      = request.query.season   ? parseInt(request.query.season, 10) : null;
         const status      = request.query.status || null;
-        const statusGroup = request.query.statusGroup || null;
-        const date        = request.query.date     || null;
+        const includeLive = request.query.includeLive === 'true';
         const dateFrom    = request.query.dateFrom || null;
         const dateTo      = request.query.dateTo   || null;
         const team        = request.query.team     || null;
         const limit       = Math.min(parseInt(request.query.limit || 50, 10), 200);
         const offset      = parseInt(request.query.offset || 0, 10);
 
-        if (!leagueId && !date && !dateFrom && !dateTo && statusGroup !== 'live' && !team) {
+        if (!leagueId && !date && !dateFrom && !dateTo && statusGroup !== 'live' && !team && !includeLive) {
             return reply.code(400).send({ success: false,
                 error: 'at least one filter required: leagueId | date | dateFrom/dateTo | statusGroup=live | team' });
         }
@@ -163,6 +162,12 @@ async function dbRoutes(fastify) {
         if (statusGroup === 'upcoming') { where.push(`(g.status = 'scheduled' OR g.status = 'postponed')`); }
         else if (statusGroup === 'live') { where.push(`g.is_live = true`); }
         else if (statusGroup === 'finished') { where.push(`g.status = 'finished'`); }
+        if (includeLive) {
+            // Wrap all non-trivial conditions to OR with is_live
+            const rest = where.slice(1).join(' AND ');
+            where.length = 1; // keep only 'g.is_deleted = false'
+            where.push(`(${rest} OR g.is_live = true)`);
+        }
         if (team) {
             where.push(`(ht.name ILIKE $${i} OR at.name ILIKE $${i})`);
             params.push(`%${team}%`); i++;
