@@ -136,6 +136,8 @@ async function dbRoutes(fastify) {
         const dateFrom    = request.query.dateFrom || null;
         const dateTo      = request.query.dateTo   || null;
         const team        = request.query.team     || null;
+        const statusGroup = request.query.statusGroup || null;
+        const date        = request.query.date || null;
         const limit       = Math.min(parseInt(request.query.limit || 50, 10), 200);
         const offset      = parseInt(request.query.offset || 0, 10);
 

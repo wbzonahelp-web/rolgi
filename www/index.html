@@ -1271,6 +1271,7 @@
 
         // Auto-refresh interval for live games (2 minutes)
         let autoRefreshInterval = null;
+        let gamesLoadError = false;
         const AUTO_REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes in ms
         
         // Start auto-refresh when viewing live games
@@ -1664,6 +1665,7 @@
                 // Handle response - local proxy returns { success, data, total }
                 const games = result.data || result;
                 if (Array.isArray(games)) {
+                    gamesLoadError = false;
                     allGames = games;
                     totalGames = result.total || games.length;
                     console.log(`Loaded ${games.length} games, fromCache: ${result.fromCache || false}`);
@@ -1678,6 +1680,7 @@
                     throw new Error('No data received');
                 }
             } catch (error) {
+                gamesLoadError = true;
                 console.error('Error loading games:', error);
                 gamesList.innerHTML = `
                     <div class="loading">
@@ -1935,12 +1938,22 @@
             let games = filterByStatus(allGames);
 
             if (games.length === 0) {
-                gamesList.innerHTML = `
-                    <div class="loading">
-                        <i class="fas fa-calendar-times"></i>
-                        <div>Нет матчей для выбранной даты</div>
-                    </div>
-                `;
+                if (gamesLoadError) {
+                    gamesList.innerHTML = `
+                        <div class="loading">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--danger-color);"></i>
+                            <div>Ошибка загрузки данных</div>
+                            <div style="font-size: 0.9em; margin-top: 5px; color: var(--text-muted);">Попробуйте обновить страницу</div>
+                        </div>
+                    `;
+                } else {
+                    gamesList.innerHTML = `
+                        <div class="loading">
+                            <i class="fas fa-calendar-times"></i>
+                            <div>Нет матчей для выбранной даты</div>
+                        </div>
+                    `;
+                }
                 return;
             }
 
