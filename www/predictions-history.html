@@ -324,6 +324,14 @@
 
     <script src="/assets/app.js?v=4"></script>
     <script>
+    // Emergency: unregister any stale Service Workers that may hang network requests
+    if ('serviceWorker' in navigator) {
+        try {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.unregister(); });
+            });
+        } catch(e) {}
+    }
     (function () {
         // Fallback XHR wrapper (bypasses broken fetch / blocked app.js)
         function apiGetFallback(endpoint, params) {
