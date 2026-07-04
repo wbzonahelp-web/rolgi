@@ -39,6 +39,20 @@
         default:        60_000,
     };
 
+    function safeFetch(url, opts, timeout) {
+        return new Promise((resolve, reject) => {
+            var handled = false;
+            var id = setTimeout(function () {
+                if (!handled) { handled = true; reject(new Error('Fetch timeout')); }
+            }, timeout || 15000);
+            fetch(url, opts).then(function (r) {
+                if (!handled) { handled = true; clearTimeout(id); resolve(r); }
+            }).catch(function (err) {
+                if (!handled) { handled = true; clearTimeout(id); reject(err); }
+            });
+        });
+    }
+
     async function apiGet(endpoint, params = {}, opts = {}) {
         const qs = new URLSearchParams(
             Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
@@ -56,29 +70,18 @@
 
         let lastErr;
         for (let i = 0; i < 2; i++) {
-            let controller, timeoutId;
             try {
-                controller = new AbortController();
-                timeoutId = setTimeout(() => controller.abort(), 15000);
-                const r = await raceFetch(url, { credentials: 'same-origin', signal: controller.signal }, 15000);
-                clearTimeout(timeoutId);
+                const r = await safeFetch(url, { credentials: 'same-origin' });
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 const data = await r.json();
                 cache.set(url, { v: data, t: Date.now() });
                 return data;
             } catch (e) {
-                clearTimeout(timeoutId);
                 lastErr = e;
                 if (i === 0) await new Promise(r => setTimeout(r, 400));
             }
         }
         throw lastErr;
-    }
-    function raceFetch(url, opts, ms) {
-        return Promise.race([
-            fetch(url, opts),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch timeout')), ms))
-        ]);
     }
     const api = { get: apiGet, clearCache: () => cache.clear() };
 
@@ -375,12 +378,8 @@
 
         let lastErr;
         for (let i = 0; i < 2; i++) {
-            let controller, timeoutId;
             try {
-                controller = new AbortController();
-                timeoutId = setTimeout(() => controller.abort(), 15000);
-                const r = await raceFetch(url, { credentials: 'same-origin', signal: controller.signal }, 15000);
-                clearTimeout(timeoutId);
+                const r = await safeFetch(url, { credentials: 'same-origin' });
                 if (r.status === 401 && i === 0) {
                     const refreshed = await auth.refresh();
                     if (refreshed) continue;
@@ -390,7 +389,6 @@
                 cache.set(url, { v: data, t: Date.now() });
                 return data;
             } catch (e) {
-                clearTimeout(timeoutId);
                 lastErr = e;
                 if (i === 0) await new Promise(r => setTimeout(r, 400));
             }
