@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debug — Predictions API</title>
+<style>
+  body{font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto}
+  h2{color:#1a5f7a}
+  .block{margin:10px 0;padding:10px;border:1px solid #ddd;border-radius:8px}
+  .ok{color:green}.err{color:red}.warn{color:orange}
+  pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h2>Diagnostics</h2>
+<div class="block" id="status">Loading…</div>
+<div class="block" id="result"></div>
+
+<script>
+(function() {
+  var output = document.getElementById('status');
+  var resultDiv = document.getElementById('result');
+  var log = function(label, value, cls) {
+    var d = document.createElement('div');
+    d.className = cls || '';
+    d.textContent = label + ': ' + value;
+    output.appendChild(d);
+  };
+
+  // Test 1: basic types
+  try {
+    log('typeof setTimeout', typeof setTimeout);
+    log('typeof Promise', typeof Promise);
+    log('typeof fetch', typeof fetch);
+    log('typeof XMLHttpRequest', typeof XMLHttpRequest);
+  } catch(e) { log('ENV error', e.message, 'err'); }
+
+  var url = '/api/db/predictions/stats?range=30d&only_verified=true';
+
+  // Test 2: direct XMLHttpRequest (bypasses fake fetch/promise)
+  var start = Date.now();
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onload = function() {
+    var took = Date.now() - start;
+    if (xhr.status === 200) {
+      log('XHR status', '200 OK (' + took + 'ms)', 'ok');
+      resultDiv.innerHTML = '<pre>' + xhr.responseText.substring(0, 500) + '…</pre>';
+    } else {
+      log('XHR status', xhr.status + ' (' + took + 'ms)', 'err');
+      resultDiv.innerHTML = '<pre>' + xhr.responseText + '</pre>';
+    }
+  };
+  xhr.onerror = function() { log('XHR error', 'Network failed', 'err'); };
+  xhr.timeout = 10000;
+  xhr.ontimeout = function() { log('XHR timeout', 'Request timed out after 10s', 'warn'); };
+  xhr.send();
+
+  // Test 3: standard fetch (for comparison)
+  var fetchStart = Date.now();
+  if (typeof fetch === 'function') {
+    fetch(url, { credentials: 'same-origin' }).then(function(r) {
+      return r.text().then(function(t) {
+        log('fetch status', r.status + ' (' + (Date.now()-fetchStart) + 'ms)', r.ok ? 'ok' : 'err');
+      });
+    }).catch(function(e) {
+      log('fetch error', e.name + ': ' + e.message, 'err');
+    }XX);
+  } else {
+    log('fetch', 'not available', 'warn');
+  }
+})();
+</script>
+</body>
+</html>

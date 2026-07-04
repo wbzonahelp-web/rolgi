@@ -368,9 +368,7 @@
         const url = (endpoint.startsWith('/api/') || endpoint.startsWith('http'))
             ? endpoint + (qs ? '?' + qs : '')
             : API_BASE + endpoint + (qs ? '?' + qs : '');
-        const token = auth.getToken();
-        const fetchOpts = { credentials: 'same-origin' };
-        if (token) { fetchOpts.headers = { 'Authorization': 'Bearer ' + token }; }
+
         const type = opts.cacheType || 'default';
         const ttl = TTL[type] ?? TTL.default;
 
@@ -382,6 +380,9 @@
         let lastErr;
         for (let i = 0; i < 2; i++) {
             try {
+                const token = auth.getToken();
+                const fetchOpts = { credentials: 'same-origin' };
+                if (token) { fetchOpts.headers = { 'Authorization': 'Bearer ' + token }; }
                 const r = await safeFetch(url, fetchOpts);
                 if (r.status === 401 && i === 0) {
                     const refreshed = await auth.refresh();
