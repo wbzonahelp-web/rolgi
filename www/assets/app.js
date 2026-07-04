@@ -334,11 +334,11 @@
             const refreshToken = localStorage.getItem(AUTH_REFRESH_KEY);
             if (!refreshToken) { auth.clearSession(); return false; }
             try {
-                const r = await fetch('/api/auth/refresh', {
+                const r = await safeFetch('/api/auth/refresh', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refreshToken }),
-                });
+                }, 8000);
                 if (!r.ok) { auth.clearSession(); return false; }
                 const data = await r.json();
                 auth.setSession(data);
@@ -368,6 +368,9 @@
         const url = (endpoint.startsWith('/api/') || endpoint.startsWith('http'))
             ? endpoint + (qs ? '?' + qs : '')
             : API_BASE + endpoint + (qs ? '?' + qs : '');
+        const token = auth.getToken();
+        const fetchOpts = { credentials: 'same-origin' };
+        if (token) { fetchOpts.headers = { 'Authorization': 'Bearer ' + token }; }
         const type = opts.cacheType || 'default';
         const ttl = TTL[type] ?? TTL.default;
 
@@ -379,7 +382,7 @@
         let lastErr;
         for (let i = 0; i < 2; i++) {
             try {
-                const r = await safeFetch(url, { credentials: 'same-origin' });
+                const r = await safeFetch(url, fetchOpts);
                 if (r.status === 401 && i === 0) {
                     const refreshed = await auth.refresh();
                     if (refreshed) continue;
