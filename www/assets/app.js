@@ -56,13 +56,18 @@
 
         let lastErr;
         for (let i = 0; i < 2; i++) {
+            let controller, timeoutId;
             try {
-                const r = await fetch(url, { credentials: 'same-origin' });
+                controller = new AbortController();
+                timeoutId = setTimeout(() => controller.abort(), 15000);
+                const r = await fetch(url, { credentials: 'same-origin', signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 const data = await r.json();
                 cache.set(url, { v: data, t: Date.now() });
                 return data;
             } catch (e) {
+                clearTimeout(timeoutId);
                 lastErr = e;
                 if (i === 0) await new Promise(r => setTimeout(r, 400));
             }
@@ -364,8 +369,12 @@
 
         let lastErr;
         for (let i = 0; i < 2; i++) {
+            let controller, timeoutId;
             try {
-                const r = await authFetch(url, { credentials: 'same-origin' });
+                controller = new AbortController();
+                timeoutId = setTimeout(() => controller.abort(), 15000);
+                const r = await authFetch(url, { credentials: 'same-origin', signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (r.status === 401 && i === 0) {
                     const refreshed = await auth.refresh();
                     if (refreshed) continue;
@@ -375,6 +384,7 @@
                 cache.set(url, { v: data, t: Date.now() });
                 return data;
             } catch (e) {
+                clearTimeout(timeoutId);
                 lastErr = e;
                 if (i === 0) await new Promise(r => setTimeout(r, 400));
             }

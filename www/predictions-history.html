@@ -427,7 +427,11 @@
             ].join('');
     } catch (e) {
         console.error('loadStats error:', e);
-        document.getElementById('statsBlock').innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки статистики</div>';
+        const isBlocked = (e.name === 'AbortError' || (e.message && e.message.includes('aborted')));
+        const msg = isBlocked
+            ? 'Запрос прерван (возможно, заблокирован расширением или прокси). Попробуйте отключить ad-blocker или открыть страницу в режиме Инкогнито.'
+            : 'Ошибка загрузки статистики';
+        document.getElementById('statsBlock').innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> ' + msg + '</div>';
         document.getElementById('byOutcomeBlock').innerHTML = '';
     }
         }
@@ -521,7 +525,11 @@
             renderPagination();
     } catch (e) {
         console.error('loadList error:', e);
-        document.getElementById('tableBody').innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки прогнозов</div>';
+        const isBlocked = (e.name === 'AbortError' || (e.message && e.message.includes('aborted')));
+        const msg = isBlocked
+            ? 'Запрос прерван (возможно, заблокирован расширением или прокси). Попробуйте отключить ad-blocker или открыть страницу в режиме Инкогнито.'
+            : 'Ошибка загрузки прогнозов';
+        document.getElementById('tableBody').innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> ' + msg + '</div>';
     }
         }
 
