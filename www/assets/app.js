@@ -60,7 +60,7 @@
             try {
                 controller = new AbortController();
                 timeoutId = setTimeout(() => controller.abort(), 15000);
-                const r = await fetch(url, { credentials: 'same-origin', signal: controller.signal });
+                const r = await raceFetch(url, { credentials: 'same-origin', signal: controller.signal }, 15000);
                 clearTimeout(timeoutId);
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 const data = await r.json();
@@ -73,6 +73,12 @@
             }
         }
         throw lastErr;
+    }
+    function raceFetch(url, opts, ms) {
+        return Promise.race([
+            fetch(url, opts),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch timeout')), ms))
+        ]);
     }
     const api = { get: apiGet, clearCache: () => cache.clear() };
 
@@ -373,7 +379,7 @@
             try {
                 controller = new AbortController();
                 timeoutId = setTimeout(() => controller.abort(), 15000);
-                const r = await authFetch(url, { credentials: 'same-origin', signal: controller.signal });
+                const r = await raceFetch(url, { credentials: 'same-origin', signal: controller.signal }, 15000);
                 clearTimeout(timeoutId);
                 if (r.status === 401 && i === 0) {
                     const refreshed = await auth.refresh();
