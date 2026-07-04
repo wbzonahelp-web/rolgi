@@ -301,6 +301,7 @@
         </div>
 
 
+        <div id="debugLog" style="white-space:pre-wrap;font-family:monospace;font-size:0.9em;color:#555;border:1px dashed #999;padding:10px;margin-bottom:10px;max-height:300px;overflow:auto;">[Debug log]</div>
         <div id="statsBlock" class="stats-grid">
             <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка статистики…</div>
         </div>
@@ -389,13 +390,17 @@
             return '<span class="conf-bar"><div style="width:' + pct + '%"></div></span>' + fmtPct(c, 1);
         }
 
+        function _log(msg) { var el = document.getElementById('debugLog'); if (el){el.textContent += '\n['+new Date().toLocaleTimeString('ru-RU')+'] '+msg;} }
         async function loadStats() { try {
+            _log('loadStats start');
             const params = {
                 range: state.range,
                 only_verified: state.status === 'verified' ? 'true' : 'false',
             };
             if (state.analyzer) params.analyzer = state.analyzer;
+            _log('loadStats api before');
             const r = await apiGet('/api/db/predictions/stats', params);
+            _log('loadStats api after r='+(r?typeof r:'null'));
             if (!r || !r.success) { document.getElementById('statsBlock').innerHTML = '<div class="empty">Ошибка загрузки статистики</div>'; return; }
             const d = r.data;
             if (!d || d.total == null) {
@@ -458,6 +463,7 @@
                 '</div>',
             ].join('');
     } catch (e) {
+        _log('loadStats catch: '+ (e && e.message ? e.message : String(e)));
         console.error('loadStats error:', e);
         const isBlocked = (e.name === 'AbortError' || (e.message && e.message.includes('aborted')));
         const msg = isBlocked
@@ -469,6 +475,7 @@
         }
 
         async function loadList() { try {
+            _log('loadList start');
             const params = {
                 range: state.range,
                 status: state.status,
@@ -479,7 +486,9 @@
             if (state.hit) params.hit = state.hit;
             if (state.analyzer) params.analyzer = state.analyzer;
 
+            _log('loadList api before');
             const r = await apiGet('/api/db/predictions/list', params);
+            _log('loadList api after r='+(r?typeof r:'null'));
             if (!r || !r.success) {
                 document.getElementById('tableBody').innerHTML = '<div class="empty">Ошибка загрузки</div>';
                 return;
@@ -556,8 +565,9 @@
 
             renderPagination();
     } catch (e) {
+        _log('loadList catch: '+ (e && e.message ? e.message : String(e)));
         console.error('loadList error:', e);
-        const isBlocked = (e.name === 'AbortError' || (e.message && e.message.includes('aborted')));
+        var isBlocked = (e.name === 'AbortError' || (e.message && e.message.includes('aborted')));
         const msg = isBlocked
             ? 'Запрос прерван (возможно, заблокирован расширением или прокси). Попробуйте отключить ad-blocker или открыть страницу в режиме Инкогнито.'
             : 'Ошибка загрузки прогнозов';

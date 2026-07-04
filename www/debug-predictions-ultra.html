@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Debug Ultra</title>
+</head>
+<body>
+<h1>Debug Ultra</h1>
+<pre id="txt">INIT</pre>
+<script>
+(function() {
+    var el = document.getElementById('txt');
+    el.textContent += '\nJS_START ' + new Date().toISOString() + '\n';
+    try {
+        el.textContent += 'XHR_start\n';
+        var xhr = new XMLHttpRequest();
+        var url = '/api/db/predictions/stats?range=30d&only_verified=true&nocache=' + Date.now();
+        xhr.open('GET', url, true);
+        xhr.onload = function() {
+            el.textContent += 'XHR_onload_status:' + xhr.status + '\n';
+            el.textContent += 'XHR_response_len:' + xhr.responseText.length + '\n';
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    el.textContent += 'JSON_success_total:' + (data.data ? data.data.total : 'N/A') + '\n';
+                } catch(e) {
+                    el.textContent += 'JSON_parse_err:' + e.message + '\n';
+                }
+            }
+        };
+        xhr.onerror = function() {
+            el.textContent += 'XHR_onerror\n';
+        };
+        xhr.ontimeout = function() {
+            el.textContent += 'XHR_ontimeout\n';
+        };
+        xhr.timeout = 15000;
+        el.textContent += 'XHR_send\n';
+        xhr.send();
+    } catch(e) {
+        el.textContent += 'ERR:' + e.message + '\n';
+    }
+})();
+</script>
+</body>
+</html>
