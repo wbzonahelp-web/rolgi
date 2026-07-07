@@ -4370,7 +4370,8 @@ async function scoutRoutes(fastify, options) {
         SELECT 
           e.*,
           u.filename as upload_filename,
-          u.created_at as upload_date
+          u.created_at as upload_date,
+    (SELECT json_agg(json_build_object('m',ge.minute,'x',ge.minute_extra,'h',(ge.team_id=g2.home_team_id)) ORDER BY ge.minute, COALESCE(ge.minute_extra,0)) FROM game_events ge JOIN games g2 ON ge.game_id=g2.id WHERE g2.sstats_id=e.matched_game_sstats_id AND ge.type='goal') AS goal_events
         FROM scout_events e
         LEFT JOIN scout_uploads u ON e.upload_batch_id = u.id
         WHERE ${whereConditions.join(' AND ')}
@@ -4928,7 +4929,8 @@ async function scoutRoutes(fastify, options) {
         SELECT 
           e.*,
           u.filename as upload_filename,
-          u.created_at as upload_date
+          u.created_at as upload_date,
+    (SELECT json_agg(json_build_object('m',ge.minute,'x',ge.minute_extra,'h',(ge.team_id=g2.home_team_id)) ORDER BY ge.minute, COALESCE(ge.minute_extra,0)) FROM game_events ge JOIN games g2 ON ge.game_id=g2.id WHERE g2.sstats_id=e.matched_game_sstats_id AND ge.type='goal') AS goal_events
         FROM scout_events e
         LEFT JOIN scout_uploads u ON e.upload_batch_id = u.id
         WHERE ${whereConditions.join(' AND ')}
@@ -5476,7 +5478,49 @@ async function scoutRoutes(fastify, options) {
     } catch (error) {
       return reply.code(500).send({ error: error.message });
     }
+  });  // ================== BACKFILL ГОЛЕВЫХ СОБЫТИЙ ====================
+  fastify.post('/api/scout/backfill-events', async (request, reply) => {
+    try {
+      const { limit = 20 } = request.body || {};
+      const DataLoader = require('../../loader/data-loader');
+      const toFill = await pool.query(`
+        SELECT DISTINCT se.matched_game_sstats_id AS sstats_id
+        FROM scout_events se
+        WHERE se.matched_game_sstats_id IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM game_events ge
+            JOIN games g ON ge.game_id = g.id
+            WHERE g.sstats_id = se.matched_game_sstats_id AND ge.type = 'goal'
+          )
+        LIMIT $1`, [Math.min(parseInt(limit) || 20, 50)]);
+      const ids = toFill.rows.map(r => r.sstats_id);
+      let loaded = 0, failed = 0;
+      for (const sstatsId of ids) {
+        try {
+          const loader = new DataLoader();
+          await loader.load('game_details', { gameId: sstatsId });
+          loaded++;
+          await new Promise(r => setTimeout(r, 400));
+        } catch (err) {
+          console.error('[Scout] Backfill failed for', sstatsId, err.message);
+          failed++;
+        }
+      }
+      const rem = await pool.query(`
+        SELECT COUNT(DISTINCT se.matched_game_sstats_id) AS cnt
+        FROM scout_events se
+        WHERE se.matched_game_sstats_id IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM game_events ge
+            JOIN games g ON ge.game_id=g.id
+            WHERE g.sstats_id=se.matched_game_sstats_id AND ge.type='goal'
+          )
+      `);
+      return { success:true, processed:ids.length, loaded, failed, remaining:parseInt(rem.rows[0].cnt) };
+    } catch (error) {
+      console.error('[Scout] Backfill error:', error);
+      return reply.code(500).send({ error: error.message });
+    }
   });
 }
-
 module.exports = scoutRoutes;

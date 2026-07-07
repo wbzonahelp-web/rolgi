@@ -257,7 +257,38 @@
         .filter-group input[type="number"] { width: 70px; }
         
         /* Sources Filter */
-        .sources-filter {
+        .scout-source { display:inline-block; padding:2px 7px; border-radius:4px; font-size:0.72em; font-weight:700; margin:1px 2px; } .scout-source.ven { background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.4); } .scout-source.tv { background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); } .scout-source.lbl { color:#94a3b8; font-size:0.68em; }           .preset-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .preset-card:hover {
+            background: rgba(102,126,234,0.15);
+            border-color: rgba(102,126,234,0.4);
+            transform: translateY(-2px);
+          }
+          .preset-card.active-preset {
+            background: rgba(102,126,234,0.2);
+            border-color: #667eea;
+          }
+          .preset-name {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 6px;
+          }
+          .preset-stats {
+            font-size: 0.75em;
+            color: #94a3b8;
+            line-height: 1.5;
+          }
+          .preset-stats .ps-total { color: #60a5fa; font-weight: 600; }
+          .preset-stats .ps-over { color: #22c55e; }
+          .preset-stats .ps-under { color: #f59e0b; }
+          .sources-filter {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -510,7 +541,12 @@
             .upload-table { display: block; overflow-x: auto; }
         }
         
-        @media (max-width: 640px) {
+        /* Goal timeline */
+.score-cell { display:flex; flex-direction:column; gap:3px; }
+.goal-timeline { display:flex; flex-wrap:wrap; gap:2px; margin-top:2px; }
+.goal-h { background:rgba(16,185,129,0.18); color:#10b981; border:1px solid rgba(16,185,129,0.35); padding:1px 5px; border-radius:3px; font-size:0.7em; white-space:nowrap; }
+.goal-a { background:rgba(239,68,68,0.18); color:#ef4444; border:1px solid rgba(239,68,68,0.35); padding:1px 5px; border-radius:3px; font-size:0.7em; white-space:nowrap; }
+@media (max-width: 640px) {
             .events-table { display: block; overflow-x: auto; }
             .users-table { display: block; overflow-x: auto; }
         }
@@ -546,6 +582,9 @@
             </button>
             <button class="tab" onclick="switchTab('all-events')" id="tabAllEvents">
                 <i class="fas fa-list"></i> Все события
+            </button>
+            <button class="tab" onclick="switchTab('strategies')" id="tabStrategies" style="display:none;">
+              <i class="fas fa-chart-line"></i> Стратегии
             </button>
             <button class="tab" onclick="switchTab('admin')" id="tabAdmin" style="display:none;">
                 <i class="fas fa-users-cog"></i> Пользователи
@@ -650,7 +689,102 @@
                     </div>
                 </div>
                 
-                <div class="table-container table-wrap"><table class="upload-table">
+                <div class="filter-bar" style="margin-top:8px; flex-wrap:wrap; gap:8px; align-items:flex-end;">
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">Genius</label>
+    <select id="fGenius" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">Running</label>
+    <select id="fRunning" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">Radar</label>
+    <select id="fRadar" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">Feedcon</label>
+    <select id="fFeedcon" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">IMG</label>
+    <select id="fImg" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">RTS</label>
+    <select id="fRts" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">InPlay</label>
+    <select id="fInplay" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">Enet</label>
+    <select id="fEnet" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="VEN">VEN</option>
+      <option value="TV">TV</option>
+      <option value="NONE">—</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">Cat</label>
+    <select id="fCat" onchange="applyFilters()" style="min-width:80px;">
+      <option value="">Любой</option>
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label style="font-size:0.8em; color:#94a3b8;">Мин. VEN</label>
+    <select id="filterMinVen" onchange="applyFilters()" style="min-width:80px;">
+      <option value="0">Любое</option>
+      <option value="1">&ge;1 VEN</option>
+      <option value="2">&ge;2 VEN</option>
+      <option value="3">&ge;3 VEN</option>
+    </select>
+  </div>
+  <button onclick="resetSourceFilters()" style="padding:6px 12px; background:rgba(148,163,184,0.15); border:1px solid rgba(148,163,184,0.3); border-radius:6px; color:#94a3b8; cursor:pointer; font-size:0.8em;">Сбросить</button>
+</div><div class="table-container table-wrap"><table class="upload-table">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -755,7 +889,176 @@
                 </div>
                 
                 <!-- Sources Filter for All Events -->
-                <div class="sources-filter" id="allEventsSourcesFilter" style="display:none;"></div>
+                <div class="sources-filter" id="allEventsSourcesFilter" style="display:none;"></div> <!-- Фильтры источников -->
+              <!-- Пресеты стратегий с расчётом -->
+          <div style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <span style="font-size:0.95em; color:#94a3b8; font-weight:500;"><i class="fas fa-chart-bar"></i> Стратегии</span>
+              <button class="btn btn-sm" onclick="resetAllSourceFilters()" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); font-size:0.8em;">Сброс</button>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:10px;" id="presetCards">
+              <div class="preset-card" id="preset-ven-only" onclick="applyPresetToAllEvents('ven-only')">
+                <div class="preset-name">VEN Скауты</div>
+                <div class="preset-stats" id="stats-ven-only"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-ven-min2" onclick="applyPresetToAllEvents('ven-min2')">
+                <div class="preset-name">≥2 VEN</div>
+                <div class="preset-stats" id="stats-ven-min2"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-genius-ven" onclick="applyPresetToAllEvents('genius-ven')">
+                <div class="preset-name">Genius VEN</div>
+                <div class="preset-stats" id="stats-genius-ven"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-tv-only" onclick="applyPresetToAllEvents('tv-only')">
+                <div class="preset-name">Только TV</div>
+                <div class="preset-stats" id="stats-tv-only"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-mixed" onclick="applyPresetToAllEvents('mixed')">
+                <div class="preset-name">VEN + TV Mix</div>
+                <div class="preset-stats" id="stats-mixed"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-over25" onclick="applyPresetToAllEvents('over25')">
+                <div class="preset-name">ТБ 2.5</div>
+                <div class="preset-stats" id="stats-over25"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-under25" onclick="applyPresetToAllEvents('under25')">
+                <div class="preset-name">ТМ 2.5</div>
+                <div class="preset-stats" id="stats-under25"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div style="grid-column: 1 / -1; border-top:1px solid rgba(255,255,255,0.1); margin:4px 0; padding-top:8px;"><small style="color:#64748b; font-size:0.75em;">Cat уровни:</small></div>
+              <div class="preset-card" id="preset-cat1" onclick="applyPresetToAllEvents('cat1')">
+                <div class="preset-name">Cat 1 🏟️</div>
+                <div class="preset-stats" id="stats-cat1"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-cat2" onclick="applyPresetToAllEvents('cat2')">
+                <div class="preset-name">Cat 2 📡</div>
+                <div class="preset-stats" id="stats-cat2"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-cat3" onclick="applyPresetToAllEvents('cat3')">
+                <div class="preset-name">Cat 3 📺</div>
+                <div class="preset-stats" id="stats-cat3"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-cat4" onclick="applyPresetToAllEvents('cat4')">
+                <div class="preset-name">Cat 4 📻</div>
+                <div class="preset-stats" id="stats-cat4"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <div class="preset-card" id="preset-cat5" onclick="applyPresetToAllEvents('cat5')">
+                <div class="preset-name">Cat 5 ⏱️</div>
+                <div class="preset-stats" id="stats-cat5"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+            </div>
+          </div>
+<div class="filter-bar" style="margin-top:12px; flex-wrap:wrap; gap:8px; align-items:flex-end;">
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">Genius</label>
+        <select id="allFGenius" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">Running</label>
+        <select id="allFRunning" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">Radar</label>
+        <select id="allFRadar" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">Feedcon</label>
+        <select id="allFFeedcon" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">IMG</label>
+        <select id="allFImg" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">RTS</label>
+        <select id="allFRts" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">InPlay</label>
+        <select id="allFInplay" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">Enet</label>
+        <select id="allFEnet" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="VEN">VEN</option>
+          <option value="TV">TV</option>
+          <option value="NONE">—</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">Cat</label>
+        <select id="allFCat" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="">Любой</option>
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size:0.8em; color:#94a3b8;">Мин. VEN</label>
+        <select id="allFilterMinVen" onchange="loadAllEvents()" style="min-width:80px;">
+          <option value="0">Любое</option>
+          <option value="1">≥1 VEN</option>
+          <option value="2">≥2 VEN</option>
+          <option value="3">≥3 VEN</option>
+        </select>
+      </div>
+      <button onclick="resetAllSourceFilters()" style="padding:6px 12px; background:rgba(148,163,184,0.15); border:1px solid rgba(148,163,184,0.3); border-radius:6px; color:#94a3b8; cursor:pointer; font-size:0.8em;">Сбросить источники</button>
+    </div>
+    <!-- Фильтр тоталов -->
+    <div class="filter-bar" style="margin-top:8px;">
+      <div class="filter-group">
+        <label>Тотал:</label>
+        <select id="allFilterTotal" onchange="loadAllEvents()">
+          <option value="all">Все</option>
+          <option value="over-1.5">ТБ 1.5</option>
+          <option value="under-1.5">ТМ 1.5</option>
+          <option value="over-2.5">ТБ 2.5</option>
+          <option value="under-2.5">ТМ 2.5</option>
+          <option value="over-3.5">ТБ 3.5</option>
+          <option value="under-3.5">ТМ 3.5</option>
+        </select>
+      </div>
+    </div>
                 
                 <div class="filter-bar">
                     <div class="filter-group">
@@ -833,6 +1136,58 @@
             </div>
         </div>
         
+          <!-- Strategies Tab -->
+          <div class="tab-content" id="tab-strategies">
+            <div class="results-section">
+              <div class="results-header">
+                <h2><i class="fas fa-chart-line"></i> Анализ стратегий</h2>
+              </div>
+              <div style="margin-bottom:24px;">
+                <h3 style="margin-bottom:12px; font-size:1.1em;">Готовые стратегии</h3>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                  <button class="btn btn-secondary btn-sm" onclick="applyPreset('ven-only')">VEN Скауты</button>
+                  <button class="btn btn-secondary btn-sm" onclick="applyPreset('ven-min2')">≥2 VEN</button>
+                  <button class="btn btn-secondary btn-sm" onclick="applyPreset('genius-ven')">Genius VEN</button>
+                  <button class="btn btn-secondary btn-sm" onclick="applyPreset('tv-only')">Только TV</button>
+                  <button class="btn btn-secondary btn-sm" onclick="applyPreset('mixed')">VEN + TV Mix</button>
+                  <button class="btn btn-secondary btn-sm" onclick="applyPreset('over25')">ТБ2.5</button>
+                  <button class="btn btn-secondary btn-sm" onclick="applyPreset('under25')">ТМ2.5</button>
+                  <button class="btn btn-sm" onclick="clearStrategyFilters()" style="background:#f59e0b; color:#fff;">Сбросить</button>
+                </div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05); padding:16px; border-radius:8px; margin-bottom:24px;">
+                <h3 style="margin-bottom:12px; font-size:1em; color:#94a3b8;">Конструктор стратегии</h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px;">
+                  <div class="filter-group"><label style="font-size:0.85em;">Genius</label><select id="stratGenius" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">Running</label><select id="stratRunning" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">Radar</label><select id="stratRadar" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">Feedcon</label><select id="stratFeedcon" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">IMG</label><select id="stratImg" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">RTS</label><select id="stratRts" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">Мин. VEN</label><select id="stratMinVen" onchange="recalcStrategy()"><option value="0">—</option><option value="1">≥1</option><option value="2">≥2</option><option value="3">≥3</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">Тотал</label><select id="stratTotal" onchange="recalcStrategy()"><option value="">—</option><option value="over-1.5">ТБ1.5</option><option value="under-1.5">ТМ1.5</option><option value="over-2.5">ТБ2.5</option><option value="under-2.5">ТМ2.5</option><option value="over-3.5">ТБ3.5</option><option value="under-3.5">ТМ3.5</option></select></div>
+                </div>
+              </div>
+              <div id="strategyResults" style="display:none;">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:24px;">
+                  <div class="stat-card"><div class="value" id="stratTotalCount">0</div><div class="label">Матчей</div></div>
+                  <div class="stat-card"><div class="value" id="stratAvgTotal">0</div><div class="label">Средний тотал</div></div>
+                  <div class="stat-card green"><div class="value" id="stratOver25">0%</div><div class="label">ТБ2.5</div></div>
+                  <div class="stat-card yellow"><div class="value" id="stratOver35">0%</div><div class="label">ТБ3.5</div></div>
+                  <div class="stat-card"><div class="value" id="stratBtts">0%</div><div class="label">BTTS</div></div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); padding:16px; border-radius:8px;">
+                  <h4 style="margin-bottom:12px;">Детальная статистика</h4>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div><strong>Тоталы:</strong><div style="margin-top:8px; font-size:0.9em; color:#94a3b8;"><div>ТБ0.5: <span id="stratOver05">—</span></div><div>ТБ1.5: <span id="stratOver15">—</span></div><div>ТБ2.5: <span id="stratOver25_2">—</span></div><div>ТБ3.5: <span id="stratOver35_2">—</span></div><div>ТБ4.5: <span id="stratOver45">—</span></div></div></div>
+                    <div><strong>Исходы:</strong><div style="margin-top:8px; font-size:0.9em; color:#94a3b8;"><div>П1: <span id="stratHomeWins">—</span></div><div>X: <span id="stratDraws">—</span></div><div>П2: <span id="stratAwayWins">—</span></div><div style="margin-top:8px;">Медиана: <span id="stratMedian">—</span></div><div>σ: <span id="stratStddev">—</span></div></div></div>
+                  </div>
+                </div>
+              </div>
+              <div id="strategyLoading" style="display:none; text-align:center; padding:40px; color:#94a3b8;"><i class="fas fa-spinner fa-spin" style="font-size:2em;"></i><div style="margin-top:12px;">Анализ...</div></div>
+            </div>
+          </div>
+
         <!-- Admin Tab -->
         <div class="tab-content" id="tab-admin">
             <div class="stats-bar">
@@ -1282,7 +1637,8 @@
                 updateProtectedTabs();
                 if (currentUser && currentUser.canViewHistory) loadUploads();
             }
-            if (tabName === 'all-events') { 
+                    if (tabName === 'all-events') {
+          loadAllPresetStats(); 
                 updateProtectedTabs();
                 if (currentUser && currentUser.canViewHistory) {
                     loadSummary(); 
@@ -1541,11 +1897,24 @@
                     }
                 }
                 
-                // Format sources
-                const sourcesHtml = event.sources 
-                    ? event.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean)
-                        .map(s => `<span class="source-tag">${s}</span>`).join('')
-                    : '—';
+                // Format sources - show actual scout names if available, fallback to VEN/TV badges
+                const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+                let sourcesHtml = '';
+                if (event.sources) {
+                    sourcesHtml = event.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean)
+                        .map(s => `<span class="source-tag">${esc(s)}</span>`).join('');
+                }
+                if (!sourcesHtml) {
+                    const _srcNames = ['genius','running','radar','feedcon','img','rts','inplay','enet'];
+                    const _catBadge = event.cat != null ? `<span class="scout-source lbl" title="Cat">Cat:${esc(event.cat)}</span>` : '';
+                    const _srcBadges = _srcNames.map(src => {
+                        const val = (event[src] || '').toString().toUpperCase().trim();
+                        if (!val || val === '0' || val === '-' || val === '') return '';
+                        const cls = val.startsWith('VEN') ? 'ven' : 'tv';
+                        return `<span class="scout-source ${cls}" title="${src}">${src.charAt(0).toUpperCase()+src.slice(1)}: ${esc(val)}</span>`;
+                    }).filter(Boolean).join('');
+                    sourcesHtml = (_srcBadges + _catBadge) || '—';
+                }
                 
                 return `
                     <tr>
@@ -1950,7 +2319,13 @@
         }
         
         // Load all events
-        async function loadAllEvents() {
+         function resetAllSourceFilters() {
+    ['allFGenius','allFRunning','allFRadar','allFFeedcon','allFImg','allFRts','allFInplay','allFEnet','allFCat','allFilterMinVen'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = id === 'allFilterMinVen' ? '0' : '';
+    }); loadAllEvents();
+  }
+  async function loadAllEvents() {
             const container = document.getElementById('allEventsTable');
             const loading = document.getElementById('allEventsLoading');
             const empty = document.getElementById('allEventsEmpty');
@@ -1959,6 +2334,17 @@
             empty.style.display = 'none';
             
             const params = new URLSearchParams();
+    // Фильтры источников
+    const srcMap = {genius:'allFGenius', running:'allFRunning', radar:'allFRadar', feedcon:'allFFeedcon', img:'allFImg', rts:'allFRts', inplay:'allFInplay', enet:'allFEnet'};
+    for (const [src, elId] of Object.entries(srcMap)) {
+      const val = document.getElementById(elId)?.value;
+      if (val) params.append(`filter_${src}`, val);
+    }
+    const minVen = document.getElementById('allFilterMinVen')?.value; const catFilter = document.getElementById('allFCat')?.value; if (catFilter) params.append('filter_cat', catFilter);
+    if (minVen && minVen !== '0') params.append('filter_min_ven', minVen);
+    // Фильтр тоталов
+    const totalFilter = document.getElementById('allFilterTotal')?.value;
+    if (totalFilter && totalFilter !== 'all') params.append('filter_total', totalFilter);
             
             const matchFound = document.getElementById('allFilterStatus').value;
             if (matchFound) params.append('matchFound', matchFound);
@@ -2024,23 +2410,51 @@
                 }
                 
                 container.innerHTML = data.events.map(e => {
-                    const score = (e.home_score !== null && e.home_score !== undefined && e.away_score !== null && e.away_score !== undefined) ? `${e.home_score}:${e.away_score}` : '—';
+                    // Счёт + таймлайн голов
+    let scoreHtml = '<span class="score not-found">—</span>';
+    if (e.home_score !== null && e.home_score !== undefined && e.away_score !== null && e.away_score !== undefined) {
+      const goals = e.goal_events || [];
+      let tlHtml = '';
+      if (goals.length > 0) {
+        const h1 = goals.filter(g => g.m <= 45);
+        const h2 = goals.filter(g => g.m > 45);
+        let htHome = 0, htAway = 0;
+        h1.forEach(g => g.h ? htHome++ : htAway++);
+        const renderGoals = gs => gs.map(g => {
+          const min = g.x ? g.m + "+" + g.x + "'" : g.m + "'";
+          return '<span class="' + (g.h ? 'goal-h' : 'goal-a') + '" title="' + (g.h ? 'Хозяева' : 'Гости') + '">⚽' + min + '</span>';
+        }).join('');
+        tlHtml = '<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">';
+        if (h1.length > 0) {
+          tlHtml += '<div style="display:flex;gap:4px;align-items:center"><span style="font-size:0.65em;color:#888;min-width:28px">1H:</span><div class="goal-timeline">' + renderGoals(h1) + '</div></div>';
+        }
+        if (h2.length > 0) {
+          tlHtml += '<div style="display:flex;gap:4px;align-items:center"><span style="font-size:0.65em;color:#888;min-width:28px">2H:</span><div class="goal-timeline">' + renderGoals(h2) + '</div></div>';
+        }
+        tlHtml += '</div>';
+        if (h1.length > 0) {
+          tlHtml = '<div style="font-size:0.7em;color:#666;margin-top:2px">HT: ' + htHome + ':' + htAway + '</div>' + tlHtml;
+        }
+      }
+      scoreHtml = '<div class="score-cell"><span class="score ' + (e.matched_game_sstats_id ? 'found' : 'not-found') + '">' + e.home_score + ':' + e.away_score + '</span>' + tlHtml + '</div>';
+    }
                     const betInfo = e.bet_amount ? `${e.bet_type || '?'} @ ${e.bet_odds} (${e.bet_amount})` : '—';
                     const resultClass = e.bet_result === 'win' ? 'found' : e.bet_result === 'lose' ? 'not-found' : 'pending';
                     
-                    // Format sources
-                    const sourcesHtml = e.sources 
-                        ? e.sources.split(/[,;|]/).map(s => s.trim()).filter(Boolean)
-                            .map(s => `<span class="source-tag">${s}</span>`).join('')
-                        : '—';
+                    // Format sources from provider columns
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+const _sn=['genius','running','radar','feedcon','img','rts','inplay','enet'];
+const _cb=(e.cat!=null&&e.cat!=='')?`<span class="scout-source lbl" title="Cat">Cat:${esc(e.cat)}</span>`:'';
+const _sb=_sn.map(src=>{const v=(e[src]||'').toString().toUpperCase().trim();if(!v||v==='-'||v==='0')return '';const cls=v.startsWith('VEN')?'ven':'tv';return `<span class="scout-source ${cls}" title="${src}">${src.charAt(0).toUpperCase()+src.slice(1)}: ${esc(v)}</span>`;}).filter(Boolean).join('');
+const sourcesHtml=(_sb+_cb)||(e.sources?e.sources.split(/[,;|]/).map(s=>s.trim()).filter(Boolean).map(s=>`<span class="source-tag">${esc(s)}</span>`).join(''):'—');
                     
                     return `
                         <tr>
-                            <td>${e.event_date ? new Date(e.event_date).toLocaleDateString('ru-RU') : '—'}</td>
+                            <td>${e.event_date ? (()=>{const d=new Date(e.event_date);const ds=d.toLocaleDateString('ru-RU');const h=d.getUTCHours(),m=d.getUTCMinutes();return(h||m)?ds+' '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'):ds;})() : '—'}</td>
                             <td><small>${e.competition || '—'}</small></td>
                             <td><strong>${e.home_team_original}</strong> vs ${e.away_team_original}</td>
                             <td>${sourcesHtml}</td>
-                            <td><span class="score ${e.matched_game_sstats_id ? 'found' : 'not-found'}">${score}</span></td>
+                            <td>${scoreHtml}</td>
                             <td><small>${betInfo}</small></td>
                             <td><span class="status-badge ${resultClass}">${e.bet_result || 'pending'}</span></td>
                             <td>
@@ -2205,6 +2619,17 @@
         // Export all events to CSV
         async function exportAllEvents() {
             const params = new URLSearchParams();
+    // Фильтры источников
+    const srcMap = {genius:'allFGenius', running:'allFRunning', radar:'allFRadar', feedcon:'allFFeedcon', img:'allFImg', rts:'allFRts', inplay:'allFInplay', enet:'allFEnet'};
+    for (const [src, elId] of Object.entries(srcMap)) {
+      const val = document.getElementById(elId)?.value;
+      if (val) params.append(`filter_${src}`, val);
+    }
+    const minVen = document.getElementById('allFilterMinVen')?.value; const catFilter = document.getElementById('allFCat')?.value; if (catFilter) params.append('filter_cat', catFilter);
+    if (minVen && minVen !== '0') params.append('filter_min_ven', minVen);
+    // Фильтр тоталов
+    const totalFilter = document.getElementById('allFilterTotal')?.value;
+    if (totalFilter && totalFilter !== 'all') params.append('filter_total', totalFilter);
             params.append('limit', '10000');
             
             const matchFound = document.getElementById('allFilterStatus').value;
@@ -2599,6 +3024,184 @@
         document.getElementById('editUserModal').addEventListener('click', (e) => {
             if (e.target.id === 'editUserModal') closeEditUserModal();
         });
-    </script>
+    
+  // ==================== STRATEGIES ====================
+  const presets = {
+    'ven-only': {filter_genius:'VEN'},
+    'ven-min2': {filter_min_ven:'2'},
+    'genius-ven': {filter_genius:'VEN'},
+    'tv-only': {filter_genius:'TV',filter_running:'TV',filter_radar:'TV'},
+    'mixed': {filter_genius:'VEN',filter_radar:'TV'},
+    'over25': {filter_total:'over-2.5'},
+    'under25': {filter_total:'under-2.5'},
+    'cat1': {filter_cat:'1'},
+    'cat2': {filter_cat:'2'},
+    'cat3': {filter_cat:'3'},
+    'cat4': {filter_cat:'4'},
+    'cat5': {filter_cat:'5'}
+  };
+    async function loadAllPresetStats() {
+    const presetList = ['ven-only','ven-min2','genius-ven','tv-only','mixed','over25','under25','cat1','cat2','cat3','cat4','cat5'];
+    await Promise.all(presetList.map(async name => {
+      const el = document.getElementById('stats-' + name);
+      if (!el) return;
+      try {
+        const filters = Object.assign({}, presets[name]);
+        const resp = await fetch('/api/scout/strategy-analysis', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(filters)
+        });
+        const data = await resp.json();
+        if (data.success && data.stats) {
+          const s = data.stats;
+          const isUnder = name.includes('under');
+          const isOver = name.includes('over');
+          let totals_line = '';
+          if (isUnder) {
+            totals_line = `ТМ1.5: <span class="ps-under">${100 - s.totals.over_1_5.pct}%</span> | ТМ2.5: <span class="ps-under">${100 - s.totals.over_2_5.pct}%</span><br>`;
+          } else if (isOver) {
+            totals_line = `ТБ2.5: <span class="ps-over">${s.totals.over_2_5.pct}%</span> | ТБ3.5: <span class="ps-over">${s.totals.over_3_5.pct}%</span><br>`;
+          } else {
+            totals_line = `ТБ2.5: <span class="ps-over">${s.totals.over_2_5.pct}%</span> | avg: ${s.avg_total}<br>`;
+          }
+          el.innerHTML = `<span class="ps-total">${s.total} матчей</span><br>` +
+            totals_line +
+            `П1/X/П2: ${s.results.home_wins.pct}/${s.results.draws.pct}/${s.results.away_wins.pct}% | ` +
+            `BTTS: <span class="${s.btts.yes.pct >= 50 ? 'ps-over' : 'ps-under'}">${s.btts.yes.pct}%</span>`;
+        } else {
+          el.textContent = 'нет данных';
+        }
+      } catch(e) {
+        el.textContent = 'ошибка';
+      }
+    }));
+  }
+
+  function applyPresetToAllEvents(name) {
+    resetAllSourceFilters();
+    const preset = presets[name];
+    if (!preset) return;
+    if (preset.filter_genius) document.getElementById('allFGenius').value = preset.filter_genius;
+    if (preset.filter_running) document.getElementById('allFRunning').value = preset.filter_running;
+    if (preset.filter_radar) document.getElementById('allFRadar').value = preset.filter_radar;
+    if (preset.filter_feedcon) document.getElementById('allFFeedcon').value = preset.filter_feedcon;
+    if (preset.filter_img) document.getElementById('allFImg').value = preset.filter_img;
+    if (preset.filter_rts) document.getElementById('allFRts').value = preset.filter_rts;
+    if (preset.filter_min_ven) document.getElementById('allFilterMinVen').value = preset.filter_min_ven;
+    if (preset.filter_total) document.getElementById('allFilterTotal').value = preset.filter_total;
+    loadAllEvents();
+  }
+  function applyPreset(name) {
+    clearStrategyFilters();
+    const preset = presets[name];
+    if (!preset) return;
+    if (preset.filter_genius) document.getElementById('stratGenius').value = preset.filter_genius;
+    if (preset.filter_running) document.getElementById('stratRunning').value = preset.filter_running;
+    if (preset.filter_radar) document.getElementById('stratRadar').value = preset.filter_radar;
+    if (preset.filter_feedcon) document.getElementById('stratFeedcon').value = preset.filter_feedcon;
+    if (preset.filter_img) document.getElementById('stratImg').value = preset.filter_img;
+    if (preset.filter_rts) document.getElementById('stratRts').value = preset.filter_rts;
+    if (preset.filter_min_ven) document.getElementById('stratMinVen').value = preset.filter_min_ven;
+    if (preset.filter_total) document.getElementById('stratTotal').value = preset.filter_total;
+    recalcStrategy();
+  }
+  function clearStrategyFilters() {
+    ['stratGenius','stratRunning','stratRadar','stratFeedcon','stratImg','stratRts'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('stratMinVen').value = '0';
+    document.getElementById('stratTotal').value = '';
+    document.getElementById('strategyResults').style.display = 'none';
+  }
+  async function recalcStrategy() {
+    const filters = {
+      filter_genius: document.getElementById('stratGenius').value,
+      filter_running: document.getElementById('stratRunning').value,
+      filter_radar: document.getElementById('stratRadar').value,
+      filter_feedcon: document.getElementById('stratFeedcon').value,
+      filter_img: document.getElementById('stratImg').value,
+      filter_rts: document.getElementById('stratRts').value,
+      filter_min_ven: document.getElementById('stratMinVen').value,
+      filter_total: document.getElementById('stratTotal').value
+    };
+    // Удаляем пустые фильтры
+    Object.keys(filters).forEach(k => {
+      if (!filters[k] || filters[k] === '0' || filters[k] === '') delete filters[k];
+    });
+    if (Object.keys(filters).length === 0) {
+      document.getElementById('strategyResults').style.display = 'none';
+      return;
+    }
+    document.getElementById('strategyLoading').style.display = 'block';
+    document.getElementById('strategyResults').style.display = 'none';
+    try {
+      const resp = await fetch('/api/scout/strategy-analysis', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(filters)
+      });
+      const data = await resp.json();
+      if (data.success) {
+        const s = data.stats;
+        document.getElementById('stratTotalCount').textContent = s.total;
+        document.getElementById('stratAvgTotal').textContent = s.avg_total.toFixed(2);
+        document.getElementById('stratOver25').textContent = s.totals.over_2_5.pct + '%';
+        document.getElementById('stratOver35').textContent = s.totals.over_3_5.pct + '%';
+        document.getElementById('stratBtts').textContent = s.btts.yes.pct + '%';
+        document.getElementById('stratOver05').textContent = s.totals.over_0_5.count + ' (' + s.totals.over_0_5.pct + '%)';
+        document.getElementById('stratOver15').textContent = s.totals.over_1_5.count + ' (' + s.totals.over_1_5.pct + '%)';
+        document.getElementById('stratOver25_2').textContent = s.totals.over_2_5.count + ' (' + s.totals.over_2_5.pct + '%)';
+        document.getElementById('stratOver35_2').textContent = s.totals.over_3_5.count + ' (' + s.totals.over_3_5.pct + '%)';
+        document.getElementById('stratOver45').textContent = s.totals.over_4_5.count + ' (' + s.totals.over_4_5.pct + '%)';
+        document.getElementById('stratHomeWins').textContent = s.results.home_wins.count + ' (' + s.results.home_wins.pct + '%)';
+        document.getElementById('stratDraws').textContent = s.results.draws.count + ' (' + s.results.draws.pct + '%)';
+        document.getElementById('stratAwayWins').textContent = s.results.away_wins.count + ' (' + s.results.away_wins.pct + '%)';
+        document.getElementById('stratMedian').textContent = s.median_total;
+        document.getElementById('stratStddev').textContent = s.stddev_total.toFixed(2);
+        document.getElementById('strategyResults').style.display = 'block';
+      } else {
+        alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+      }
+    } catch (err) {
+      alert('Ошибка запроса: ' + err.message);
+    } finally {
+      document.getElementById('strategyLoading').style.display = 'none';
+    }
+  }
+
+  // Backfill: загрузить минуты голов
+  async function backfillEvents() {
+    const btn = document.getElementById('btnBackfill');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
+    try {
+      const resp = await fetch('/api/scout/backfill-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 20 })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        const msg = 'Загружено: ' + data.loaded + ' матчей\nОшибок: ' + data.failed + '\nОсталось без минут: ' + data.remaining;
+        alert(msg);
+        if (data.remaining > 0) {
+          btn.innerHTML = '<i class="fas fa-clock"></i> Минуты голов (' + data.remaining + ')';
+        } else {
+          btn.innerHTML = '<i class="fas fa-check"></i> Готово';
+        }
+        loadAllEvents();
+      } else {
+        alert('Ошибка: ' + (data.error || 'неизвестная'));
+        btn.innerHTML = '<i class="fas fa-clock"></i> Минуты голов';
+      }
+    } catch (e) {
+      alert('Ошибка: ' + e.message);
+      btn.innerHTML = '<i class="fas fa-clock"></i> Минуты голов';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
 </body>
 </html>
