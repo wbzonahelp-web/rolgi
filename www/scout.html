@@ -1213,6 +1213,64 @@
 <div id="taLoading" style="display:none; text-align:center; padding:20px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Анализ...</div>
 </div>
 </div>
+<div style="margin-top:24px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;" id="gsSection">
+  <h3 style="margin-bottom:12px; font-size:1.1em;"><i class="fas fa-list-ol"></i> Последовательности голов</h3>
+  <div style="margin-bottom:12px;">
+    <div style="background:rgba(255,255,255,0.03); padding:10px 12px; border-radius:6px; margin-bottom:12px; font-size:0.8em; border-left:3px solid #667eea;">
+  <strong>Что анализируем:</strong>
+  <ul style="margin:6px 0 0 20px; padding:0; line-height:1.6;">
+    <li><strong>Последовательности</strong> — порядок голов (H=хозяева, A=гости). Пример: [H,A,H] = хозяева, гости, хозяева.</li>
+    <li><strong>Первый гол</strong> — кто забил первым и как это повлияло на итог. Процент побед показывает эффективность первого гола.</li>
+    <li><strong>Тайминг</strong> — распределение первого гола по минутам (early goals 0-15', поздние 61+).</li>
+    <li><strong>Cat</strong> — паттерны в разрезе категорий скаутинга (0-5). Видно, как качество источников влияет на порядок голов.</li>
+  </ul>
+</div>
+<button class="btn btn-primary btn-sm" onclick="runGoalSequences()"><i class="fas fa-play"></i> Анализ паттернов</button>
+    <span style="font-size:0.75em; color:#64748b; margin-left:8px;">Учитывает фильтры конструктора выше</span>
+  </div>
+  <div id="gsLoading" style="display:none; text-align:center; padding:20px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Анализ...</div>
+  <div id="gsResults" style="display:none;">
+    <div style="background:rgba(102,126,234,0.1); padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.85em; display:flex; gap:16px; flex-wrap:wrap;">
+      <span>Матчей: <strong id="gsTotal" title="Всего сопоставленных матчей по выбранным фильтрам">—</strong></span>
+      <span>С голами: <strong id="gsWithGoals" title="Матчей с ненулевым счётом (исключая 0:0)">—</strong></span>
+      <span style="color:#94a3b8;">0:0: <strong id="gsNoGoals" title="Матчей без голов по счёту. Для них паттерны не считаются">—</strong> (<span id="gsNoGoalsPct">—</span>)</span>
+      <span style="color:#60a5fa;">Событий загружено: <strong id="gsEventsLoaded" title="Матчей с загруженными минутами голов из SStats (backfill). Только для них строятся последовательности">—</strong></span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px;">
+      <div style="background:rgba(34,197,94,0.1); padding:12px; border-radius:8px; border:1px solid rgba(34,197,94,0.2);">
+        <div style="font-size:0.8em; color:#94a3b8; margin-bottom:4px;"><i class="fas fa-home"></i> Первый гол — хозяева</div><div style="font-size:0.7em; color:#64748b; margin-top:2px;" title="Из матчей с загруженными событиями">(из событий)</div>
+        <div style="font-size:1.4em; font-weight:700; color:#22c55e;" id="gsHomeFirst">—</div>
+        <div style="font-size:0.75em; margin-top:4px; color:#94a3b8;">Затем победа: <span id="gsHomeThenWin" title="Сколько матчей, где хозяева забили первыми, закончились их победой" style="color:#22c55e;">—</span></div>
+      </div>
+      <div style="background:rgba(239,68,68,0.1); padding:12px; border-radius:8px; border:1px solid rgba(239,68,68,0.2);">
+        <div style="font-size:0.8em; color:#94a3b8; margin-bottom:4px;"><i class="fas fa-plane-departure"></i> Первый гол — гости</div><div style="font-size:0.7em; color:#64748b; margin-top:2px;" title="Из матчей с загруженными событиями">(из событий)</div>
+        <div style="font-size:1.4em; font-weight:700; color:#ef4444;" id="gsAwayFirst">—</div>
+        <div style="font-size:0.75em; margin-top:4px; color:#94a3b8;">Затем победа: <span id="gsAwayThenWin" title="Сколько матчей, где гости забили первыми, закончились их победой" style="color:#ef4444;">—</span></div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <strong style="font-size:0.9em;">Первый гол по минутам:</strong>
+      <div id="gsTiming" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; font-size:0.85em;"></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div>
+        <strong style="font-size:0.9em; display:block; margin-bottom:4px;">Топ-10 паттернов:</strong>
+<div style="font-size:0.75em; color:#64748b; margin-bottom:8px;">
+  <span style="background:rgba(34,197,94,0.2); padding:2px 6px; border-radius:3px; color:#22c55e; margin-right:4px;">H</span> = хозяева |
+  <span style="background:rgba(239,68,68,0.2); padding:2px 6px; border-radius:3px; color:#ef4444; margin:0 4px;">A</span> = гости
+</div>
+        <div id="gsPatterns" style="font-size:0.85em; display:grid; gap:4px;"></div>
+      </div>
+      <div>
+        <strong style="font-size:0.9em; display:block; margin-bottom:4px;">По Cat:</strong>
+<div style="font-size:0.75em; color:#64748b; margin-bottom:8px;" title="П1 first = хозяева забили первыми | П2 first = гости забили первыми | Топ = самый частый паттерн в этой категории">
+  Кто забил первым + самый частый паттерн
+</div>
+        <div id="gsByCat" style="font-size:0.85em; display:grid; gap:4px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 <div id="strategyResults" style="display:none;">
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:24px;">
                   <div class="stat-card"><div class="value" id="stratTotalCount">0</div><div class="label">Матчей</div></div>
@@ -3304,6 +3362,69 @@ async function runTimeAnalysis() {
     document.getElementById('taResults').style.display = 'block';
   } catch(e) { alert('Ошибка: ' + e.message); }
   finally { document.getElementById('taLoading').style.display = 'none'; }
+}
+
+async function runGoalSequences() {
+  const filters = {};
+  const ids = {
+    genius:'stratGenius', running:'stratRunning', radar:'stratRadar',
+    feedcon:'stratFeedcon', img:'stratImg', rts:'stratRts',
+    min_ven:'stratMinVen', total:'stratTotal', cat:'stratCat'
+  };
+  for (const [key, id] of Object.entries(ids)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const v = el.value;
+    if (v && v !== '0') filters['filter_' + key] = v;
+  }
+  document.getElementById('gsLoading').style.display = 'block';
+  document.getElementById('gsResults').style.display = 'none';
+  try {
+    const resp = await fetch('/api/scout/goal-sequences', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(filters)
+    });
+    const d = await resp.json();
+    if (!d.success) { alert('Ошибка: ' + (d.error || '?')); return; }
+    document.getElementById('gsTotal').textContent = d.total;
+    document.getElementById('gsWithGoals').textContent = d.with_goals;
+    document.getElementById('gsNoGoals').textContent = d.no_goals;
+    document.getElementById('gsNoGoalsPct').textContent = Math.round(d.no_goals / d.total * 100) + '%';
+    document.getElementById('gsEventsLoaded').textContent = d.events_loaded;
+    const fg = d.first_goal || {};
+    const total_fg = (fg.home || 0) + (fg.away || 0);
+    document.getElementById('gsHomeFirst').textContent = fg.home + ' (' + (total_fg ? Math.round(fg.home / total_fg * 100) : 0) + '%)';
+    document.getElementById('gsAwayFirst').textContent = fg.away + ' (' + (total_fg ? Math.round(fg.away / total_fg * 100) : 0) + '%)';
+    document.getElementById('gsHomeThenWin').textContent = fg.home_then_win + '/' + fg.home + ' (' + (fg.home ? Math.round(fg.home_then_win / fg.home * 100) : 0) + '%)';
+    document.getElementById('gsAwayThenWin').textContent = fg.away_then_win + '/' + fg.away + ' (' + (fg.away ? Math.round(fg.away_then_win / fg.away * 100) : 0) + '%)';
+    const tm = d.timing || {};
+    const timingSlots = [['0-15', tm['0-15']], ['16-45', tm['16-45']], ['46-60', tm['46-60']], ['61+', tm['61+']]];
+    document.getElementById('gsTiming').innerHTML = timingSlots.map(([label, val]) =>
+      '<span style="background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:6px;">' + label + "':<strong>" + (val || 0) + '</strong></span>'
+    ).join('');
+    document.getElementById('gsPatterns').innerHTML = (d.patterns || []).slice(0, 10).map((p, i) => {
+      const seq = p.seq.split(',').map(s =>
+        '<span style="display:inline-block; padding:1px 6px; border-radius:3px; margin:1px; font-size:0.95em; background:' +
+        (s === 'H' ? 'rgba(34,197,94,0.2); color:#22c55e' : 'rgba(239,68,68,0.2); color:#ef4444') + ';">' + s + '</span>'
+      ).join('');
+      return '<div style="display:flex; align-items:center; gap:8px; padding:3px 0;">' +
+        '<span style="color:#64748b; min-width:16px;">' + (i+1) + '.</span>' +
+        '<span>' + seq + '</span>' +
+        '<span style="color:#60a5fa; margin-left:auto;">' + p.cnt + ' матч.</span></div>';
+    }).join('') || '<div style="color:#64748b;">Нет данных</div>';
+    document.getElementById('gsByCat').innerHTML = Object.entries(d.by_cat || {}).map(([cat, v]) =>
+      '<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">' +
+      '<strong>Cat ' + cat + ':</strong> П1 ' + v.home_first + ' | П2 ' + v.away_first +
+      (v.top_pattern ? ' | Топ:<span style="color:#f59e0b;">[' + v.top_pattern + ']</span>' : '') +
+      '</div>'
+    ).join('') || '<div style="color:#64748b;">Нет данных</div>';
+    document.getElementById('gsResults').style.display = 'block';
+  } catch (e) {
+    alert('Ошибка: ' + e.message);
+  } finally {
+    document.getElementById('gsLoading').style.display = 'none';
+  }
 }
 </script>
 </body>

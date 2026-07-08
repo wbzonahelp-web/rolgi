@@ -5156,6 +5156,7 @@ async function scoutRoutes(fastify, options) {
         FROM games g
         WHERE g.sstats_id = se.matched_game_sstats_id
           AND ${whereClause}
+          AND g.home_score IS NOT NULL
           AND (
             se.home_score IS DISTINCT FROM g.home_score
             OR se.away_score IS DISTINCT FROM g.away_score
@@ -5213,6 +5214,7 @@ async function scoutRoutes(fastify, options) {
         FROM games g
         WHERE g.sstats_id = se.matched_game_sstats_id
           AND se.matched_game_sstats_id IS NOT NULL
+          AND g.home_score IS NOT NULL
           AND (
             se.home_score IS DISTINCT FROM g.home_score
             OR se.away_score IS DISTINCT FROM g.away_score

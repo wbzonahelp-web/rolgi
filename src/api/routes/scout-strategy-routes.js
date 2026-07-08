@@ -201,5 +201,100 @@ async function scoutStrategyRoutes(fastify, options) {
       return reply.code(500).send({ error: e.message });
     }
   });
-}
+fastify.post('/api/scout/goal-sequences', async (request, reply) => {
+  try {
+    const filters = request.body || {};
+    const baseConds = ['matched_game_sstats_id IS NOT NULL'];
+    const params = [];
+    let pi = buildScoutFilters(filters, baseConds, params,1);
+    const qualify = s => s
+      .replace(/\b(home_score)\b(?!\s*[=<>])/g, 'se.home_score')
+      .replace(/\b(away_score)\b(?!\s*[=<>])/g, 'se.away_score')
+      .replace(/\bmatched_game_sstats_id\b/g, 'se.matched_game_sstats_id')
+      .replace(/\bevent_date\b/g, 'se.event_date')
+      .replace(/\bgenius\b/g, 'se.genius').replace(/\brunning\b/g, 'se.running')
+      .replace(/\bradar\b/g, 'se.radar').replace(/\bfeedcon\b/g, 'se.feedcon')
+      .replace(/\bimg\b/g, 'se.img').replace(/\brts\b/g, 'se.rts')
+      .replace(/\bcat\b/g, 'se.cat');
+    const where = qualify(baseConds.join(' AND '));
+    const withClause = `
+      WITH matched AS (
+        SELECT se.id, g.id AS gid, g.home_team_id, se.home_score, se.away_score, se.cat
+        FROM scout_events se JOIN games g ON g.sstats_id = se.matched_game_sstats_id
+        WHERE ${where}
+      ), gs AS (
+        SELECT m.id, m.cat,
+          COUNT(ge.id) AS gc,
+          array_to_string(
+            array_agg(
+              CASE WHEN ge.team_id = m.home_team_id THEN 'H' ELSE 'A' END
+              ORDER BY ge.minute, COALESCE(ge.minute_extra, 0)
+            ) FILTER (WHERE ge.id IS NOT NULL), ','
+          ) AS seq,
+          MIN(ge.minute + COALESCE(ge.minute_extra, 0)) AS fm,
+          CASE WHEN MIN(CASE WHEN ge.team_id = m.home_team_id
+                THEN ge.minute + COALESCE(ge.minute_extra,0) END)
+               < MIN(CASE WHEN ge.team_id != m.home_team_id
+                THEN ge.minute + COALESCE(ge.minute_extra,0) END) THEN 'H'
+               WHEN MIN(CASE WHEN ge.team_id != m.home_team_id
+                THEN ge.minute + COALESCE(ge.minute_extra,0) END)
+               < MIN(CASE WHEN ge.team_id = m.home_team_id
+                THEN ge.minute + COALESCE(ge.minute_extra,0) END) THEN 'A' END AS fs,
+          CASE WHEN m.home_score > m.away_score THEN 'H'
+               WHEN m.home_score < m.away_score THEN 'A' ELSE 'X' END AS winner,
+          (m.home_score IS NOT NULL AND m.home_score = 0 AND m.away_score = 0) AS no_goal
+        FROM matched m LEFT JOIN game_events ge ON ge.game_id = m.gid AND ge.type = 'goal'
+        GROUP BY m.id, m.cat, m.home_team_id, m.home_score, m.away_score
+      )`;
+    const q1 = withClause + ` SELECT COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE no_goal) AS no_goals,
+      COUNT(*) FILTER (WHERE NOT no_goal) AS with_goals,
+      COUNT(*) FILTER (WHERE gc > 0) AS events_loaded,
+      COUNT(*) FILTER (WHERE fs = 'H') AS fh,
+      COUNT(*) FILTER (WHERE fs = 'A') AS fa,
+      COUNT(*) FILTER (WHERE fs = 'H' AND winner = 'H') AS fhw,
+      COUNT(*) FILTER (WHERE fs = 'A' AND winner = 'A') AS faw,
+      COUNT(*) FILTER (WHERE fm BETWEEN 1 AND 15) AS t0,
+      COUNT(*) FILTER (WHERE fm BETWEEN 16 AND 45) AS t1,
+      COUNT(*) FILTER (WHERE fm BETWEEN 46 AND 60) AS t2,
+      COUNT(*) FILTER (WHERE fm > 60) AS t3 FROM gs`;
+    const q2 = withClause + ` SELECT seq, COUNT(*) AS cnt FROM gs
+      WHERE seq IS NOT NULL AND seq <> '' GROUP BY seq ORDER BY cnt DESC LIMIT 10`;
+    const q3 = withClause + `, tpc AS (
+        SELECT cat, seq, COUNT(*) AS cnt,
+          ROW_NUMBER() OVER (PARTITION BY cat ORDER BY COUNT(*) DESC) AS rn
+        FROM gs WHERE seq IS NOT NULL AND seq <> '' GROUP BY cat, seq
+      )
+      SELECT gs.cat, COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE fs = 'H') AS fh,
+        COUNT(*) FILTER (WHERE fs = 'A') AS fa,
+        MAX(CASE WHEN tpc.rn = 1 THEN tpc.seq END) AS top_seq
+      FROM gs LEFT JOIN tpc USING (cat, seq)
+      GROUP BY gs.cat ORDER BY gs.cat`;
+    const [r1, r2, r3] = await Promise.all([
+      pool.query(q1, params),
+      pool.query(q2, params),
+      pool.query(q3, params)
+    ]);
+    const s = r1.rows[0];
+    const byCat = {};
+    for (const row of r3.rows) {
+      byCat[row.cat] = { home_first: parseInt(row.fh), away_first: parseInt(row.fa), top_pattern: row.top_seq };
+    }
+    return {
+      success: true,
+      total: parseInt(s.total),
+      no_goals: parseInt(s.no_goals),
+      with_goals: parseInt(s.with_goals),
+      events_loaded: parseInt(s.events_loaded),
+      first_goal: { home: parseInt(s.fh), away: parseInt(s.fa), home_then_win: parseInt(s.fhw), away_then_win: parseInt(s.faw) },
+      timing: { '0-15': parseInt(s.t0), '16-45': parseInt(s.t1), '46-60': parseInt(s.t2), '61+': parseInt(s.t3) },
+      patterns: r2.rows,
+      by_cat: byCat
+    };
+  } catch (e) {
+    console.error('[goal-sequences]', e.message);
+    return reply.code(500).send({ error: e.message });
+  }
+});}
 module.exports = scoutStrategyRoutes;
