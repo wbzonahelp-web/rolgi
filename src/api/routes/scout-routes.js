@@ -3385,7 +3385,19 @@ function findTeamsCombined(teamName) {
 function excelDateToJS(excelDate) {
   if (!excelDate) return null;
   if (typeof excelDate === 'string') {
-    return new Date(excelDate);
+			// Парсим DD.MM.YYYY HH:MM
+			const match = excelDate.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(\s+(\d{1,2}):(\d{2}))?/);
+			if (match) {
+				const [, day, month, year, , hour, minute] = match;
+				return new Date(Date.UTC(
+					parseInt(year),
+					parseInt(month) - 1,
+					parseInt(day),
+					parseInt(hour || 0),
+					parseInt(minute || 0)
+				));
+			}
+			return new Date(excelDate);
   }
   const date = new Date((excelDate - 25569) * 86400 * 1000);
   return date;
@@ -3918,32 +3930,127 @@ async function scoutRoutes(fastify, options) {
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         
+        // --- Определяем формат по заголовку ---
+        const headerRow = rows[0] || [];
+        const headerNorm = headerRow.map(h => String(h ?? '').trim().toLowerCase());
+
+        // Поиск колонки по ключевым словам
+        const findCol = (...keys) => {
+          for (const k of keys) {
+            const idx = headerNorm.findIndex(h => h.includes(k));
+            if (idx !== -1) return idx;
+          }
+          return -1;
+        };
+
+        const colSport    = findCol('sport', 'вид спорта');
+        const colEvent    = findCol('event', 'событие', 'матч');
+        const colT1       = findCol('t1', 'home', 'команда 1', 'хозяева');
+        const colT2       = findCol('t2', 'away', 'команда 2', 'гости');
+        const colDate     = findCol('start date', 'date', 'дата');
+        const colTime     = findCol('time', 'время');
+        const colLeague   = findCol('league', 'competition', 'location', 'лига', 'турнир', 'соревнование');
+        const colSources  = findCol('sources', 'source', 'источник');
+
+        // Скаут-колонки (Ven = скаут на матче, Tv = смотрим по ТВ)
+        const colGenius   = findCol('genius');
+        const colRunning  = findCol('running');
+        const colRadar    = findCol('radar');
+        const colFeedcon  = findCol('feedcon', 'feed con');
+        const colImg      = findCol('img');
+        const colRts      = findCol('rts', 'enet');
+
+        // Определяем формат файла
+        const isFmtB = colT1 !== -1 && colT2 !== -1;        // Формат B: T1/T2 колонки (все футбол)
+        const isFmtA = colSport !== -1 && colEvent !== -1;  // Формат A: Sport + Event колонки
+
+        const FOOTBALL_SPORTS = new Set(['soccer', 'football', 'футбол', 'fútbol']);
+
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
-          if (!row || row.length < 4) continue;
-          
-          const [dateExcel, sport, competition, eventName, sources] = row;
-          
-          // Только футбол
-          const sportLower = String(sport || '').toLowerCase().trim();
-const FOOTBALL = ['футбол', 'soccer', 'football'];
-if (sportLower && !FOOTBALL.includes(sportLower)) continue;
-          
-          const date = excelDateToJS(dateExcel);
-          const { home, away } = parseEventName(eventName);
-          
+          if (!row || row.length < 2) continue;
+
+          const cellStr = (idx) => (idx !== -1 && row[idx] != null) ? String(row[idx]).trim() : '';
+
+          let dateExcel, timeExcel, sportVal, competition, eventName, homeTeam, awayTeam, sourcesVal;
+          let genius, running, radar, feedcon, img, rts;
+
+          // Извлекаем скаут-данные (общие для всех форматов)
+          genius   = cellStr(colGenius);
+          running  = cellStr(colRunning);
+          radar    = cellStr(colRadar);
+          feedcon  = cellStr(colFeedcon);
+          img      = cellStr(colImg);
+          rts      = cellStr(colRts);
+
+          if (isFmtB) {
+            // Формат B: DATE | TIME | COUNTRY | LEAGUE | T1 | T2 | ... (все футбол)
+            dateExcel   = colDate !== -1 ? row[colDate] : row[0];
+            timeExcel   = colTime !== -1 ? row[colTime] : null;
+            competition = cellStr(colLeague);
+            homeTeam    = cellStr(colT1);
+            awayTeam    = cellStr(colT2);
+            eventName   = homeTeam && awayTeam ? `${homeTeam} vs ${awayTeam}` : (homeTeam || '');
+            sportVal    = 'football';
+            sourcesVal  = cellStr(colSources);
+            if (!homeTeam && !awayTeam) continue;
+
+          } else if (isFmtA) {
+            // Формат A: Start Date | Sport | Location | Event | ... (смешанный спорт)
+            dateExcel   = colDate !== -1 ? row[colDate] : row[0];
+            sportVal    = cellStr(colSport);
+            competition = cellStr(colLeague);
+            eventName   = cellStr(colEvent);
+            sourcesVal  = cellStr(colSources);
+            const parsed = parseEventName(eventName);
+            homeTeam    = parsed.home;
+            awayTeam    = parsed.away;
+            if (!sportVal || !FOOTBALL_SPORTS.has(sportVal.toLowerCase())) continue;
+            if (!eventName) continue;
+
+          } else {
+            // Формат C (legacy): [dateExcel, sport, competition, eventName, sources]
+            dateExcel   = row[0];
+            sportVal    = row[1];
+            competition = row[2] != null ? String(row[2]).trim() : '';
+            eventName   = row[3] != null ? String(row[3]).trim() : '';
+            sourcesVal  = row[4] != null ? String(row[4]).trim() : '';
+            const sportStr = sportVal != null ? String(sportVal).trim().toLowerCase() : '';
+            if (sportStr && !FOOTBALL_SPORTS.has(sportStr)) continue;
+            const parsed = parseEventName(eventName);
+            homeTeam    = parsed.home;
+            awayTeam    = parsed.away;
+          }
+
+          // Парсинг даты + опциональное время
+          let date = excelDateToJS(dateExcel);
+          if (date && timeExcel != null) {
+            const t = excelDateToJS(timeExcel);
+            if (t) {
+              date = new Date(date.getTime() + t.getUTCHours() * 3600000 + t.getUTCMinutes() * 60000);
+            }
+          }
+
+          if (!homeTeam && !awayTeam) continue;
+
           results.push({
             rowNum: i + 1,
-            date: date?.toISOString(),
-            dateFormatted: date?.toLocaleString('ru-RU'),
-            sport,
+            date: date ? date.toISOString() : null,
+            dateFormatted: date ? date.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) : null,
+            sport: sportVal,
             competition,
             eventName,
-            homeTeam: home,
-            awayTeam: away,
-            homeKeywords: extractSearchKeywords(home),
-            awayKeywords: extractSearchKeywords(away),
-            sources,
+            homeTeam,
+            awayTeam,
+            homeKeywords: extractSearchKeywords(homeTeam),
+            awayKeywords: extractSearchKeywords(awayTeam),
+            sources: sourcesVal,
+            genius,
+            running,
+            radar,
+            feedcon,
+            img,
+            rts,
             result: null,
             matchFound: false
           });
@@ -3963,6 +4070,7 @@ if (sportLower && !FOOTBALL.includes(sportLower)) continue;
   });
   
   // Поиск результата для конкретного события
+
   fastify.post('/api/scout/find-result', async (request, reply) => {
     try {
       const { homeTeam, awayTeam, date, competition } = request.body;
