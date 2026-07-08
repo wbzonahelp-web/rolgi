@@ -1296,6 +1296,19 @@ const teamNameMappings = {
   'хробры глогув': 'chrobry glogow',
   'сталь жешув': 'stal rzeszow',
 
+
+  // ==================== SHORT FORMS / SCOUT ABBREVIATIONS ====================
+  'minnesota': 'minnesota united',
+  'kansas city': 'sporting kansas city',
+  'sporting kc': 'sporting kansas city',
+  'sporting jax': 'sporting jacksonville',
+  'encarnacion': 'encarnacion',
+  'olimpic': 'olympique',
+  'olympic': 'olympique',
+  'nova': 'nova iguacu',
+  'hassania': 'hassania agadir',
+  'xv de piracicaba sp': 'xv de piracicaba',
+
   // ==================== НИДЕРЛАНДЫ (доп.) ====================
   'йонг аз алкмаар': 'jong az alkmaar',
   'йонг псв эйндховен': 'jong psv',
@@ -3377,6 +3390,20 @@ function findTeamsCombined(teamName) {
     }
   }
   
+
+    // Substring matching: scout short name inside DB team name
+    // Examples: MINNESOTA -> Minnesota United II, ENCARNACION -> Encarnación
+    const firstWord = normalized.split(' ')[0];
+    if (firstWord && firstWord.length >= 4) {
+      for (const team of teamsCache.values()) {
+        if (merged.has(team.id)) continue;
+        const dbNorm = String(team.normalized || '').toLowerCase();
+        const dbName = String(team.name || '').toLowerCase();
+        if (dbNorm.includes(firstWord.toLowerCase()) || dbName.includes(firstWord.toLowerCase())) {
+          merged.set(team.id, { ...team, searchScore: 30 });
+        }
+      }
+    }
   return Array.from(merged.values())
     .sort((a, b) => b.searchScore - a.searchScore)
     .slice(0, 40);
@@ -3575,10 +3602,10 @@ async function findGameInDB(homeTeam, awayTeam, date, competition) {
   // Обнуляем время до полуночи чтобы искать весь день
   const dateFrom = new Date(searchDate);
   dateFrom.setUTCHours(0, 0, 0, 0); // начало дня UTC
-  dateFrom.setDate(dateFrom.getDate() - 1); // -1 день назад для покрытия timezone (матч 22:45 UTC = следующий день по местному)
+  dateFrom.setDate(dateFrom.getDate() - 2); // -1 день назад для покрытия timezone (матч 22:45 UTC = следующий день по местному)
   const dateTo = new Date(searchDate);
   dateTo.setUTCHours(0, 0, 0, 0);
-  dateTo.setDate(dateTo.getDate() + 2); // +2 дня вперёд для покрытия timezone-разниц
+  dateTo.setDate(dateTo.getDate() + 3); // +2 дня вперёд для покрытия timezone-разниц
   
   // Если in-memory поиск не дал результатов или результатов мало — fallback через pg_trgm в БД
   const bestHomeScore = homeCandidates.length > 0 ? homeCandidates[0].searchScore : 0;
@@ -4021,6 +4048,9 @@ async function scoutRoutes(fastify, options) {
             homeTeam    = parsed.home;
             awayTeam    = parsed.away;
           }
+
+          // Skip Simulated Reality (virtual matches not in DB)
+          if (competition && String(competition).toLowerCase().includes('simulated')) continue;
 
           // Парсинг даты + опциональное время
           let date = excelDateToJS(dateExcel);
