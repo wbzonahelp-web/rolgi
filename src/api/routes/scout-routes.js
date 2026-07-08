@@ -3925,7 +3925,9 @@ async function scoutRoutes(fastify, options) {
           const [dateExcel, sport, competition, eventName, sources] = row;
           
           // Только футбол
-          if (sport && sport.toLowerCase() !== 'футбол') continue;
+          const sportLower = String(sport || '').toLowerCase().trim();
+const FOOTBALL = ['футбол', 'soccer', 'football'];
+if (sportLower && !FOOTBALL.includes(sportLower)) continue;
           
           const date = excelDateToJS(dateExcel);
           const { home, away } = parseEventName(eventName);

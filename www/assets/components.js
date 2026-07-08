@@ -15,6 +15,7 @@
         const links = [
             { id: 'index',   href: '/',              icon: 'fa-home',   label: 'Матчи' },
             { id: 'leagues', href: '/leagues.html',  icon: 'fa-trophy', label: 'Лиги' },
+            { id: 'cappers', href: '/cappers.html',  icon: 'fa-user-secret', label: 'Капперы' },
             { id: 'teams',   href: '/teams.html',    icon: 'fa-users',  label: 'Команды' },
             { id: 'players', href: '/players.html',  icon: 'fa-user',   label: 'Игроки' },
         ];

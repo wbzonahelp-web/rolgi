@@ -862,6 +862,7 @@
             <nav class="nav-links">
                 <a href="/" class="active"><i class="fas fa-home"></i> Главная</a>
                 <a href="/leagues.html"><i class="fas fa-trophy"></i> Лиги</a>
+                <a href="/cappers.html"><i class="fas fa-user-secret"></i> Капперы</a>
                 <a href="/teams.html"><i class="fas fa-users"></i> Команды</a>
                 <a href="/players.html"><i class="fas fa-user"></i> Игроки</a>
                 <a href="/scout.html"><i class="fas fa-binoculars"></i> Скаут</a>
@@ -1198,10 +1199,8 @@
     </div>
 
     <script>
-        // API Configuration - using local cached proxy for better performance
+        // API Configuration - using local DB API for better performance
         const API_BASE = '/api/db';  // Direct DB API (sstats_id contract)
-        const API_DIRECT = 'https://api.sstats.net';  // Direct API (fallback)
-        const API_KEY = 'fl3qjc4crvx8cppm';
         
         // Client-side cache
         const clientCache = {
@@ -1265,11 +1264,7 @@
             }
         }
         
-        // Helper to add API key to URL (for direct API calls)
-        function withApiKey(url) {
-            const separator = url.includes('?') ? '&' : '?';
-            return `${url}${separator}apikey=${API_KEY}`;
-        }
+
         
         // Global state
         let currentDate = new Date();

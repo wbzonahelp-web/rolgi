@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Капперы — Rolgi SStats</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/app.css">
+    <style>
+        .cap-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }
+        .cap-card { background:#fff; border:1px solid var(--border-color); border-radius:8px; padding:16px; cursor:pointer; transition:all .12s; }
+        .cap-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.08); border-color:var(--primary-color); }
+        .cap-name { font-size:1.1em; font-weight:600; margin-bottom:10px; }
+        .wr-row { margin:8px 0; }
+        .wr-label { font-size:.8em; color:var(--text-muted); display:flex; justify-content:space-between; }
+        .wr-bar { height:8px; border-radius:4px; background:#eef0f3; overflow:hidden; margin-top:3px; }
+        .wr-fill { height:100%; border-radius:4px; }
+        .wr-claimed .wr-fill { background:#f0a020; }
+        .wr-real .wr-fill { background:#3b82f6; }
+        .cap-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+        .cap-badge { font-size:.78em; padding:3px 9px; border-radius:12px; font-weight:500; }
+        .b-honest { background:#dcfce7; color:#166534; }
+        .b-dishonest { background:#fee2e2; color:#991b1b; }
+        .b-noreport { background:#f1f5f9; color:#475569; }
+        .b-unverified { background:#f5f3ff; color:#6d28d9; }
+        .b-total { background:#e0f2fe; color:#075985; }
+        .pick-row { display:grid; grid-template-columns:1fr auto; gap:8px; padding:10px 0; border-bottom:1px solid var(--border-color); }
+        .pick-ev { font-weight:500; }
+        .pick-meta { font-size:.82em; color:var(--text-muted); }
+        .v-badge { font-size:.75em; padding:2px 8px; border-radius:10px; white-space:nowrap; align-self:center; font-weight:600; }
+        .v-honest{background:#dcfce7;color:#166534;} .v-dishonest{background:#fee2e2;color:#991b1b;}
+        .v-no_result_post{background:#f1f5f9;color:#475569;} .v-unverified{background:#f5f3ff;color:#6d28d9;}
+        .v-understated{background:#fef9c3;color:#854d0e;}
+        .cap-back { cursor:pointer; color:var(--primary-color); margin-bottom:12px; display:inline-block; }
+        .cap-profile { background:#f8f9fa; border-radius:6px; padding:12px; font-size:.9em; color:var(--text-color); margin:12px 0; line-height:1.5; }
+        .r-pill{padding:6px 14px;background:#f0f2f5;border:1px solid transparent;border-radius:20px;cursor:pointer;font-size:.88em;transition:all .12s;}
+        .r-pill.active{background:var(--primary-color);color:#fff;}
+        .r-filter-pills{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;}
+    </style>
+    <link rel="stylesheet" href="/assets/app-mobile.css">
+</head>
+<body>
+    <div id="header-mount"></div>
+    <main class="r-container">
+        <div class="r-card r-card-padded">
+            <h1 style="margin:0 0 4px;font-size:1.4em;">
+                <i class="fas fa-user-secret" style="color:var(--secondary-color);margin-right:8px;"></i>
+                Капперы
+                <span class="r-text-muted r-text-sm" style="font-weight:400;margin-left:8px;">проверка честности</span>
+            </h1>
+            <p class="r-text-muted r-text-sm" style="margin:0 0 16px;">
+                Заявленный винрейт против независимо проверенного. Прогнозы сверяются с реальными результатами матчей.
+            </p>
+            <div id="content"><div class="r-loading"><div class="r-spinner"></div> Загрузка…</div></div>
+        </div>
+    </main>
+    <script src="/assets/app.js?v=4"></script>
+    <script src="/assets/components.js?v=cappers1"></script>
+    <script>
+    (function(){
+        const { api } = Rolgi;
+        const C = Rolgi.components;
+        document.getElementById('header-mount').innerHTML = C.header('cappers');
+        const root = document.getElementById('content');
+
+        const VLABEL = { honest:'Честный', dishonest:'Ложный', no_result_post:'Нет отчёта', unverified:'Не проверен', understated:'Занижен' };
+
+        function bar(pct, cls){
+            const v = pct==null ? 0 : pct;
+            const txt = pct==null ? '—' : pct+'%';
+            return `<div class="wr-row ${cls}"><div class="wr-label"><span>${cls==='wr-claimed'?'Заявлено':'Реально'}</span><b>${txt}</b></div><div class="wr-bar"><div class="wr-fill" style="width:${v}%"></div></div></div>`;
+        }
+
+        function card(c){
+            return `<div class="cap-card" data-id="${c.channel_id}">
+                <div class="cap-name">${c.title}</div>
+                ${bar(c.claimed_winrate,'wr-claimed')}
+                ${bar(c.real_winrate,'wr-real')}
+                <div class="cap-badges">
+                    <span class="cap-badge b-total">${c.total_forecasts} прогнозов</span>
+                    <span class="cap-badge b-honest">✓ ${c.honest_cnt}</span>
+                    <span class="cap-badge b-dishonest">✗ ${c.dishonest_cnt} ложных</span>
+                    <span class="cap-badge b-noreport">${c.no_report_cnt} без отчёта</span>
+                </div></div>`;
+        }
+
+        async function listView(){
+            root.innerHTML = '<div class="r-loading"><div class="r-spinner"></div> Загрузка…</div>';
+            const res = await api.get('/api/db/cappers', {}, { ttl:120000 });
+            const cs = (res && res.cappers) || [];
+            if(!cs.length){ root.innerHTML='<div class="r-text-muted" style="padding:30px;text-align:center;">Нет данных</div>'; return; }
+            root.innerHTML = '<div class="cap-grid">'+cs.map(card).join('')+'</div>';
+            root.querySelectorAll('.cap-card').forEach(el=>el.onclick=()=>detailView(el.dataset.id));
+        }
+
+        let curPicks=[], curFilter={sport:'all',verdict:'all'};
+
+        function renderPicks(){
+            let ps = curPicks;
+            if(curFilter.sport!=='all') ps=ps.filter(p=>p.sport===curFilter.sport);
+            if(curFilter.verdict!=='all') ps=ps.filter(p=>p.verdict===curFilter.verdict);
+            const box = document.getElementById('picksBox');
+            if(!ps.length){ box.innerHTML='<div class="r-text-muted" style="padding:20px;">Нет прогнозов по фильтру</div>'; return; }
+            box.innerHTML = ps.map(p=>{
+                const v = p.verdict||'unverified';
+                const src = p.source? ` · <a href="${p.source}" target="_blank" rel="noopener">источник</a>`:'';
+                const sc = p.score? ` · ${p.score}`:'';
+                return `<div class="pick-row"><div>
+                    <div class="pick-ev">${p.event_norm||'—'}</div>
+                    <div class="pick-meta">${p.sport||''} · ${p.bet_type||''}${sc}${p.match_date? ' · '+p.match_date.slice(0,10):''}${src}</div>
+                    </div><span class="v-badge v-${v}">${VLABEL[v]||v}</span></div>`;
+            }).join('');
+        }
+
+        function pills(id,opts,cur,cb){
+            return `<div class="r-filter-pills" id="${id}">`+opts.map(o=>`<span class="r-pill ${o.v===cur?'active':''}" data-v="${o.v}">${o.l}</span>`).join('')+'</div>';
+        }
+
+        async function detailView(cid){
+            root.innerHTML='<div class="r-loading"><div class="r-spinner"></div> Загрузка…</div>';
+            const res = await api.get('/api/db/cappers/'+cid, {}, { ttl:60000 });
+            const c = res.capper; curPicks = res.picks||[]; curFilter={sport:'all',verdict:'all'};
+            const sports = [...new Set(curPicks.map(p=>p.sport).filter(Boolean))];
+            const sportOpts=[{v:'all',l:'Все виды'}].concat(sports.map(s=>({v:s,l:s})));
+            const verdOpts=[{v:'all',l:'Все'},{v:'honest',l:'Честные'},{v:'dishonest',l:'Ложные'},{v:'no_result_post',l:'Без отчёта'},{v:'unverified',l:'Не проверены'}];
+            root.innerHTML = `
+                <span class="cap-back" id="back"><i class="fas fa-arrow-left"></i> Все капперы</span>
+                <div class="cap-name" style="font-size:1.3em;">${c.title}</div>
+                <div class="cap-badges" style="margin:8px 0;">
+                    <span class="cap-badge b-total">Заявлено ${c.claimed_winrate??'—'}%</span>
+                    <span class="cap-badge b-total" style="background:#dbeafe;color:#1e40af;">Реально ${c.real_winrate??'—'}%</span>
+                    <span class="cap-badge b-honest">✓ ${c.honest_cnt}</span>
+                    <span class="cap-badge b-dishonest">✗ ${c.dishonest_cnt}</span>
+                    <span class="cap-badge b-noreport">${c.no_report_cnt} без отчёта</span>
+                    <span class="cap-badge b-unverified">${c.unverified_cnt} не пров.</span>
+                </div>
+                ${c.profile_text? `<div class="cap-profile">${c.profile_text}</div>`:''}
+                ${pills('fSport',sportOpts,'all')}
+                ${pills('fVerd',verdOpts,'all')}
+                <div id="picksBox"></div>`;
+            document.getElementById('back').onclick=listView;
+            document.querySelectorAll('#fSport .r-pill').forEach(el=>el.onclick=()=>{curFilter.sport=el.dataset.v;document.querySelectorAll('#fSport .r-pill').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPicks();});
+            document.querySelectorAll('#fVerd .r-pill').forEach(el=>el.onclick=()=>{curFilter.verdict=el.dataset.v;document.querySelectorAll('#fVerd .r-pill').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPicks();});
+            renderPicks();
+        }
+
+        listView();
+    })();
+    </script>
+</body>
+</html>

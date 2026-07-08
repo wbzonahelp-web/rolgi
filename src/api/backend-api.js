@@ -36,6 +36,7 @@ const logger = require("../monitoring/logger");
 const fastify = require('fastify');
 const cors = require('@fastify/cors');
 const helmet = require('@fastify/helmet');
+const multipart = require('@fastify/multipart');
 const swagger = require('@fastify/swagger');
 const swaggerUi = require('@fastify/swagger-ui');
 const { getDatabase } = require('../database/db-pool');
@@ -48,6 +49,8 @@ const cachedProxyRoutes = require('./routes/cached-proxy');
 const dbRoutes          = require('./routes/db-routes');
 const strategiesRoutes = require('./routes/strategies-routes');
 const scoutRoutes = require('./routes/scout-routes');
+const scoutStrategyRoutes = require('./routes/scout-strategy-routes');
+const cappersRoutes = require('./routes/cappers-routes');
 const { rateLimiterPlugin, roleBasedRateLimit } = require('../cache/fastify-rate-limiter');
 const { queryCachePlugin, scheduleCacheWarming } = require('../cache/fastify-query-cache');
 const { setupPrometheusMiddleware } = require('../monitoring/prometheus/middleware');
@@ -142,6 +145,10 @@ class BackendApi {
     }
 
     // JWT Authentication
+    await this.app.register(multipart, {
+      limits: { fileSize: 20 * 1024 * 1024 }
+    });
+
     await this.app.register(jwtAuthPlugin, {
       dbPool: this.db.pool
     });
@@ -290,6 +297,7 @@ class BackendApi {
     // Cached proxy routes for frontend (SStats with cache)
     this.app.register(cachedProxyRoutes, { prefix: '/api/cached' });
     this.app.register(dbRoutes,          { prefix: '/api/db' });
+    this.app.register(cappersRoutes,      { prefix: '/api/db' });
     this.app.register(strategiesRoutes, { prefix: '/api/strategies' });
 
     // GET /api/analyzers — список анализаторов
@@ -299,6 +307,7 @@ class BackendApi {
 
     // Scout routes (uses full /api/scout/* paths internally)
     this.app.register(scoutRoutes);
+  this.app.register(scoutStrategyRoutes);
 
     // ============================================================
     // API VERSIONING

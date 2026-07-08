@@ -17,8 +17,7 @@
 
 ## Анализаторы (src/analytics/analyzers/*.js)
 Доступные: poisson, markov-outcome, markov-state, shannon-entropy, form-inertia,
-multipeak-density, monte-carlo, pagerank, game-stats,
-valenzetti, valenzetti-variants, match-predictor-v3
+multipeak-density, monte-carlo, pagerank, game-stats, match-predictor-v3.
 Python-аналитика: src/analytics-python/analyzers/ (hmm.py и др.).
 
 ## Стратегии
