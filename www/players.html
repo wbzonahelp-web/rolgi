@@ -326,6 +326,7 @@
             </a>
             <nav class="nav-links">
                 <a href="/"><i class="fas fa-home"></i> Матчи</a>
+                <a href="/cappers.html"><i class="fas fa-user-secret"></i> Капперы</a>
                 <a href="/teams.html"><i class="fas fa-users"></i> Команды</a>
                 <a href="/players.html" class="active"><i class="fas fa-user"></i> Игроки</a>
             </nav>
@@ -381,19 +382,12 @@
     </div>
 
     <script>
-        // API Configuration - use cached proxy for faster loading
-        const API_BASE = '/api/cached';
-        const API_KEY = 'fl3qjc4crvx8cppm';
+        // API Configuration - use local DB API
+        const API_BASE = '/api/db';
         
         // Client-side cache
         const clientCache = new Map();
         const CACHE_TTL = { players: 3600000, playerDetails: 3600000, events: 300000 };
-        
-        // Helper to add API key to URL (fallback)
-        function withApiKey(url) {
-            const separator = url.includes('?') ? '&' : '?';
-            return `${url}${separator}apikey=${API_KEY}`;
-        }
         
         // Cached fetch - uses local proxy with server cache
         async function cachedFetch(endpoint, params = {}, cacheType = 'players') {
@@ -427,7 +421,7 @@
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner spinner"></i><div>Поиск игроков...</div></div>';
 
             try {
-                const result = await cachedFetch('/players/find', { name: query }, 'players');
+                const result = await cachedFetch('/players/search', { q: query }, 'players');
                 const players = result.data || [];
                 renderPlayers(players);
             } catch (error) {

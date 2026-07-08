@@ -289,6 +289,7 @@
             </a>
             <nav class="nav-links">
                 <a href="/"><i class="fas fa-home"></i> Матчи</a>
+                <a href="/cappers.html"><i class="fas fa-user-secret"></i> Капперы</a>
                 <a href="/teams.html" class="active"><i class="fas fa-users"></i> Команды</a>
                 <a href="/players.html"><i class="fas fa-user"></i> Игроки</a>
             </nav>
@@ -366,13 +367,31 @@
     </div>
 
     <script>
-        // API Configuration
-        const API_KEY = 'fl3qjc4crvx8cppm';
+        // API Configuration - use local DB API
+        const API_BASE = '/api/db';
         
-        // Helper to add API key to URL
-        function withApiKey(url) {
-            const separator = url.includes('?') ? '&' : '?';
-            return `${url}${separator}apikey=${API_KEY}`;
+        // Client-side cache
+        const clientCache = new Map();
+        const CACHE_TTL = { teams: 3600000, teamDetails: 3600000 };
+        
+        // Cached fetch - uses local proxy with server cache
+        async function cachedFetch(endpoint, params = {}, cacheType = 'teams') {
+            const cacheKey = endpoint + JSON.stringify(params);
+            const cached = clientCache.get(cacheKey);
+            if (cached && Date.now() - cached.time < (CACHE_TTL[cacheType] || 300000)) {
+                console.log('Client cache hit:', endpoint);
+                return cached.data;
+            }
+            
+            const queryString = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+            const response = await fetch(API_BASE + endpoint + queryString);
+            const result = await response.json();
+            
+            if (result.success) {
+                clientCache.set(cacheKey, { data: result, time: Date.now() });
+                console.log('Loaded from server:', endpoint, 'fromCache:', result.fromCache);
+            }
+            return result;
         }
         
         let currentPage = 1;
@@ -414,8 +433,7 @@
             try {
                 let result;
                 const params = {};
-                if (query) params.name = query;
-                if (query) params.search = query;
+                if (query) params.q = query;
                 if (country) params.country = country;
                 params.limit = pageSize;
                 params.offset = (currentPage - 1) * pageSize;
@@ -423,7 +441,7 @@
                 if (source === 'flashscore') {
                     result = await cachedFetch('/ls/teams', params, 'teams');
                 } else {
-                    result = await cachedFetch('/teams/list', params, 'teams');
+                    result = await cachedFetch('/teams/search', params, 'teams');
                 }
                 
                 const teams = result.data || [];

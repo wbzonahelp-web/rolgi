@@ -471,6 +471,108 @@ async function dbRoutes(fastify) {
         const { rows } = await db.query(sql, [q, limit]);
         return { success: true, data: rows, total: rows.length, source: 'db' };
     });
+
+    // ────────────────────────────────────────────────────────────
+    // GET /api/db/teams/:id — данные команды
+    // ────────────────────────────────────────────────────────────
+    fastify.get('/teams/:id', async (request, reply) => {
+        const id = parseInt(request.params.id, 10);
+        if (!id) return reply.code(400).send({ success: false, error: 'id required' });
+        const sql = `
+            SELECT t.sstats_id AS id, t.id AS internal_id,
+                   t.name, t.short_name, t.logo,
+                   t.country_name, t.stadium, t.founded
+            FROM teams t
+            WHERE t.sstats_id = $1 OR t.id = $1
+            LIMIT 1`;
+        const { rows } = await db.query(sql, [id]);
+        if (!rows.length) return reply.code(404).send({ success: false, error: 'not found' });
+        const t = rows[0];
+        return {
+            success: true,
+            data: {
+                id: t.id,
+                name: t.name,
+                shortName: t.short_name,
+                logo: t.logo,
+                country: t.country_name ? { name: t.country_name } : null,
+                countryName: t.country_name,
+                stadium: t.stadium ? { name: t.stadium } : null,
+                stadiumName: t.stadium,
+                founded: t.founded,
+                foundedYear: t.founded
+            },
+            source: 'db'
+        };
+    });
+
+    // ────────────────────────────────────────────────────────────
+    // GET /api/db/players/:id — данные игрока
+    // ────────────────────────────────────────────────────────────
+    fastify.get('/players/:id', async (request, reply) => {
+        const id = parseInt(request.params.id, 10);
+        if (!id) return reply.code(400).send({ success: false, error: 'id required' });
+        const sql = `
+            SELECT p.sstats_id AS id, p.id AS internal_id,
+                   p.name, p.first_name, p.last_name,
+                   p.position, p.country_name, p.photo,
+                   p.date_of_birth, p.age, p.height, p.weight
+            FROM players p
+            WHERE p.sstats_id = $1 OR p.id = $1
+            LIMIT 1`;
+        const { rows } = await db.query(sql, [id]);
+        if (!rows.length) return reply.code(404).send({ success: false, error: 'not found' });
+        const p = rows[0];
+        return {
+            success: true,
+            data: {
+                id: p.id,
+                name: p.name,
+                firstName: p.first_name,
+                lastName: p.last_name,
+                position: p.position,
+                country: p.country_name ? { name: p.country_name } : null,
+                countryName: p.country_name,
+                photo: p.photo,
+                dateOfBirth: p.date_of_birth,
+                age: p.age,
+                height: p.height,
+                weight: p.weight
+            },
+            source: 'db'
+        };
+    });
+
+    // ────────────────────────────────────────────────────────────
+    // GET /api/db/players/:id/events — события игрока
+    // ────────────────────────────────────────────────────────────
+    fastify.get('/players/:id/events', async (request, reply) => {
+        const id = parseInt(request.params.id, 10);
+        if (!id) return reply.code(400).send({ success: false, error: 'id required' });
+        const limit = Math.min(Math.max(parseInt(request.query.limit || '20', 10), 1), 50);
+        const sql = `
+            SELECT e.id, e.type, e.subtype, e.description, e.minute, e.minute_extra,
+                   g.date AS game_date
+            FROM game_events e
+            JOIN players p ON p.id = e.player_id
+            LEFT JOIN games g ON g.id = e.game_id
+            WHERE p.sstats_id = $1 OR p.id = $1
+            ORDER BY e.date DESC, e.minute DESC NULLS LAST
+            LIMIT $2`;
+        const { rows } = await db.query(sql, [id, limit]);
+        return {
+            success: true,
+            data: rows.map(row => ({
+                id: row.id,
+                type: row.type,
+                name: row.subtype || row.description || row.type,
+                gameDate: row.game_date,
+                minute: row.minute
+            })),
+            source: 'db'
+        };
+    });
+
     // ────────────────────────────────────────────────────────────
     // GET /api/db/games/:id/h2h — личные встречи команд (из БД)
     // ────────────────────────────────────────────────────────────
