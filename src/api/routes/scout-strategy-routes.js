@@ -88,5 +88,118 @@ async function scoutStrategyRoutes(fastify, options) {
       return { success:true, game:gm, events:events.rows, stats:stats.rows[0]||null };
     } catch(e){ return reply.code(500).send({error:e.message}); }
   });
+  fastify.post('/api/scout/time-analysis', async (request, reply) => {
+    try {
+      const filters = request.body || {};
+      const mode = filters.mode || 'hourly';
+      const tz = Number.isFinite(parseInt(filters.tzOffset)) ? parseInt(filters.tzOffset) : 3;
+      const whereConditions = ['matched_game_sstats_id IS NOT NULL', 'home_score IS NOT NULL', 'away_score IS NOT NULL'];
+      const params = [];
+      let paramIndex = buildScoutFilters(filters, whereConditions, params, 1);
+      const tzParam = paramIndex;
+      params.push(tz);
+      paramIndex++;
+      const where = whereConditions.join(' AND ');
+      const hourExpr ='EXTRACT(HOUR FROM event_date + make_interval(hours => $' + tzParam + '))::int';
+      let rows;
+      if (mode === 'slots') {
+        const q = `WITH s AS (SELECT (home_score+away_score) AS tot, home_score, away_score,
+          CASE WHEN ${hourExpr} BETWEEN 0 AND 5 THEN '1) Ночь 00-06'
+               WHEN ${hourExpr} BETWEEN 6 AND 10 THEN '2) Утро 06-11'
+               WHEN ${hourExpr} BETWEEN 11 AND 16 THEN '3) День 11-17'
+               WHEN ${hourExpr} BETWEEN 17 AND 20 THEN '4) Вечер 17-21'
+               ELSE '5) Поздний 21-00' END AS slot
+          FROM scout_events WHERE ${where})
+        SELECT slot AS label, COUNT(*) AS matches,
+          ROUND(AVG(tot)::numeric,2) AS avg_total,
+          ROUND(COUNT(*) FILTER (WHERE tot>1.5)*100.0/COUNT(*),0) AS over15,
+          ROUND(COUNT(*) FILTER (WHERE tot>2.5)*100.0/COUNT(*),0) AS over25,
+          ROUND(COUNT(*) FILTER (WHERE tot<2.5)*100.0/COUNT(*),0) AS under25,
+          ROUND(COUNT(*) FILTER (WHERE tot>3.5)*100.0/COUNT(*),0) AS over35,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>0.5)*100.0/COUNT(*),0) AS over05,
+              ROUND(COUNT(*) FILTER (WHERE home_score+away_score<1.5)*100.0/COUNT(*),0) AS under15,
+              ROUND(COUNT(*) FILTER (WHERE home_score>0 AND away_score>0)*100.0/COUNT(*),0) AS btts_yes,
+              ROUND(COUNT(*) FILTER (WHERE home_score=0 OR away_score=0)*100.0/COUNT(*),0) AS btts_no,
+              ROUND(COUNT(*) FILTER (WHERE home_score>away_score)*100.0/COUNT(*),0) AS p1,
+              ROUND(COUNT(*) FILTER (WHERE home_score=away_score)*100.0/COUNT(*),0) AS x,
+              ROUND(COUNT(*) FILTER (WHERE home_score<away_score)*100.0/COUNT(*),0) AS p2
+        FROM s GROUP BY slot ORDER BY slot`;
+        rows = (await pool.query(q, params)).rows;
+      } else if (mode === 'custom') {
+        const hFrom = parseInt(filters.hourFrom);
+        const hTo = parseInt(filters.hourTo);
+        const fromP = paramIndex; params.push(Number.isFinite(hFrom)?hFrom:0); paramIndex++;
+        const toP = paramIndex; params.push(Number.isFinite(hTo)?hTo:23); paramIndex++;
+        const rangeCond = `(CASE WHEN $${fromP}::int <= $${toP}::int THEN ${hourExpr} BETWEEN $${fromP}::int AND $${toP}::int ELSE (${hourExpr} >= $${fromP}::int OR ${hourExpr} <= $${toP}::int) END)`;
+        const q = `SELECT COUNT(*) AS matches,
+          ROUND(AVG(home_score+away_score)::numeric,2) AS avg_total,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>1.5)*100.0/NULLIF(COUNT(*),0),0) AS over15,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>2.5)*100.0/NULLIF(COUNT(*),0),0) AS over25,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score<2.5)*100.0/NULLIF(COUNT(*),0),0) AS under25,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>3.5)*100.0/NULLIF(COUNT(*),0),0) AS over35,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>0.5)*100.0/NULLIF(COUNT(*),0),0) AS over05,
+              ROUND(COUNT(*) FILTER (WHERE home_score+away_score<1.5)*100.0/NULLIF(COUNT(*),0),0) AS under15,
+              ROUND(COUNT(*) FILTER (WHERE home_score>0 AND away_score>0)*100.0/NULLIF(COUNT(*),0),0) AS btts_yes,
+              ROUND(COUNT(*) FILTER (WHERE home_score=0 OR away_score=0)*100.0/NULLIF(COUNT(*),0),0) AS btts_no,
+              ROUND(COUNT(*) FILTER (WHERE home_score>away_score)*100.0/NULLIF(COUNT(*),0),0) AS p1,
+              ROUND(COUNT(*) FILTER (WHERE home_score=away_score)*100.0/NULLIF(COUNT(*),0),0) AS x,
+              ROUND(COUNT(*) FILTER (WHERE home_score<away_score)*100.0/NULLIF(COUNT(*),0),0) AS p2
+        FROM scout_events WHERE ${where} AND ${rangeCond}`;
+        const r = (await pool.query(q, params)).rows[0];
+        rows = [{ label: (filters.hourFrom||0)+':00-'+(filters.hourTo||23)+':00', ...r }];
+      } else {
+        const q = `SELECT ${hourExpr} AS hour, COUNT(*) AS matches,
+          ROUND(AVG(home_score+away_score)::numeric,2) AS avg_total,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>1.5)*100.0/COUNT(*),0) AS over15,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>2.5)*100.0/COUNT(*),0) AS over25,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score<2.5)*100.0/COUNT(*),0) AS under25,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>3.5)*100.0/COUNT(*),0) AS over35,
+          ROUND(COUNT(*) FILTER (WHERE home_score+away_score>0.5)*100.0/COUNT(*),0) AS over05,
+              ROUND(COUNT(*) FILTER (WHERE home_score+away_score<1.5)*100.0/COUNT(*),0) AS under15,
+              ROUND(COUNT(*) FILTER (WHERE home_score>0 AND away_score>0)*100.0/COUNT(*),0) AS btts_yes,
+              ROUND(COUNT(*) FILTER (WHERE home_score=0 OR away_score=0)*100.0/COUNT(*),0) AS btts_no,
+              ROUND(COUNT(*) FILTER (WHERE home_score>away_score)*100.0/COUNT(*),0) AS p1,
+              ROUND(COUNT(*) FILTER (WHERE home_score=away_score)*100.0/COUNT(*),0) AS x,
+              ROUND(COUNT(*) FILTER (WHERE home_score<away_score)*100.0/COUNT(*),0) AS p2
+        FROM scout_events WHERE ${where} GROUP BY hour ORDER BY hour`;
+        rows = (await pool.query(q, params)).rows;
+      }
+      const gapWhere = whereConditions.join(' AND ')
+    .replace(/(^|[^.\w])home_score/g, '$1se.home_score')
+    .replace(/(^|[^.\w])away_score/g, '$1se.away_score')
+    .replace(/(^|[^.\w])matched_game_sstats_id/g, '$1se.matched_game_sstats_id')
+    .replace(/(^|[^.\w])event_date/g, '$1se.event_date')
+    .replace(/(^|[^.\w])genius/g, '$1se.genius')
+    .replace(/(^|[^.\w])running/g, '$1se.running')
+    .replace(/(^|[^.\w])radar/g, '$1se.radar')
+    .replace(/(^|[^.\w])feedcon/g, '$1se.feedcon')
+    .replace(/(^|[^.\w])img/g, '$1se.img')
+    .replace(/(^|[^.\w])rts/g, '$1se.rts')
+    .replace(/(^|[^.\w])cat/g, '$1se.cat');
+      const gapParams = params.slice(0, tzParam - 1);
+      const gapQ = `WITH goals AS (
+        SELECT se.id AS sid, ge.minute + COALESCE(ge.minute_extra,0) AS m,
+          LAG(ge.minute + COALESCE(ge.minute_extra,0)) OVER (
+            PARTITION BY se.id ORDER BY ge.minute, COALESCE(ge.minute_extra,0)
+          ) AS prev_m
+        FROM scout_events se
+        JOIN games g ON g.sstats_id = se.matched_game_sstats_id
+        JOIN game_events ge ON ge.game_id = g.id AND ge.type='goal'
+        WHERE ${gapWhere}),
+      gaps AS (SELECT sid, m - prev_m AS gap FROM goals WHERE prev_m IS NOT NULL),
+      pm AS (SELECT sid, AVG(gap) AS mag FROM gaps GROUP BY sid)
+      SELECT COUNT(*) AS matches,
+        ROUND(AVG(mag)::numeric,1) AS avg_gap,
+        ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY mag)::numeric,1) AS median_gap,
+        ROUND(MIN(mag)::numeric,1) AS min_gap,
+        ROUND(MAX(mag)::numeric,1) AS max_gap
+      FROM pm`;
+      const gaps = (await pool.query(gapQ, gapParams)).rows[0];
+      return { success: true, mode, tzOffset: tz, data: rows, gaps };
+    } catch (e) {
+      console.error('time-analysis error:', e);
+      return reply.code(500).send({ error: e.message });
+    }
+  });
 }
 module.exports = scoutStrategyRoutes;

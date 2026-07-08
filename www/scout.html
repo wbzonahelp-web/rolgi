@@ -583,7 +583,7 @@
             <button class="tab" onclick="switchTab('all-events')" id="tabAllEvents">
                 <i class="fas fa-list"></i> Все события
             </button>
-            <button class="tab" onclick="switchTab('strategies')" id="tabStrategies" style="display:none;">
+            <button class="tab" onclick="switchTab('strategies')" id="tabStrategies">
               <i class="fas fa-chart-line"></i> Стратегии
             </button>
             <button class="tab" onclick="switchTab('admin')" id="tabAdmin" style="display:none;">
@@ -1165,10 +1165,55 @@
                   <div class="filter-group"><label style="font-size:0.85em;">IMG</label><select id="stratImg" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
                   <div class="filter-group"><label style="font-size:0.85em;">RTS</label><select id="stratRts" onchange="recalcStrategy()"><option value="">—</option><option value="VEN">VEN</option><option value="TV">TV</option><option value="NONE">Нет</option></select></div>
                   <div class="filter-group"><label style="font-size:0.85em;">Мин. VEN</label><select id="stratMinVen" onchange="recalcStrategy()"><option value="0">—</option><option value="1">≥1</option><option value="2">≥2</option><option value="3">≥3</option></select></div>
-                  <div class="filter-group"><label style="font-size:0.85em;">Тотал</label><select id="stratTotal" onchange="recalcStrategy()"><option value="">—</option><option value="over-1.5">ТБ1.5</option><option value="under-1.5">ТМ1.5</option><option value="over-2.5">ТБ2.5</option><option value="under-2.5">ТМ2.5</option><option value="over-3.5">ТБ3.5</option><option value="under-3.5">ТМ3.5</option></select></div>
+                  <div class="filter-group"><label style="font-size:0.85em;">Тотал</label><select id="stratTotal" onchange="recalcStrategy()"><option value="">—</option><option value="over-1.5">ТБ1.5</option><option value="under-1.5">ТМ1.5</option><option value="over-2.5">ТБ2.5</option><option value="under-2.5">ТМ2.5</option><option value="over-3.5">ТБ3.5</option><option value="under-3.5">ТМ3.5</option></select></div><div class="filter-group"><label style="font-size:0.85em;">Cat</label><select id="stratCat" onchange="recalcStrategy()"><option value="">—</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
                 </div>
               </div>
-              <div id="strategyResults" style="display:none;">
+              <div style="margin-top:24px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+<h3 style="margin-bottom:16px; font-size:1.1em;"><i class="fas fa-clock"></i> Анализ по времени суток</h3>
+<div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px;">
+<div class="filter-group"><label style="font-size:0.85em;">Режим</label>
+<select id="taMode" onchange="taModeChanged()">
+<option value="slots">Слоты (утро/день/вечер)</option>
+<option value="hourly">По часам (0-23)</option>
+<option value="custom">Свой диапазон</option>
+</select>
+</div>
+<div class="filter-group"><label style="font-size:0.85em;">Часовой пояс UTC+</label>
+<select id="taTz">
+<option value="0">0</option><option value="1">1</option><option value="2">2</option>
+<option value="3" selected>3 (МСК)</option><option value="4">4</option>
+<option value="5">5</option><option value="6">6</option><option value="7">7</option></select>
+</div>
+<div class="filter-group" id="taCustomFrom" style="display:none;"><label style="font-size:0.85em;">С часа</label>
+<select id="taFrom"><option value="0">0:00</option><option value="1">1:00</option><option value="2">2:00</option><option value="3">3:00</option><option value="4">4:00</option><option value="5">5:00</option><option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option><option value="9">9:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select>
+</div>
+<div class="filter-group" id="taCustomTo" style="display:none;"><label style="font-size:0.85em;">По час</label>
+<select id="taTo"><option value="0">0:00</option><option value="1">1:00</option><option value="2">2:00</option><option value="3">3:00</option><option value="4">4:00</option><option value="5">5:00</option><option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option><option value="9">9:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23" selected>23:00</option></select>
+</div>
+<button class="btn btn-primary btn-sm" onclick="runTimeAnalysis()"><i class="fas fa-play"></i> Анализ</button>
+<span style="font-size:0.75em; color:#64748b;">Учитывает фильтры конструктора выше</span>
+</div>
+<div id="taResults" style="display:none;">
+<div id="taGaps" style="background:rgba(102,126,234,0.1); padding:12px; border-radius:8px; margin-bottom:12px; font-size:0.9em;"></div>
+<div style="overflow-x:auto;">
+<table style="width:100%; border-collapse:collapse; font-size:0.85em;">
+<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.15);">
+<th style="text-align:left; padding:8px;">Период</th>
+<th style="padding:8px;">Матчей</th>
+<th style="padding:8px;">Ср.тотал</th>
+<th style="padding:8px;">ТБ1.5</th>
+<th style="padding:8px; color:#22c55e;">ТБ2.5</th>
+<th style="padding:8px; color:#f59e0b;">ТМ2.5</th>
+<th style="padding:8px;">ТБ3.5</th>
+<th style="padding:8px;">BTTS</th>
+</tr></thead>
+<tbody id="taTableBody"></tbody>
+</table>
+</div>
+<div id="taLoading" style="display:none; text-align:center; padding:20px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Анализ...</div>
+</div>
+</div>
+<div id="strategyResults" style="display:none;">
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:24px;">
                   <div class="stat-card"><div class="value" id="stratTotalCount">0</div><div class="label">Матчей</div></div>
                   <div class="stat-card"><div class="value" id="stratAvgTotal">0</div><div class="label">Средний тотал</div></div>
@@ -3123,7 +3168,7 @@ const sourcesHtml=(_sb+_cb)||(e.sources?e.sources.split(/[,;|]/).map(s=>s.trim()
       filter_img: document.getElementById('stratImg').value,
       filter_rts: document.getElementById('stratRts').value,
       filter_min_ven: document.getElementById('stratMinVen').value,
-      filter_total: document.getElementById('stratTotal').value
+      filter_total: document.getElementById('stratTotal').value, filter_cat: document.getElementById('stratCat')?.value || ''
     };
     // Удаляем пустые фильтры
     Object.keys(filters).forEach(k => {
@@ -3201,7 +3246,98 @@ const sourcesHtml=(_sb+_cb)||(e.sources?e.sources.split(/[,;|]/).map(s=>s.trim()
     } finally {
       btn.disabled = false;
     }
+  }function taModeChanged() {
+  const mode = document.getElementById('taMode').value;
+  const show = mode === 'custom' ? 'block' : 'none';
+  document.getElementById('taCustomFrom').style.display = show;
+  document.getElementById('taCustomTo').style.display = show;
+}
+async function runTimeAnalysis() {
+  const filters = {
+    filter_genius: document.getElementById('stratGenius')?.value || '',
+    filter_running: document.getElementById('stratRunning')?.value || '',
+    filter_radar: document.getElementById('stratRadar')?.value || '',
+    filter_feedcon: document.getElementById('stratFeedcon')?.value || '',
+    filter_img: document.getElementById('stratImg')?.value || '',
+    filter_rts: document.getElementById('stratRts')?.value || '',
+    filter_min_ven: document.getElementById('stratMinVen')?.value || '0',
+    filter_total: document.getElementById('stratTotal')?.value || '', filter_cat: document.getElementById('stratCat')?.value || ''
+  };
+  Object.keys(filters).forEach(k => { if(!filters[k]||filters[k]==='0') delete filters[k]; });
+  filters.mode = document.getElementById('taMode').value;
+  filters.tzOffset = parseInt(document.getElementById('taTz').value);
+  if (filters.mode === 'custom') {
+    filters.hourFrom = parseInt(document.getElementById('taFrom').value);
+    filters.hourTo = parseInt(document.getElementById('taTo').value);
   }
+  document.getElementById('taLoading').style.display = 'block';
+  document.getElementById('taResults').style.display = 'none';
+  try {
+    const resp = await fetch('/api/scout/time-analysis', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(filters)
+    });
+    const data = await resp.json();
+    if (!data.success) { alert('Ошибка: ' + (data.error||'?')); return; }
+    const g = data.gaps || {};
+    document.getElementById('taGaps').innerHTML =
+      '<i class="fas fa-stopwatch"></i> <b>Промежутки между голами:</b> ' +
+      'среднее <b>' + (g.avg_gap||'—') + '</b> мин | медиана ' + (g.median_gap||'—') +
+      ' | мин ' + (g.min_gap||'—') + ' | макс ' + (g.max_gap||'—') +
+      ' (по ' + (g.matches||0) + ' матчам с≥2 голами)';
+    const tbody = document.getElementById('taTableBody');
+    tbody.innerHTML = data.data.map(r => {
+      const label = r.label != null ? r.label : (r.hour != null ? r.hour+':00' : '?');
+      const o25 = parseInt(r.over25)||0, u25 = parseInt(r.under25)||0; const by = parseInt(r.btts_yes || r.btts)||0, bn = parseInt(r.btts_no)||0; const p1 = parseInt(r.p1)||0, xd = parseInt(r.x)||0, p2 = parseInt(r.p2)||0;
+      return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">' +
+        '<td style="padding:6px; text-align:left; font-weight:600;">'+label+'</td>' +
+        '<td style="padding:6px; text-align:center;">'+r.matches+'</td>' +
+        '<td style="padding:6px; text-align:center; color:#60a5fa;">'+(r.avg_total||'—')+'</td>' +
+        '<td style="padding:6px; text-align:center;">'+(r.over05||0)+'%</td>' + '<td style="padding:6px; text-align:center;">'+(r.over15||0)+'%</td>' + '<td style="padding:6px; text-align:center; color:#f59e0b;">'+(r.under15||0)+'%</td>' +
+        '<td style="padding:6px; text-align:center; color:'+(o25>=55?'#22c55e':o25>=45?'#94a3b8':'#ef4444')+'; font-weight:'+(o25>=55?'700':'400')+';">'+o25+'%</td>' +
+        '<td style="padding:6px; text-align:center; color:'+(u25>=55?'#f59e0b':u25>=45?'#94a3b8':'#94a3b8')+'; font-weight:'+(u25>=55?'700':'400')+';">'+u25+'%</td>' +
+        '<td style="padding:6px; text-align:center;">'+(r.over35||0)+'%</td>' +
+        '<td style="padding:6px; text-align:center; color:'+(by>=55?'#22c55e':'#94a3b8')+';">'+by+'%</td>' + '<td style="padding:6px; text-align:center; color:'+(bn>=45?'#f59e0b':'#94a3b8')+';">'+bn+'%</td>' + '<td style="padding:6px; text-align:center; color:'+(p1>=40?'#22c55e':'#94a3b8')+';">'+p1+'%</td>' + '<td style="padding:6px; text-align:center;">'+xd+'%</td>' + '<td style="padding:6px; text-align:center; color:'+(p2>=40?'#22c55e':'#94a3b8')+';">'+p2+'%</td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById('taResults').style.display = 'block';
+  } catch(e) { alert('Ошибка: ' + e.message); }
+  finally { document.getElementById('taLoading').style.display = 'none'; }
+}
 </script>
 </body>
 </html>
+<script>
+(function(){
+  const scoutTimeHeaders = [
+    'Период','Матчей','Ср.тотал',
+    'ТБ0.5','ТБ1.5','ТМ1.5','ТБ2.5','ТМ2.5','ТБ3.5',
+    'Обе↑','Обе↓','П1','X','П2'
+  ];
+  function fixScoutTimeHeaders(){
+    document.querySelectorAll('table').forEach(table => {
+      const ths = Array.from(table.querySelectorAll('thead th'));
+      if (!ths.length) return;
+      const text = ths.map(th => th.textContent.trim()).join('|');
+      if (
+        text.includes('Период') && text.includes('Матчей') &&
+        text.includes('Ср.тотал') &&
+        (text.includes('BTTS') || ths.length < scoutTimeHeaders.length)
+      ) {
+        const tr = table.querySelector('thead tr');
+        if (!tr) return;
+        tr.innerHTML = scoutTimeHeaders.map(h => {
+          let color = '';
+          if (['ТБ2.5','Обе↑'].includes(h)) color = ' color:#22c55e;';
+          if (['ТМ1.5','ТМ2.5','Обе↓'].includes(h)) color = ' color:#f59e0b;';
+          const align = h === 'Период' ? 'text-align:left;' : 'text-align:center;';
+          return `<th style="${align} padding:8px;${color}">${h}</th>`;
+        }).join('');
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded', fixScoutTimeHeaders);
+  setInterval(fixScoutTimeHeaders, 1000);
+})();
+</script>
