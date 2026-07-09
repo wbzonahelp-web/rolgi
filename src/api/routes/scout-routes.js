@@ -1307,6 +1307,9 @@ const teamNameMappings = {
   'olympic': 'olympique',
   'nova': 'nova iguacu',
   'hassania': 'hassania agadir',
+  'aguara': 'aguara',
+  'atletico nacional': 'atletico nacional',
+  'futuro fc': 'future fc',
   'xv de piracicaba sp': 'xv de piracicaba',
 
   // ==================== НИДЕРЛАНДЫ (доп.) ====================
